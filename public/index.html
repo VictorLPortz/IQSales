@@ -305,16 +305,21 @@ function buildMenus(){
 
 function toggleCdd(side){
   const trigger=document.getElementById('cdd-'+side+'-trigger');
-  const isOpen=trigger.classList.contains('open');
+  const menu=document.getElementById('cdd-'+side+'-menu');
+  const isOpen=menu.style.display==='block';
+  document.querySelectorAll('.cdd-menu').forEach(m=>m.style.display='none');
   document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));
-  if(!isOpen)trigger.classList.add('open');
+  if(!isOpen){menu.style.display='block';trigger.classList.add('open');}
+}
 }
 
 function selectCdd(side,value){
   cddState[side]=value;
+  document.getElementById('cdd-'+side+'-menu').style.display='none';
   document.getElementById('cdd-'+side+'-trigger').classList.remove('open');
   document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';
   updateCddDisplay(side);
+}
 }
 
 function updateCddDisplay(side){
