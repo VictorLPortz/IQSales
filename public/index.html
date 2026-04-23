@@ -304,14 +304,14 @@ const SUPABASE_URL='https://pnzpdgjstzuapgknagsa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
 
 const BRAND_COLORS={
-  'Alm. Brand':  {bg:'#003366',text:'#fff',initials:'AB'},
-  'Tryg':        {bg:'#E8001C',text:'#fff',initials:'TR'},
-  'Topdanmark':  {bg:'#00205B',text:'#fff',initials:'TD'},
-  'Codan':       {bg:'#E4002B',text:'#fff',initials:'CO'},
-  'IF Forsikring':{bg:'#0054A6',text:'#fff',initials:'IF'},
-  'Gjensidige':  {bg:'#00573F',text:'#fff',initials:'GJ'},
-  'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},
-'Privatsikring':                 {bg:'#F5A623',text:'#fff',initials:'PS'},
+  'Alm. Brand':                    {bg:'#00AEEF',text:'#fff',initials:'AB'},
+  'Tryg':                          {bg:'#E2001A',text:'#fff',initials:'TR'},
+  'Topdanmark':                    {bg:'#12205F',text:'#fff',initials:'TD'},
+  'Codan':                         {bg:'#2B3FDB',text:'#fff',initials:'CO'},
+  'IF Forsikring':                 {bg:'#1A56DB',text:'#fff',initials:'IF'},
+  'Gjensidige':                    {bg:'#1B2473',text:'#fff',initials:'GJ'},
+  'LB Forsikring':                 {bg:'#004B87',text:'#fff',initials:'LB'},
+  'Privatsikring':                 {bg:'#F5A623',text:'#fff',initials:'PS'},
   'Lærerstandens Brandforsikring': {bg:'#5B8DB8',text:'#fff',initials:'LB'},
   'GF Forsikring':                 {bg:'#2E8B2E',text:'#fff',initials:'GF'},
   'Vesta Forsikring':              {bg:'#6EE7B7',text:'#1B4D3E',initials:'VE'},
@@ -337,17 +337,8 @@ const BRAND_COLORS={
   'Sønderjysk Forsikring':         {bg:'#1A3A6B',text:'#fff',initials:'SJ'},
   'Frida Forsikring':              {bg:'#E85D9A',text:'#fff',initials:'FR'},
   'Dansk Bilforsikring':           {bg:'#1A5C8A',text:'#fff',initials:'DB'},
-};};
+};
 
-function getBrandEl(name, size=32, id='') {
-  const brand = BRAND_COLORS[name];
-  const initials = brand ? brand.initials : name.substring(0,2).toUpperCase();
-  const bg = brand ? brand.bg : '#E3E1D9';
-  const color = brand ? brand.text : '#7A7870';
-  const r = size > 24 ? 8 : 4;
-  const idAttr = id ? ` id="${id}"` : '';
-  return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
-}
 let selectedType='Indboforsikring',docsA=[],docsB=[];
 
 
@@ -361,6 +352,15 @@ function makeFallback(name, size, id) {
   return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
 }
 
+function getBrandEl(name, size=32, id='') {
+  const brand = BRAND_COLORS[name];
+  const initials = brand ? brand.initials : name.substring(0,2).toUpperCase();
+  const bg = brand ? brand.bg : '#E3E1D9';
+  const color = brand ? brand.text : '#7A7870';
+  const r = size > 24 ? 8 : 4;
+  const idAttr = id ? ` id="${id}"` : '';
+  return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
+}
 
 function logoHtml(n,size=28){return getBrandEl(n,size);}
 
