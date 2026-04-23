@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQSales – Forsikringssammenligner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F3EF;--surface:#fff;--border:#E3E1D9;--text:#141412;--muted:#7A7870;--accent:#0A2540;--accent2:#1B7F4F;--accent-light:#E6F2EC;--danger:#B91C1C;--danger-light:#FEF2F2;--warn:#92400E;--warn-light:#FFFBEB;--green:#15803D;--green-light:#F0FDF4;--r:14px;--rs:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--accent);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-iq{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:#fff;letter-spacing:-1px}
+.logo-iq span{color:#4ADE80}
+.logo-sub{font-size:12px;color:rgba(255,255,255,.45);font-weight:300;letter-spacing:.03em}
+.header-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(255,255,255,.7)}
+main{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+
+.section-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1.25rem}
+.type-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.type-btn{padding:10px 4px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;color:var(--muted);background:var(--surface);transition:all .15s;text-align:center;line-height:1.3}
+.type-btn:hover{border-color:var(--accent2);color:var(--accent2);background:var(--accent-light)}
+.type-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.type-icon{font-size:18px;display:block;margin-bottom:3px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.company-select-wrap{position:relative;margin-bottom:10px}
+.company-logo-preview{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;object-fit:contain;border-radius:4px;pointer-events:none;display:none}
+.company-logo-preview.visible{display:block}
+select{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px 10px 44px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A7870' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer;transition:border-color .15s}
+select:focus{outline:none;border-color:var(--accent)}
+input[type="text"]{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text)}
+input[type="text"]:focus{outline:none;border-color:var(--accent)}
+.col-label-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+.col-label-yours{background:var(--accent);color:#fff}
+.col-label-theirs{background:#F1F5F9;color:#475569;border:1px solid #E2E8F0}
+.upload-zone{border:1.5px dashed var(--border);border-radius:var(--r);padding:1.25rem;text-align:center;cursor:pointer;transition:all .15s}
+.upload-zone:hover{border-color:var(--accent2);background:var(--accent-light)}
+.upload-zone.ready{border-style:solid;border-color:var(--green);background:var(--green-light)}
+.uz-icon{width:28px;height:28px;margin:0 auto 8px;color:var(--muted)}
+.uz-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.uz-hint{font-size:12px;color:var(--muted)}
+.uz-files{font-size:12px;color:var(--green);margin-top:6px;font-weight:500}
+.analyze-btn{width:100%;padding:14px;font-family:'Syne',sans-serif;font-size:16px;font-weight:600;background:var(--accent2);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:opacity .15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px}
+.analyze-btn:hover{opacity:.88}
+.analyze-btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-arrow{font-size:18px;transition:transform .2s}
+.analyze-btn:not(:disabled):hover .btn-arrow{transform:translateX(3px)}
+.status-box{text-align:center;padding:3rem;color:var(--muted);font-size:14px}
+.dots{display:inline-flex;gap:5px;margin-top:10px}
+.dots span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dt 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dt{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.result-section{animation:fadeIn .4s ease;margin-top:1.5rem}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.tabs{display:inline-flex;gap:4px;margin-bottom:1.25rem;background:var(--bg);border-radius:var(--rs);padding:4px;border:1px solid var(--border)}
+.tab{padding:8px 18px;font-size:13px;font-weight:500;border:none;border-radius:6px;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.sum-bar{display:flex;align-items:center;gap:8px;background:var(--accent-light);border-radius:var(--rs);padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--accent2);flex-wrap:wrap}
+.sum-bar strong{font-weight:500}
+.sum-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);opacity:.4}
+
+/* SYNCHRONIZED TABLE LAYOUT */
+.sync-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;table-layout:fixed}
+.sync-table th{padding:12px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text);width:50%}
+.sync-table th:first-child{border-right:1px solid var(--border)}
+.sync-table td{padding:0;vertical-align:top;border-bottom:1px solid var(--border)}
+.sync-table td:first-child{border-right:1px solid var(--border)}
+.sync-table tr:last-child td{border-bottom:none}
+.cv-cell{padding:10px 14px;min-height:72px;position:relative}
+.cv-cell.is-top{background:#F0FDF4;border-left:3px solid var(--accent2)}
+.cv-cell.is-yours-weak{background:#FFF8F8}
+.cv-cat{font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.cv-det{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:5px}
+.cv-badges{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.dot svg{width:9px;height:9px}
+.dy{background:var(--green-light)}
+.dn{background:var(--danger-light)}
+.dp{background:var(--warn-light)}
+.top-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;background:var(--accent2);color:#fff}
+.top-num{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.25);font-size:9px;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.ch-b{background:var(--green-light);color:var(--green)}
+.ch-w{background:var(--danger-light);color:var(--danger)}
+.ch-inib{background:#FEF9EC;color:#92400E;border:1px solid #FDE68A}
+.ch-exc{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
+
+/* INIB tooltip */
+.inib-wrap{position:relative;display:inline-block}
+.inib-tip{display:none;position:absolute;left:0;top:calc(100% + 6px);width:220px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.55;z-index:200}
+.inib-tip::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
+.inib-wrap:hover .inib-tip{display:block}
+
+/* SALES HINT inline */
+.sales-hint{margin-top:6px;background:#EFF8FF;border-left:2px solid #378ADD;border-radius:0 6px 6px 0;padding:5px 9px;font-size:11px;color:#042C53;line-height:1.5;display:flex;gap:6px;align-items:flex-start}
+.sales-hint-icon{font-size:11px;flex-shrink:0;margin-top:1px;color:#378ADD;font-weight:700}
+.objection-hint{background:#FFF5F5;border-left:2px solid #E24B4A;border-radius:0 6px 6px 0}
+.objection-hint .sales-hint-icon{color:#E24B4A}
+.objection-hint p{color:#7A1F1F}
+
+.co-head-sync{display:flex;align-items:center;gap:10px}
+.co-logo-wrap{width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.co-logo-wrap img{width:28px;height:28px;object-fit:contain}
+.co-logo-fallback{font-size:12px;font-weight:600;color:var(--accent);font-family:'Syne',sans-serif}
+.co-nm{font-size:14px;font-weight:500;color:var(--text)}
+.co-sub{font-size:11px;color:var(--muted)}
+.yours-tag{font-size:10px;font-weight:500;background:var(--accent2);color:#fff;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+
+.hidden{display:none}
+.disclaimer{font-size:11px;color:var(--muted);text-align:center;margin-top:1rem;padding:8px 12px;border:1px solid var(--border);border-radius:var(--rs);line-height:1.5}
+
+/* CUSTOM COMPANY DROPDOWN */
+.cdd{position:relative;margin-bottom:10px;user-select:none}
+.cdd-trigger{display:flex;align-items:center;gap:10px;padding:10px 36px 10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);cursor:pointer;transition:border-color .15s;min-height:42px}
+.cdd-trigger:hover{border-color:var(--accent2)}
+.cdd-trigger.open{border-color:var(--accent);border-radius:var(--rs) var(--rs) 0 0}
+.cdd-logo{width:24px;height:24px;object-fit:contain;border-radius:3px;flex-shrink:0}
+.cdd-logo-fb{width:24px;height:24px;border-radius:3px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);font-family:'Syne',sans-serif;flex-shrink:0}
+.cdd-label{font-size:14px;color:var(--text);flex:1}
+.cdd-arrow{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;transition:transform .2s}
+.cdd-trigger.open .cdd-arrow{transform:translateY(-50%) rotate(180deg)}
+.cdd-arrow svg{width:12px;height:8px;display:block}
+.cdd-menu{display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--accent);border-top:none;border-radius:0 0 var(--rs) var(--rs);z-index:500;max-height:260px;overflow-y:auto}
+.cdd-trigger.open + .cdd-menu{display:block}
+.cdd-option{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:background .1s}
+.cdd-option:hover{background:var(--accent-light)}
+.cdd-option.active{background:var(--accent-light)}
+.cdd-option-logo{width:24px;height:24px;object-fit:contain;border-radius:3px;flex-shrink:0}
+.cdd-option-logo-fb{width:24px;height:24px;border-radius:3px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);font-family:'Syne',sans-serif;flex-shrink:0}
+.cdd-option-label{font-size:13px;color:var(--text)}
+.cdd-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
+.cdd-custom-input{padding:8px 12px;border-top:1px solid var(--border)}
+.cdd-custom-input input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text)}
+.cdd-custom-input input:focus{outline:none;border-color:var(--accent)}
+
+/* PITCH */
+.pitch-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.pitch-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.pitch-col-full{grid-column:1/-1}
+.pitch-col-header{padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#fff;display:flex;align-items:center;gap:8px}
+.ph-green{background:var(--accent2)}
+.ph-red{background:#9B1C1C}
+.ph-blue{background:var(--accent)}
+.ph-dark{background:#374151}
+.pitch-body{padding:1rem 1.1rem}
+.pitch-body p{font-size:14px;line-height:1.78;color:var(--text)}
+.pitch-kp{list-style:none}
+.pitch-kp li{font-size:14px;line-height:1.65;padding:6px 0 6px 20px;position:relative;color:var(--text);border-bottom:1px solid var(--border)}
+.pitch-kp li:last-child{border-bottom:none}
+.pitch-kp li::before{content:"→";position:absolute;left:0;color:var(--accent2);font-weight:600}
+.pitch-actions{padding:1rem;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px;grid-column:1/-1}
+.btn-act{flex:1;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border-radius:var(--rs);cursor:pointer;transition:all .15s}
+.btn-sec{border:1.5px solid var(--border);background:var(--surface);color:var(--text)}
+.btn-sec:hover{background:var(--bg)}
+.btn-pri{border:none;background:var(--accent2);color:#fff}
+.btn-pri:hover{opacity:.88}
+
+/* SEND TO CUSTOMER TAB */
+.send-intro{background:var(--accent-light);border:1px solid #A7D7B8;border-radius:var(--rs);padding:12px 16px;margin-bottom:1.25rem;font-size:13px;color:#0F4D2A;line-height:1.6}
+.coverage-selector{margin-bottom:1.25rem}
+.sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sel-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .15s;background:var(--surface)}
+.sel-item.selected{border-color:var(--accent2);background:var(--accent-light)}
+.sel-item input[type=checkbox]{margin-top:2px;accent-color:var(--accent2);width:15px;height:15px;flex-shrink:0;cursor:pointer}
+.sel-item-text{flex:1}
+.sel-item-cat{font-size:13px;font-weight:500;color:var(--text)}
+.sel-item-det{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.sel-controls{display:flex;gap:8px;margin-bottom:10px}
+.sel-ctrl-btn{padding:5px 14px;font-size:12px;border:1px solid var(--border);border-radius:20px;cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+.sel-ctrl-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.customer-pdf-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1rem}
+.pdf-header{background:var(--accent);padding:1.25rem 1.5rem;color:#fff}
+.pdf-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:4px}
+.pdf-sub{font-size:13px;color:rgba(255,255,255,.6)}
+.pdf-body{padding:1.25rem 1.5rem}
+.pdf-row{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:1px}
+.pdf-cell{padding:12px 14px;border-bottom:1px solid var(--border)}
+.pdf-cell:first-child{border-right:1px solid var(--border)}
+.pdf-row-header{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--bg)}
+.pdf-col-head{padding:8px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border)}
+.pdf-col-head:first-child{border-right:1px solid var(--border)}
+.pdf-cat{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.pdf-det{font-size:12px;color:var(--muted);line-height:1.45}
+.pdf-exp{font-size:12px;color:#042C53;background:#EFF8FF;border-radius:4px;padding:4px 8px;margin-top:5px;line-height:1.5}
+.pdf-better{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--green-light);color:var(--green);font-weight:500;display:inline-block;margin-top:4px}
+.pdf-footer{padding:1rem 1.5rem;background:var(--bg);border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.5}
+.send-actions{display:flex;gap:8px}
+
+@media print{header,#setup-area,.api-bar,.analyze-btn,.tabs,.disclaimer,.pitch-actions,.send-actions,.send-intro,.coverage-selector,.sel-controls{display:none!important}.result-section{margin:0}}
+@media(max-width:640px){.two-col,.sel-grid{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(3,1fr)}.pitch-wrap{grid-template-columns:1fr}.sync-table th,.sync-table td{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-wrap">
+    <div class="logo-iq">IQ<span>Sales</span></div>
+    <div class="logo-sub">Forsikringssammenligner</div>
+  </div>
+  <div class="header-pill">Beta v0.2</div>
+</header>
+<main>
+
+  <div id="setup-area">
+    <div class="card">
+      <div class="section-lbl">1. Forsikringstype</div>
+      <div class="type-grid">
+        <button class="type-btn active" onclick="setType(this,'Indboforsikring')"><span class="type-icon">🏠</span>Indbo</button>
+        <button class="type-btn" onclick="setType(this,'Bilforsikring')"><span class="type-icon">🚗</span>Bil</button>
+        <button class="type-btn" onclick="setType(this,'Husforsikring')"><span class="type-icon">🏡</span>Hus</button>
+        <button class="type-btn" onclick="setType(this,'Ulykkesforsikring')"><span class="type-icon">🩹</span>Ulykke</button>
+        <button class="type-btn" onclick="setType(this,'Rejseforsikring')"><span class="type-icon">✈️</span>Rejse</button>
+        <button class="type-btn" onclick="setType(this,'Hundeforsikring')"><span class="type-icon">🐶</span>Hund</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-lbl">2. Vælg selskaber og upload betingelser</div>
+      <div class="two-col">
+        <div>
+          <div class="col-label-badge col-label-yours">Dit selskab — fordele fremhæves</div>
+          <div class="cdd" id="cdd-a">
+            <div class="cdd-trigger" id="cdd-a-trigger" onclick="toggleCdd('a')">
+              <div class="cdd-logo-fb" id="cdd-a-logo">AL</div>
+              <span class="cdd-label" id="cdd-a-label">Alm. Brand</span>
+              <span class="cdd-arrow"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+            </div>
+            <div class="cdd-menu" id="cdd-a-menu"></div>
+          </div>
+          <input type="text" id="custom-a" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('a')" onchange="onCustomInput('a')">
+          <div class="upload-zone" id="zone-a" onclick="document.getElementById('file-a').click()">
+            <svg class="uz-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 2H8a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="16 2 16 9 22 9"/><line x1="14" y1="13" x2="14" y2="20"/><line x1="10.5" y1="16.5" x2="17.5" y2="16.5"/></svg>
+            <div class="uz-title">Upload betingelser (PDF)</div><div class="uz-hint">Klik for at vælge én fil — max ca. 50 sider</div>
+            <div class="uz-files" id="files-a"></div>
+          </div>
+          <input type="file" id="file-a" accept=".pdf" style="display:none" onchange="handleFiles('a',this)">
+        </div>
+        <div>
+          <div class="col-label-badge col-label-theirs">Kundens nuværende selskab</div>
+          <div class="cdd" id="cdd-b">
+            <div class="cdd-trigger" id="cdd-b-trigger" onclick="toggleCdd('b')">
+              <div class="cdd-logo-fb" id="cdd-b-logo">TR</div>
+              <span class="cdd-label" id="cdd-b-label">Tryg</span>
+              <span class="cdd-arrow"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+            </div>
+            <div class="cdd-menu" id="cdd-b-menu"></div>
+          </div>
+          <input type="text" id="custom-b" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('b')" onchange="onCustomInput('b')">
+          <div class="upload-zone" id="zone-b" onclick="document.getElementById('file-b').click()">
+            <svg class="uz-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 2H8a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="16 2 16 9 22 9"/><line x1="14" y1="13" x2="14" y2="20"/><line x1="10.5" y1="16.5" x2="17.5" y2="16.5"/></svg>
+            <div class="uz-title">Upload betingelser (PDF)</div><div class="uz-hint">Klik for at vælge én fil — max ca. 50 sider</div>
+            <div class="uz-files" id="files-b"></div>
+          </div>
+          <input type="file" id="file-b" accept=".pdf" style="display:none" onchange="handleFiles('b',this)">
+        </div>
+      </div>
+    </div>
+    <button class="analyze-btn" id="analyze-btn" onclick="analyze()">Analysér og generér salgspitch <span class="btn-arrow">→</span></button>
+  </div>
+  <div id="result"></div>
+</main>
+
+<script>
+const SUPABASE_URL='https://pnzpdgjstzuapgknagsa.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
+
+const BRAND_COLORS={
+  'Alm. Brand':  {bg:'#003366',text:'#fff',initials:'AB'},
+  'Tryg':        {bg:'#E8001C',text:'#fff',initials:'TR'},
+  'Topdanmark':  {bg:'#00205B',text:'#fff',initials:'TD'},
+  'Codan':       {bg:'#E4002B',text:'#fff',initials:'CO'},
+  'IF Forsikring':{bg:'#0054A6',text:'#fff',initials:'IF'},
+  'Gjensidige':  {bg:'#00573F',text:'#fff',initials:'GJ'},
+  'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},
+};
+
+function getBrandEl(name, size=32, id='') {
+  const brand = BRAND_COLORS[name];
+  const initials = brand ? brand.initials : name.substring(0,2).toUpperCase();
+  const bg = brand ? brand.bg : '#E3E1D9';
+  const color = brand ? brand.text : '#7A7870';
+  const r = size > 24 ? 8 : 4;
+  const idAttr = id ? ` id="${id}"` : '';
+  return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
+}
+let selectedType='Indboforsikring',docsA=[],docsB=[];
+
+function getLogo(n){return null;}
+function logoHtml(n,size=28){return getBrandEl(n,size);}
+
+const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring'];
+const cddState={a:'Alm. Brand',b:'Tryg'};
+
+function buildMenus(){
+  ['a','b'].forEach(side=>{
+    const menu=document.getElementById('cdd-'+side+'-menu');
+    menu.innerHTML=COMPANIES.map(name=>{
+      return`<div class="cdd-option" onclick="selectCdd('${side}','${name}')">${getBrandEl(name,24)}<span class="cdd-option-label">${name}</span></div>`;
+    }).join('')+`<hr class="cdd-divider"><div class="cdd-option" onclick="selectCdd('${side}','andet')"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>`;
+  });
+  updateCddDisplay('a');
+  updateCddDisplay('b');
+}
+
+function toggleCdd(side){
+  const trigger=document.getElementById('cdd-'+side+'-trigger');
+  const isOpen=trigger.classList.contains('open');
+  document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));
+  if(!isOpen)trigger.classList.add('open');
+}
+
+function selectCdd(side,value){
+  cddState[side]=value;
+  document.getElementById('cdd-'+side+'-trigger').classList.remove('open');
+  document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';
+  updateCddDisplay(side);
+}
+
+function updateCddDisplay(side){
+  const value=cddState[side];
+  const logoSlot=document.getElementById('cdd-'+side+'-logo');
+  const labelEl=document.getElementById('cdd-'+side+'-label');
+  if(value==='andet'){
+    logoSlot.outerHTML=`<div id="cdd-${side}-logo" style="width:24px;height:24px;border-radius:4px;background:#E3E1D9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#7A7870;font-family:'Syne',sans-serif;flex-shrink:0">?</div>`;
+    labelEl.textContent='Andet selskab...';
+  } else {
+    logoSlot.outerHTML=getBrandEl(value,24,'cdd-'+side+'-logo');
+    labelEl.textContent=value;
+  }
+  document.querySelectorAll(`#cdd-${side}-menu .cdd-option`).forEach(opt=>{
+    opt.classList.toggle('active',opt.querySelector('.cdd-option-label')?.textContent===value);
+  });
+}
+
+function onCustomInput(side){
+  const val=document.getElementById('custom-'+side).value.trim();
+  document.getElementById('cdd-'+side+'-label').textContent=val||'Andet selskab...';
+}
+
+function getName(side){
+  if(cddState[side]==='andet')return document.getElementById('custom-'+side).value.trim()||'Selskab '+side.toUpperCase();
+  return cddState[side];
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.cdd'))document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));
+});
+function setType(btn,type){selectedType=type;document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function handleFiles(side,input){
+  const file=input.files[0];
+  if(!file)return;
+  const mb=(file.size/1024/1024).toFixed(1);
+  if(file.size>15*1024*1024){
+    alert(`Filen er ${mb} MB — det er for stor (max ca. 15 MB). Prøv at komprimere PDF'en eller brug en kortere version af betingelserne.`);
+    input.value='';return;
+  }
+  const store=side==='a'?docsA:docsB;
+  store.length=0;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    store.push({name:file.name,data:e.target.result.split(',')[1]});
+    document.getElementById('files-'+side).textContent=`${file.name} (${mb} MB)`;
+    document.getElementById('zone-'+side).classList.add('ready');
+  };
+  reader.readAsDataURL(file);
+}
+function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+Math.random().toString(36).substring(2,10);localStorage.setItem('iqsales_uid',id);}return id;}
+async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getUserId()})});}catch(e){}}
+
+async function extractPdfText(base64data) {
+  if (!window.pdfjsLib) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const binary = atob(base64data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+  const nameA=getName('a'),nameB=getName('b');
+  if(!docsA.length||!docsB.length){alert('Upload PDF-betingelser fra begge selskaber.');return;}
+  if(nameA===nameB){alert('Vælg to forskellige selskaber.');return;}
+  const btn=document.getElementById('analyze-btn');
+  btn.disabled=true;
+  document.getElementById('result').innerHTML=`<div class="status-box">Udtrækker tekst fra PDF'er...<br><div class="dots"><span></span><span></span><span></span></div></div>`;
+
+  let textA='', textB='';
+  try {
+    btn.innerHTML='Læser ${nameA}... <span class="btn-arrow">⟳</span>';
+    textA = await extractPdfText(docsA[0].data);
+    btn.innerHTML='Læser ${nameB}... <span class="btn-arrow">⟳</span>';
+    textB = await extractPdfText(docsB[0].data);
+  } catch(e) {
+    document.getElementById('result').innerHTML=`<div class="status-box" style="color:var(--danger)">Kunne ikke læse PDF: ${e.message}</div>`;
+    btn.disabled=false; btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>'; return;
+  }
+
+  // Truncate to stay well within token limits (~60k chars each ≈ ~15k tokens)
+  const MAX_CHARS = 60000;
+  if(textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[tekst afkortet pga. længde]';
+  if(textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[tekst afkortet pga. længde]';
+
+  document.getElementById('result').innerHTML=`<div class="status-box">Sammenligner ${selectedType}-betingelser for <strong>${nameA}</strong> og <strong>${nameB}</strong><br><div class="dots"><span></span><span></span><span></span></div></div>`;
+  btn.innerHTML='Analyserer... <span class="btn-arrow">⟳</span>';
+
+  const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${selectedType}-betingelser.
+
+=== BETINGELSER FRA ${nameA} ===
+${textA}
+
+=== BETINGELSER FRA ${nameB} ===
+${textB}
+
+Returner KUN et JSON-objekt uden markdown:
+{
+  "companyA": "${nameA}",
+  "companyB": "${nameB}",
+  "type": "${selectedType}",
+  "top3_a": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
+  "coverage": [
+    {
+      "category": "Dækningskategori",
+      "a_status": "yes|no|partial|inib",
+      "a_detail": "Præcis dækning fra ${nameA} med beløb og vilkår.",
+      "b_status": "yes|no|partial|inib",
+      "b_detail": "Præcis dækning fra ${nameB} med beløb og vilkår.",
+      "winner": "a|b|equal",
+      "sales_tip": "Max 1 sætning. Kun hvis winner=a. Ellers tom streng.",
+      "objection_tip": "Max 1 sætning. Kun hvis winner=b. Ellers tom streng.",
+      "customer_explanation": "Max 1 sætning i enkelt dansk med hverdagseksempel."
+    }
+  ],
+  "pitch": {
+    "opener": "Åbning til sælger fra ${nameA} mod ${nameB}-kunde (max 2 sæt.)",
+    "advantages": ["Fordel 1 med tal","Fordel 2","Fordel 3"],
+    "objection": "Svar på: jeg er tilfreds med ${nameB} (2-3 sæt.)",
+    "closing": "Call to action (1-2 sæt.)"
+  },
+  "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
+}
+
+Regler:
+- inib = ikke nævnt i betingelserne, no = eksplicit undtaget
+- top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
+- winner=a automatisk hvis b_status=no eller inib
+- Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
+
+  try{
+    const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');
+    const m=txt.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('Kunne ikke fortolke svar fra AI');
+    let parsed;
+    try{parsed=JSON.parse(m[0]);}
+    catch(e){
+      let fixed=m[0];
+      fixed=fixed.replace(/[\u0000-\u001F\u007F]/g,' ');
+      fixed=fixed.replace(/,\s*([}\]])/g,'$1');
+      const stringFields=['a_detail','b_detail','sales_tip','objection_tip','customer_explanation','opener','objection','closing'];
+      stringFields.forEach(field=>{
+        fixed=fixed.replace(new RegExp(`("${field}":\\s*")((?:[^"\\\\]|\\\\.)*)`,'g'),(match,prefix,content)=>{
+          return prefix+content.replace(/\n/g,' ').replace(/\r/g,' ').replace(/"/g,"'");
+        });
+      });
+      try{parsed=JSON.parse(fixed);}
+      catch(e2){
+        const lastGood=fixed.lastIndexOf('}',fixed.lastIndexOf('}')-1);
+        try{parsed=JSON.parse(fixed.substring(0,lastGood+1)+']}');}
+        catch(e3){throw new Error('JSON parse fejl — prøv igen');}
+      }
+    }
+    renderResult(parsed);
+    logAnalysis(nameA,nameB,selectedType);
+  }catch(err){document.getElementById('result').innerHTML=`<div class="status-box" style="color:var(--danger)">Fejl: ${err.message}<br><small style="color:var(--muted);display:block;margin-top:6px">Tjek API-nøglen og prøv igen.</small></div>`;}
+  btn.disabled=false;btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+}
+
+function ico(s){
+  if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
+  if(s==='no')return`<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  if(s==='inib')return`<svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="8.5" r="1" fill="#92400E"/></svg>`;
+  return`<svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>`;
+}
+function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':'dp';}
+function inibBadge(type){
+  const label=type==='inib'?'Ikke nævnt':'Undtaget';
+  const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';
+  return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;
+}
+
+function renderResult(d){
+  window._d=d;
+  const aW=d.coverage.filter(c=>c.winner==='a').length;
+  const bW=d.coverage.filter(c=>c.winner==='b').length;
+  const eq=d.coverage.filter(c=>c.winner==='equal').length;
+  const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
+  const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  const topRank=c=>{if(c.b_status==='no'||c.b_status==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));return r!==-1?r+1:null;};
+
+  // Build synchronized table rows
+  const rows=d.coverage.map(c=>{
+    const isTop=isTopA(c);
+    const rank=topRank(c);
+    // LEFT cell (yours)
+    const aCls=dotCls(c.a_status);
+    const aTop=isTop?' is-top':'';
+    let aBadges=`<div class="cv-badges">`;
+    if(c.a_status==='inib'||c.a_status==='no')aBadges+=inibBadge(c.a_status);
+    if(isTop&&c.a_status!=='inib'&&c.a_status!=='no'){aBadges+=`<span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span>`;}
+    else if(c.winner==='a'&&!isTop)aBadges+=`<span class="chip ch-b">Bedre dækning</span>`;
+    aBadges+=`</div>`;
+    const aSalesTip=c.sales_tip&&(isTop||c.winner==='a')?`<div class="sales-hint"><span class="sales-hint-icon">→</span><p>${c.sales_tip}</p></div>`:'';
+
+    // RIGHT cell (theirs)
+    const bCls=dotCls(c.b_status);
+    const bWeak=c.winner==='a'?' is-yours-weak':'';
+    let bBadges=`<div class="cv-badges">`;
+    if(c.b_status==='inib'||c.b_status==='no')bBadges+=inibBadge(c.b_status);
+    else if(c.winner==='b')bBadges+=`<span class="chip ch-b">Bedre dækning</span>`;
+    else if(c.winner==='a')bBadges+=`<span class="chip ch-w">Svagere dækning</span>`;
+    bBadges+=`</div>`;
+    const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
+
+    return`<tr>
+      <td><div class="cv-cell${aTop}">
+        <div class="cv-cat"><div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div>
+        <div class="cv-det">${c.a_detail}</div>
+        ${aBadges}${aSalesTip}
+      </div></td>
+      <td><div class="cv-cell${bWeak}">
+        <div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div>
+        <div class="cv-det">${c.b_detail}</div>
+        ${bBadges}${bObjTip}
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  
+  const p=d.pitch;
+
+  document.getElementById('result').innerHTML=`
+  <div class="result-section">
+    <div class="tabs">
+      <button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button>
+      <button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button>
+      <button class="tab" id="t3" onclick="sw('send')">Send til kunde</button>
+    </div>
+
+    <div id="vc">
+      <div class="sum-bar">
+        <strong>${d.companyA}</strong> bedre på ${aW} punkter
+        <span class="sum-dot"></span>
+        <strong>${d.companyB}</strong> bedre på ${bW} punkter
+        <span class="sum-dot"></span>
+        Ens på ${eq} punkter
+      </div>
+      <table class="sync-table">
+        <thead><tr>
+          <th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyA)}</div><div><div class="co-nm">${d.companyA}<span class="yours-tag">Dit selskab</span></div><div class="co-sub">Hold musen over rækker for salgstips</div></div></div></th>
+          <th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyB)}</div><div><div class="co-nm">${d.companyB}</div><div class="co-sub">Kundens nuværende selskab</div></div></div></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center">
+        <span style="display:flex;align-items:center;gap:4px"><span class="dot dy" style="width:14px;height:14px">${ico('yes')}</span>Dækket</span>
+        <span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">${ico('partial')}</span>Delvist dækket</span>
+        <span style="display:flex;align-items:center;gap:4px"><span class="dot dn" style="width:14px;height:14px">${ico('no')}</span>Undtaget</span>
+        <span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">${ico('inib')}</span>Ikke nævnt i betingelserne</span>
+      </div>
+      <div class="disclaimer" style="margin-top:10px">${d.disclaimer}</div>
+    </div>
+
+    <div id="vp" class="hidden">
+      <div class="pitch-wrap">
+        <div class="pitch-col">
+          <div class="pitch-col-header ph-blue"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><circle cx="7" cy="7" r="6" stroke="rgba(255,255,255,.7)" stroke-width="1.2"/><line x1="7" y1="4" x2="7" y2="7.5" stroke="white" stroke-width="1.4" stroke-linecap="round"/><circle cx="7" cy="9.5" r=".8" fill="white"/></svg>Åbning – skab interesse</div>
+          <div class="pitch-body"><p>${p.opener}</p></div>
+        </div>
+        <div class="pitch-col">
+          <div class="pitch-col-header ph-dark"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M7 2v5l3 2" stroke="rgba(255,255,255,.7)" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="7" r="5.5" stroke="rgba(255,255,255,.7)" stroke-width="1.2"/></svg>Afslutning</div>
+          <div class="pitch-body"><p>${p.closing}</p></div>
+        </div>
+        <div class="pitch-col pitch-col-full">
+          <div class="pitch-col-header ph-green"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><polyline points="1.5,7 5,10.5 12.5,3.5" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>De tre vigtigste fordele med ${d.companyA}</div>
+          <div class="pitch-body"><ul class="pitch-kp">${p.advantages.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        </div>
+        <div class="pitch-col pitch-col-full">
+          <div class="pitch-col-header ph-red"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M7 2L1.5 11.5h11L7 2z" stroke="rgba(255,255,255,.8)" stroke-width="1.2" fill="none"/><line x1="7" y1="6" x2="7" y2="9" stroke="white" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10.5" r=".7" fill="white"/></svg>Når kunden siger "jeg er tilfreds med ${d.companyB}"</div>
+          <div class="pitch-body"><p>${p.objection}</p></div>
+        </div>
+        <div class="pitch-actions">
+          <button class="btn-act btn-sec" id="cp-btn" onclick="copyP()">Kopiér pitch</button>
+          <button class="btn-act btn-pri" onclick="window.print()">Print / Gem som PDF</button>
+        </div>
+      </div>
+      <div class="disclaimer">${d.disclaimer}</div>
+    </div>
+
+    <div id="vs" class="hidden">
+      <div class="send-intro">Vælg de dækninger du vil sende til kunden. Rapporten forklarer hver dækning i simpelt sprog — ingen forsikringsjargon.</div>
+      <div class="coverage-selector">
+        <div class="sec-lbl">Vælg dækninger til kunderapport</div>
+        <div class="sel-controls">
+          <button class="sel-ctrl-btn" onclick="selAll(true)">Vælg alle</button>
+          <button class="sel-ctrl-btn" onclick="selAll(false)">Fravælg alle</button>
+          <button class="sel-ctrl-btn" onclick="selOnlyTop()">Kun top fordele</button>
+        </div>
+        <div class="sel-grid" id="sel-grid"></div>
+      </div>
+      <div id="customer-preview"></div>
+      <div class="send-actions">
+        <button class="btn-act btn-sec" onclick="printCustomer()">Gem som PDF</button>
+        <button class="btn-act btn-pri" onclick="mailCustomer()">Åbn i mail</button>
+      </div>
+    </div>
+  </div>`;
+
+  buildSelector(d);
+}
+
+function buildSelector(d){
+  const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
+  const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  const grid=document.getElementById('sel-grid');
+  grid.innerHTML=d.coverage.map((c,i)=>{
+    const isTop=isTopA(c);
+    return`<label class="sel-item${isTop?' selected':''}" id="sel-${i}" onclick="toggleSel(${i})">
+      <input type="checkbox" id="chk-${i}"${isTop?' checked':''} onclick="event.stopPropagation();toggleSel(${i})">
+      <div class="sel-item-text">
+        <div class="sel-item-cat">${c.category}${isTop?` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">Top</span>`:''}</div>
+        <div class="sel-item-det">${c.a_detail.substring(0,60)}${c.a_detail.length>60?'...':''}</div>
+      </div>
+    </label>`;
+  }).join('');
+  updateCustomerPreview();
+}
+
+function toggleSel(i){
+  const chk=document.getElementById('chk-'+i);
+  const lbl=document.getElementById('sel-'+i);
+  chk.checked=!chk.checked;
+  lbl.classList.toggle('selected',chk.checked);
+  updateCustomerPreview();
+}
+function selAll(v){const d=window._d;d.coverage.forEach((_,i)=>{document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
+function selOnlyTop(){
+  const d=window._d;
+  const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
+  const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});
+  updateCustomerPreview();
+}
+
+function updateCustomerPreview(){
+  const d=window._d;if(!d)return;
+  const selected=d.coverage.filter((_,i)=>document.getElementById('chk-'+i)?.checked);
+  if(!selected.length){document.getElementById('customer-preview').innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px">Vælg mindst én dækning ovenfor</div>';return;}
+  
+  const rows=selected.map(c=>{
+    const aIcon=ico(c.a_status),bIcon=ico(c.b_status);
+    const aCls=dotCls(c.a_status),bCls=dotCls(c.b_status);
+    const isBetter=c.winner==='a';
+    return`<div class="pdf-row">
+      <div class="pdf-cell">
+        <div class="pdf-cat"><span class="dot ${aCls}" style="width:14px;height:14px">${aIcon}</span>${c.category}${isBetter?` <span class="pdf-better">Bedre hos os</span>`:''}</div>
+        <div class="pdf-det">${c.a_detail}</div>
+        ${c.customer_explanation?`<div class="pdf-exp">${c.customer_explanation}</div>`:''}
+      </div>
+      <div class="pdf-cell">
+        <div class="pdf-cat"><span class="dot ${bCls}" style="width:14px;height:14px">${bIcon}</span>${c.category}</div>
+        <div class="pdf-det">${c.b_detail}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('customer-preview').innerHTML=`
+    <div class="customer-pdf-preview" id="pdf-content">
+      <div class="pdf-header">
+        <div class="pdf-title">Forsikringssammenligning</div>
+        <div class="pdf-sub">${d.companyA} vs. ${d.companyB} · ${d.type} · ${new Date().toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'})}</div>
+      </div>
+      <div class="pdf-body" style="padding:0">
+        <div class="pdf-row-header">
+          <div class="pdf-col-head">${d.companyA}</div>
+          <div class="pdf-col-head">${d.companyB}</div>
+        </div>
+        ${rows}
+      </div>
+      <div class="pdf-footer">${d.disclaimer}</div>
+    </div>`;
+}
+
+function printCustomer(){window.print();}
+function mailCustomer(){
+  const d=window._d;if(!d)return;
+  const subject=encodeURIComponent(`Forsikringssammenligning: ${d.companyA} vs. ${d.companyB}`);
+  const body=encodeURIComponent(`Hej,\n\nHermed en sammenligning af din nuværende forsikring hos ${d.companyB} og vores tilbud hos ${d.companyA}.\n\nJeg vedlægger en detaljeret sammenligning. Kontakt mig endelig hvis du har spørgsmål.\n\nMed venlig hilsen`);
+  window.location.href=`mailto:?subject=${subject}&body=${body}`;
+}
+
+function sw(t){
+  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+  const map={compare:'t1',pitch:'t2',send:'t3'};
+  document.getElementById(map[t]).classList.add('active');
+  document.getElementById('vc').classList.toggle('hidden',t!=='compare');
+  document.getElementById('vp').classList.toggle('hidden',t!=='pitch');
+  document.getElementById('vs').classList.toggle('hidden',t!=='send');
+}
+
+function copyP(){
+  const d=window._d;if(!d)return;
+  const p=d.pitch;
+  let t=`SALGSPITCH – ${d.companyA} til kunde hos ${d.companyB} (${d.type})\n\nÅBNING\n${p.opener}\n\nVIGTIGSTE FORDELE\n${p.advantages.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nNÅR KUNDEN ER TILFREDS MED ${d.companyB.toUpperCase()}\n${p.objection}\n\nAFSLUTNING\n${p.closing}\n\n---\n${d.disclaimer}`;
+  navigator.clipboard.writeText(t).then(()=>{const btn=document.getElementById('cp-btn');btn.textContent='Kopieret!';setTimeout(()=>btn.textContent='Kopiér pitch',2000);});
+}
+
+buildMenus();
+</script>
+</body>
+</html>
