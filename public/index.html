@@ -361,15 +361,6 @@ function makeFallback(name, size, id) {
   return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
 }
 
-function getBrandEl(name, size=32, id='') {
-  const brand = BRAND_COLORS[name];
-  const initials = brand ? brand.initials : name.substring(0,2).toUpperCase();
-  const bg = brand ? brand.bg : '#E3E1D9';
-  const color = brand ? brand.text : '#7A7870';
-  const r = size > 24 ? 8 : 4;
-  const idAttr = id ? ` id="${id}"` : '';
-  return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
-}
 
 function logoHtml(n,size=28){return getBrandEl(n,size);}
 
