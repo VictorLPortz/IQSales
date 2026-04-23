@@ -112,6 +112,25 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .hidden{display:none}
 .disclaimer{font-size:11px;color:var(--muted);text-align:center;margin-top:1rem;padding:8px 12px;border:1px solid var(--border);border-radius:var(--rs);line-height:1.5}
 
+/* FEEDBACK */
+.fb-btn{display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:11px;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:2px 0;font-family:'DM Sans',sans-serif;transition:color .15s}
+.fb-btn:hover{color:var(--danger)}
+.fb-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;align-items:center;justify-content:center}
+.fb-modal-bg.open{display:flex}
+.fb-modal{background:var(--surface);border-radius:var(--r);padding:1.25rem;width:340px;max-width:90vw;border:1px solid var(--border)}
+.fb-modal-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px}
+.fb-modal-cat{font-size:12px;color:var(--muted);margin-bottom:1rem}
+.fb-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:1rem}
+.fb-type-btn{padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;text-align:left;transition:all .15s}
+.fb-type-btn:hover{border-color:var(--danger);color:var(--danger)}
+.fb-type-btn.active{border-color:var(--danger);background:#FEF2F2;color:var(--danger)}
+.fb-comment{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--rs);resize:vertical;min-height:70px;margin-bottom:1rem;color:var(--text)}
+.fb-comment:focus{outline:none;border-color:var(--accent)}
+.fb-actions{display:flex;gap:8px}
+.fb-send{flex:1;padding:9px;font-size:13px;font-weight:500;border:none;border-radius:var(--rs);cursor:pointer;background:var(--accent2);color:#fff;font-family:'DM Sans',sans-serif}
+.fb-cancel{padding:9px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif}
+.fb-success{font-size:13px;color:var(--accent2);text-align:center;padding:.5rem 0}
+
 /* CUSTOM COMPANY DROPDOWN */
 .cdd{position:relative;margin-bottom:10px;user-select:none}
 .cdd-trigger{display:flex;align-items:center;gap:10px;padding:10px 36px 10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);cursor:pointer;transition:border-color .15s;min-height:42px}
@@ -261,6 +280,25 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   <div id="result"></div>
 </main>
 
+<div class="fb-modal-bg" id="fb-modal-bg">
+  <div class="fb-modal">
+    <div class="fb-modal-title">Giv feedback på dækning</div>
+    <div class="fb-modal-cat" id="fb-cat"></div>
+    <div class="fb-type-grid">
+      <button class="fb-type-btn" data-type="forkert_fordel" onclick="setFbType(this)">Ikke en reel fordel</button>
+      <button class="fb-type-btn" data-type="mangler_info" onclick="setFbType(this)">Mangler information</button>
+      <button class="fb-type-btn" data-type="forkert_info" onclick="setFbType(this)">Forkert information</button>
+      <button class="fb-type-btn" data-type="andet" onclick="setFbType(this)">Andet</button>
+    </div>
+    <textarea class="fb-comment" id="fb-comment" placeholder="Beskriv hvad der er forkert eller mangler..."></textarea>
+    <div id="fb-success" class="fb-success hidden">Tak for din feedback! ✓</div>
+    <div class="fb-actions" id="fb-actions">
+      <button class="fb-cancel" onclick="closeFb()">Annuller</button>
+      <button class="fb-send" onclick="sendFb()">Send feedback</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL='https://pnzpdgjstzuapgknagsa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
@@ -286,13 +324,82 @@ function getBrandEl(name, size=32, id='') {
 }
 let selectedType='Indboforsikring',docsA=[],docsB=[];
 
-function getLogo(n){return null;}
+const LOGOS={
+  'Alm. Brand':  'https://www.google.com/s2/favicons?domain=almbrand.dk&sz=128',
+  'Tryg':        'https://www.google.com/s2/favicons?domain=tryg.dk&sz=128',
+  'Topdanmark':  'https://www.google.com/s2/favicons?domain=topdanmark.dk&sz=128',
+  'Codan':       'https://www.google.com/s2/favicons?domain=codan.dk&sz=128',
+  'IF Forsikring':'https://www.google.com/s2/favicons?domain=if.dk&sz=128',
+  'Gjensidige':  'https://www.google.com/s2/favicons?domain=gjensidige.dk&sz=128',
+  'LB Forsikring':'https://www.google.com/s2/favicons?domain=lb.dk&sz=128',
+};
+
+function makeFallback(name, size, id) {
+  const brand = BRAND_COLORS[name];
+  const initials = brand ? brand.initials : name.substring(0,2).toUpperCase();
+  const bg = brand ? brand.bg : '#E3E1D9';
+  const color = brand ? brand.text : '#7A7870';
+  const r = size > 24 ? 8 : 4;
+  const idAttr = id ? ` id="${id}"` : '';
+  return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
+}
+
+function getBrandEl(name, size=32, id='') {
+  const brand = BRAND_COLORS[name];
+  const initials = brand ? brand.initials : name.substring(0,2).toUpperCase();
+  const bg = brand ? brand.bg : '#E3E1D9';
+  const color = brand ? brand.text : '#7A7870';
+  const r = size > 24 ? 8 : 4;
+  const idAttr = id ? ` id="${id}"` : '';
+  return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
+}
+
 function logoHtml(n,size=28){return getBrandEl(n,size);}
 
-const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring'];
+const COMPANIES=[
+  'Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring',
+  'Privatsikring','Lærerstandens Brandforsikring','GF Forsikring','Vesta Forsikring',
+  'Thisted Forsikring','Runa Forsikring','Bauta Forsikring','Alka','Vejle Brand',
+  'Vestjylland Forsikring','Køgbstædernes Forsikring','Jyske Forsikring','Aros Forsikring',
+  'Nærsikring','Bornholms Brandforsikring','Spira Forsikring','Concordia Forsikring',
+  'IDA Forsikring','TJM Forsikring','Storstrom Forsikring','OK Forsikring',
+  'FDM Forsikring','Himmerland Forsikring','Sønderjysk Forsikring','Frida Forsikring',
+  'Dansk Bilforsikring'
+];
 const cddState={a:'Alm. Brand',b:'Tryg'};
 
-function buildMenus(){
+let fbState = {};
+function openFb(category, companyA, companyB, type) {
+  fbState = { category, companyA, companyB, type, issueType: '' };
+  document.getElementById('fb-cat').textContent = category;
+  document.getElementById('fb-comment').value = '';
+  document.getElementById('fb-success').classList.add('hidden');
+  document.getElementById('fb-actions').style.display = 'flex';
+  document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('fb-modal-bg').classList.add('open');
+}
+function closeFb() { document.getElementById('fb-modal-bg').classList.remove('open'); }
+function setFbType(btn) {
+  document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  fbState.issueType = btn.dataset.type;
+}
+async function sendFb() {
+  if (!fbState.issueType) { alert('Vælg venligst en fejltype.'); return; }
+  const comment = document.getElementById('fb-comment').value.trim();
+  try {
+    await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ company_a: fbState.companyA, company_b: fbState.companyB, insurance_type: fbState.type, category: fbState.category, issue_type: fbState.issueType, comment, user_id: getUserId() })
+    });
+  } catch(e) {}
+  document.getElementById('fb-success').classList.remove('hidden');
+  document.getElementById('fb-actions').style.display = 'none';
+  setTimeout(() => closeFb(), 1500);
+}
+
+
   ['a','b'].forEach(side=>{
     const menu=document.getElementById('cdd-'+side+'-menu');
     menu.innerHTML=COMPANIES.map(name=>{
@@ -540,6 +647,10 @@ function renderResult(d){
     else if(c.winner==='a'&&!isTop)aBadges+=`<span class="chip ch-b">Bedre dækning</span>`;
     aBadges+=`</div>`;
     const aSalesTip=c.sales_tip&&(isTop||c.winner==='a')?`<div class="sales-hint"><span class="sales-hint-icon">→</span><p>${c.sales_tip}</p></div>`:'';
+    const cat=c.category.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const coA=d.companyA.replace(/'/g,"\\'");
+    const coB=d.companyB.replace(/'/g,"\\'");
+    const fbBtn=`<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}')">⚑ Giv feedback</button>`;
 
     // RIGHT cell (theirs)
     const bCls=dotCls(c.b_status);
@@ -555,7 +666,7 @@ function renderResult(d){
       <td><div class="cv-cell${aTop}">
         <div class="cv-cat"><div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div>
         <div class="cv-det">${c.a_detail}</div>
-        ${aBadges}${aSalesTip}
+        ${aBadges}${aSalesTip}${fbBtn}
       </div></td>
       <td><div class="cv-cell${bWeak}">
         <div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div>
