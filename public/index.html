@@ -304,35 +304,43 @@ const SUPABASE_URL='https://pnzpdgjstzuapgknagsa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
 
 const BRAND_COLORS={
-  'Alm. Brand':  {bg:'#003366',text:'#fff',initials:'AB'},
-  'Tryg':        {bg:'#E8001C',text:'#fff',initials:'TR'},
-  'Topdanmark':  {bg:'#00205B',text:'#fff',initials:'TD'},
-  'Codan':       {bg:'#E4002B',text:'#fff',initials:'CO'},
-  'IF Forsikring':{bg:'#0054A6',text:'#fff',initials:'IF'},
-  'Gjensidige':  {bg:'#00573F',text:'#fff',initials:'GJ'},
-  'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},
+  'Alm. Brand':                    {bg:'#00AEEF',text:'#fff',initials:'AB'},
+  'Tryg':                          {bg:'#E2001A',text:'#fff',initials:'TR'},
+  'Topdanmark':                    {bg:'#12205F',text:'#fff',initials:'TD'},
+  'Codan':                         {bg:'#2B3FDB',text:'#fff',initials:'CO'},
+  'IF Forsikring':                 {bg:'#1A56DB',text:'#fff',initials:'IF'},
+  'Gjensidige':                    {bg:'#1B2473',text:'#fff',initials:'GJ'},
+  'LB Forsikring':                 {bg:'#004B87',text:'#fff',initials:'LB'},
+  'Privatsikring':                 {bg:'#F5A623',text:'#fff',initials:'PS'},
+  'Lærerstandens Brandforsikring': {bg:'#5B8DB8',text:'#fff',initials:'LB'},
+  'GF Forsikring':                 {bg:'#2E8B2E',text:'#fff',initials:'GF'},
+  'Vesta Forsikring':              {bg:'#6EE7B7',text:'#1B4D3E',initials:'VE'},
+  'Thisted Forsikring':            {bg:'#1E5FA6',text:'#fff',initials:'TF'},
+  'Runa Forsikring':               {bg:'#D41A3A',text:'#fff',initials:'RU'},
+  'Bauta Forsikring':              {bg:'#4DB89A',text:'#fff',initials:'BA'},
+  'Alka':                          {bg:'#5C5757',text:'#fff',initials:'AL'},
+  'Vejle Brand':                   {bg:'#1E4D2B',text:'#fff',initials:'VB'},
+  'Vestjylland Forsikring':        {bg:'#2D4B7A',text:'#fff',initials:'VJ'},
+  'Køgbstædernes Forsikring':      {bg:'#C8102E',text:'#fff',initials:'KF'},
+  'Jyske Forsikring':              {bg:'#1A4D2E',text:'#fff',initials:'JF'},
+  'Aros Forsikring':               {bg:'#4A2D82',text:'#fff',initials:'AR'},
+  'Nærsikring':                    {bg:'#4A90C4',text:'#fff',initials:'NS'},
+  'Bornholms Brandforsikring':     {bg:'#5C5757',text:'#fff',initials:'BB'},
+  'Spira Forsikring':              {bg:'#2D6A2D',text:'#fff',initials:'SP'},
+  'Concordia Forsikring':          {bg:'#1A56A0',text:'#fff',initials:'CF'},
+  'IDA Forsikring':                {bg:'#5B7499',text:'#fff',initials:'ID'},
+  'TJM Forsikring':                {bg:'#E85D0A',text:'#fff',initials:'TJ'},
+  'Storstrom Forsikring':          {bg:'#1A5C1A',text:'#fff',initials:'ST'},
+  'OK Forsikring':                 {bg:'#C8102E',text:'#fff',initials:'OK'},
+  'FDM Forsikring':                {bg:'#1A5C8A',text:'#fff',initials:'FD'},
+  'Himmerland Forsikring':         {bg:'#C8102E',text:'#fff',initials:'HI'},
+  'Sønderjysk Forsikring':         {bg:'#1A3A6B',text:'#fff',initials:'SJ'},
+  'Frida Forsikring':              {bg:'#E85D9A',text:'#fff',initials:'FR'},
+  'Dansk Bilforsikring':           {bg:'#1A5C8A',text:'#fff',initials:'DB'},
 };
 
-function getBrandEl(name, size=32, id='') {
-  const brand = BRAND_COLORS[name];
-  const initials = brand ? brand.initials : name.substring(0,2).toUpperCase();
-  const bg = brand ? brand.bg : '#E3E1D9';
-  const color = brand ? brand.text : '#7A7870';
-  const r = size > 24 ? 8 : 4;
-  const idAttr = id ? ` id="${id}"` : '';
-  return `<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;
-}
 let selectedType='Indboforsikring',docsA=[],docsB=[];
 
-const LOGOS={
-  'Alm. Brand':  'https://www.google.com/s2/favicons?domain=almbrand.dk&sz=128',
-  'Tryg':        'https://www.google.com/s2/favicons?domain=tryg.dk&sz=128',
-  'Topdanmark':  'https://www.google.com/s2/favicons?domain=topdanmark.dk&sz=128',
-  'Codan':       'https://www.google.com/s2/favicons?domain=codan.dk&sz=128',
-  'IF Forsikring':'https://www.google.com/s2/favicons?domain=if.dk&sz=128',
-  'Gjensidige':  'https://www.google.com/s2/favicons?domain=gjensidige.dk&sz=128',
-  'LB Forsikring':'https://www.google.com/s2/favicons?domain=lb.dk&sz=128',
-};
 
 function makeFallback(name, size, id) {
   const brand = BRAND_COLORS[name];
