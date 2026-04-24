@@ -8,9 +8,27 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
-  const { prompt } = req.body;
+  const { prompt, system, history } = req.body;
   if (!prompt) {
     return res.status(400).json({ error: 'Missing prompt' });
+  }
+
+  // Build messages array - supports both simple prompt and chat history
+  let messages;
+  if (history && history.length > 0) {
+    messages = [...history, { role: 'user', content: prompt }];
+  } else {
+    messages = [{ role: 'user', content: [{ type: 'text', text: prompt }] }];
+  }
+
+  const body = {
+    model: 'claude-sonnet-4-5',
+    max_tokens: system ? 1000 : 8000,
+    messages
+  };
+
+  if (system) {
+    body.system = system;
   }
 
   try {
@@ -21,11 +39,7 @@ export default async function handler(req, res) {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 8000,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }]
-      })
+      body: JSON.stringify(body)
     });
 
     const data = await response.json();
