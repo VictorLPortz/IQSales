@@ -408,7 +408,8 @@ async function sendFb() {
 }
 
 
-  ['a','b'].forEach(side=>{
+  function buildMenus(){
+    ['a','b'].forEach(side=>{
     const menu=document.getElementById('cdd-'+side+'-menu');
     menu.innerHTML=COMPANIES.map(name=>{
       return`<div class="cdd-option" data-side="${side}" data-name="${name}">${getBrandEl(name,24)}<span class="cdd-option-label">${name}</span></div>`;
