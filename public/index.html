@@ -1127,7 +1127,9 @@ Svar ALTID på denne måde:
 - Skriv i korte afsnit adskilt af linjeskift
 - Max 4-5 sætninger med mindre der specifikt spørges om mere
 - Giv konkrete sætninger sælgeren kan bruge direkte over for kunden
-- Hold fokus på det der er relevant for netop denne analyse`;
+- Hold fokus på det der er relevant for netop denne analyse
+
+Vigtig begrænsning: Du må KUN svare på spørgsmål der handler om forsikringer, dækninger, salg af forsikringer eller denne konkrete analyse. Hvis nogen spørger om noget andet — f.eks. om ejerskab, aktiekurser, politik, generel viden eller andet der ikke er forsikringsrelevant — svar venligt at du kun kan hjælpe med forsikringsspørgsmål og salgssituationer.`;
 
   try{
     const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
