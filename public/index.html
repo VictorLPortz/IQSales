@@ -1043,17 +1043,61 @@ function useCoachSuggestion(s){
   sendCoach();
 }
 
-function addCoachMsg(text,role){
+let coachMsgCount=0;
+function addCoachMsg(text,role,question=''){
   const msgs=document.getElementById('coach-messages');
   if(!msgs)return;
   const isUser=role==='user';
+  const msgId='cmsg-'+(++coachMsgCount);
   const div=document.createElement('div');
   div.style.cssText=`display:flex;gap:8px;align-items:flex-start;${isUser?'flex-direction:row-reverse':''}`;
+  const feedbackHtml = !isUser && text!=='Tænker...' ? `
+    <div style="display:flex;gap:4px;margin-top:5px">
+      <button onclick="coachFeedback('${msgId}',true,'${question.replace(/'/g,"\\'")}')" id="${msgId}-up" title="Godt svar" style="font-size:13px;background:none;border:none;cursor:pointer;opacity:.5;transition:opacity .15s;padding:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">👍</button>
+      <button onclick="coachFeedback('${msgId}',false,'${question.replace(/'/g,"\\'")}')" id="${msgId}-dn" title="Dårligt svar" style="font-size:13px;background:none;border:none;cursor:pointer;opacity:.5;transition:opacity .15s;padding:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">👎</button>
+    </div>
+    <div id="${msgId}-form" style="display:none;margin-top:5px">
+      <input id="${msgId}-txt" type="text" placeholder="Hvad var galt?" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;width:100%;font-family:'DM Sans',sans-serif">
+      <button onclick="sendCoachFeedback('${msgId}','${question.replace(/'/g,"\\'")}','${text.substring(0,100).replace(/'/g,"\\'")}')" style="margin-top:4px;font-size:12px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif">Send feedback</button>
+    </div>` : '';
   div.innerHTML=`
     <div style="width:26px;height:26px;border-radius:50%;background:${isUser?'var(--accent2)':'var(--accent)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:#fff">${isUser?'Du':'IQ'}</div>
-    <div style="max-width:80%;background:${isUser?'var(--accent-light)':'var(--bg)'};border:1px solid var(--border);border-radius:${isUser?'12px 4px 12px 12px':'4px 12px 12px 12px'};padding:8px 12px;font-size:13px;color:var(--text);line-height:1.6">${text}</div>`;
+    <div style="max-width:80%">
+      <div style="background:${isUser?'var(--accent-light)':'var(--bg)'};border:1px solid var(--border);border-radius:${isUser?'12px 4px 12px 12px':'4px 12px 12px 12px'};padding:8px 12px;font-size:13px;color:var(--text);line-height:1.6">${text}</div>
+      ${feedbackHtml}
+    </div>`;
   msgs.appendChild(div);
   msgs.scrollTop=msgs.scrollHeight;
+}
+
+function coachFeedback(msgId, positive, question){
+  if(positive){
+    document.getElementById(msgId+'-up').style.opacity=1;
+    document.getElementById(msgId+'-dn').style.opacity=.3;
+    saveCoachFeedback(question,'','positive');
+  } else {
+    document.getElementById(msgId+'-dn').style.opacity=1;
+    document.getElementById(msgId+'-up').style.opacity=.3;
+    document.getElementById(msgId+'-form').style.display='block';
+  }
+}
+
+function sendCoachFeedback(msgId, question, answer){
+  const comment=document.getElementById(msgId+'-txt').value.trim();
+  saveCoachFeedback(question, comment, 'negative', answer);
+  document.getElementById(msgId+'-form').style.display='none';
+  document.getElementById(msgId+'-form').insertAdjacentHTML('afterend','<div style="font-size:11px;color:var(--accent2);margin-top:3px">Tak for feedback ✓</div>');
+}
+
+async function saveCoachFeedback(question, comment, type, answer=''){
+  const d=window._d;if(!d)return;
+  try{
+    await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY','Prefer':'return=minimal'},
+      body:JSON.stringify({company_a:d.companyA,company_b:d.companyB,insurance_type:d.type,category:'IQSales Coach',issue_type:type==='positive'?'coach_positiv':'coach_negativ',comment:question+(comment?'\nFeedback: '+comment:''),user_id:getUserId()})
+    });
+  }catch(e){}
 }
 
 async function sendCoach(){
@@ -1096,7 +1140,7 @@ Svar ALTID på denne måde:
     const answer=rawAnswer.replace(/#{1,6}\s/g,'').replace(/\*\*/g,'').replace(/\*/g,'').replace(/^-\s/gm,'').trim();
     const msgs=document.getElementById('coach-messages');
     if(msgs&&msgs.lastChild)msgs.removeChild(msgs.lastChild);
-    addCoachMsg(answer,'assistant');
+    addCoachMsg(answer,'assistant',q);
     coachHistory.push({role:'assistant',content:answer});
   }catch(e){
     const msgs=document.getElementById('coach-messages');
