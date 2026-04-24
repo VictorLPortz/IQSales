@@ -35,6 +35,10 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .col-label-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;margin-bottom:8px}
 .col-label-yours{background:var(--accent);color:#fff}
 .col-label-theirs{background:#F1F5F9;color:#475569;border:1px solid #E2E8F0}
+.col-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.betingelser-link{font-size:11px;color:var(--accent2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:500;opacity:.85;transition:opacity .15s}
+.betingelser-link:hover{opacity:1;text-decoration:underline}
+.betingelser-link svg{width:11px;height:11px;flex-shrink:0}
 .upload-zone{border:1.5px dashed var(--border);border-radius:var(--r);padding:1.25rem;text-align:center;cursor:pointer;transition:all .15s}
 .upload-zone:hover{border-color:var(--accent2);background:var(--accent-light)}
 .upload-zone.ready{border-style:solid;border-color:var(--green);background:var(--green-light)}
@@ -238,7 +242,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       <div class="section-lbl">2. Vælg selskaber og upload betingelser</div>
       <div class="two-col">
         <div>
-          <div class="col-label-badge col-label-yours">Dit selskab — fordele fremhæves</div>
+          <div class="col-label-row">
+            <div class="col-label-badge col-label-yours" style="margin-bottom:0">Dit selskab — fordele fremhæves</div>
+            <a class="betingelser-link" id="link-a" href="#" target="_blank" rel="noopener">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7"/><path d="M8 1h3v3"/><line x1="11" y1="1" x2="5" y2="7"/></svg>
+              Hent betingelser
+            </a>
+          </div>
           <div class="cdd" id="cdd-a">
             <div class="cdd-trigger" id="cdd-a-trigger" onclick="toggleCdd('a')">
               <div class="cdd-logo-fb" id="cdd-a-logo">AL</div>
@@ -256,7 +266,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
           <input type="file" id="file-a" accept=".pdf" style="display:none" onchange="handleFiles('a',this)">
         </div>
         <div>
-          <div class="col-label-badge col-label-theirs">Kundens nuværende selskab</div>
+          <div class="col-label-row">
+            <div class="col-label-badge col-label-theirs" style="margin-bottom:0">Kundens nuværende selskab</div>
+            <a class="betingelser-link" id="link-b" href="#" target="_blank" rel="noopener">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7"/><path d="M8 1h3v3"/><line x1="11" y1="1" x2="5" y2="7"/></svg>
+              Hent betingelser
+            </a>
+          </div>
           <div class="cdd" id="cdd-b">
             <div class="cdd-trigger" id="cdd-b-trigger" onclick="toggleCdd('b')">
               <div class="cdd-logo-fb" id="cdd-b-logo">TR</div>
@@ -407,9 +423,55 @@ async function sendFb() {
   setTimeout(() => closeFb(), 1500);
 }
 
+const BETINGELSER_LINKS={
+  'Alm. Brand':                    'https://www.almbrand.dk/privat/forsikring/',
+  'Tryg':                          'https://www.tryg.dk/forsikringer/privat/',
+  'Topdanmark':                    'https://www.topdanmark.dk/privat/forsikring/',
+  'Codan':                         'https://www.codan.dk/privat/forsikringer/',
+  'IF Forsikring':                 'https://www.if.dk/privat/forsikringer',
+  'Gjensidige':                    'https://www.gjensidige.dk/privat/forsikring/',
+  'LB Forsikring':                 'https://www.lb.dk/forsikring/',
+  'Privatsikring':                 'https://www.privatsikring.dk/forsikringer/',
+  'Lærerstandens Brandforsikring': 'https://www.lb.dk/laererstandens-brandforsikring/',
+  'GF Forsikring':                 'https://www.gfforsikring.dk/forsikringer/',
+  'Vesta Forsikring':              'https://www.vesta.dk/forsikringer/',
+  'Thisted Forsikring':            'https://www.thistedforsikring.dk/forsikringer/',
+  'Runa Forsikring':               'https://www.lb.dk/runa-forsikring/',
+  'Bauta Forsikring':              'https://www.lb.dk/bauta-forsikring/',
+  'Alka':                          'https://www.alka.dk/forsikringer/',
+  'Vejle Brand':                   'https://www.vejlebrand.dk/forsikringer/',
+  'Vestjylland Forsikring':        'https://www.vestjyllandforsikring.dk/forsikringer/',
+  'Køgbstædernes Forsikring':      'https://www.kforsikring.dk/forsikringer/',
+  'Jyske Forsikring':              'https://www.jyskeforsikring.dk/forsikringer/',
+  'Aros Forsikring':               'https://www.arosforsikring.dk/forsikringer/',
+  'Nærsikring':                    'https://www.naersikring.dk/forsikringer/',
+  'Bornholms Brandforsikring':     'https://www.bornholmsbrand.dk/forsikringer/',
+  'Spira Forsikring':              'https://www.spiraforsikring.dk/forsikringer/',
+  'Concordia Forsikring':          'https://www.concordia.dk/forsikringer/',
+  'IDA Forsikring':                'https://www.idaforsikring.dk/forsikringer/',
+  'TJM Forsikring':                'https://www.tjm.dk/forsikringer/',
+  'Storstrom Forsikring':          'https://www.storstromforsikring.dk/forsikringer/',
+  'OK Forsikring':                 'https://www.ok.dk/forsikring/',
+  'FDM Forsikring':                'https://www.fdm.dk/forsikring/',
+  'Himmerland Forsikring':         'https://www.himmerlandforsikring.dk/forsikringer/',
+  'Sønderjysk Forsikring':         'https://www.sonderjyskforsikring.dk/forsikringer/',
+  'Frida Forsikring':              'https://www.fridaforsikring.dk/forsikringer/',
+  'Dansk Bilforsikring':           'https://www.danskbilforsikring.dk/forsikringer/',
+};
 
-  function buildMenus(){
-    ['a','b'].forEach(side=>{
+function updateBetingelsesLinks(){
+  ['a','b'].forEach(side=>{
+    const name=cddState[side];
+    const link=document.getElementById('link-'+side);
+    if(!link)return;
+    const url=BETINGELSER_LINKS[name];
+    if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}
+    else{link.href='#';link.style.display='none';}
+  });
+}
+
+function buildMenus(){
+  ['a','b'].forEach(side=>{
     const menu=document.getElementById('cdd-'+side+'-menu');
     menu.innerHTML=COMPANIES.map(name=>{
       return`<div class="cdd-option" data-side="${side}" data-name="${name}">${getBrandEl(name,24)}<span class="cdd-option-label">${name}</span></div>`;
@@ -440,6 +502,7 @@ function selectCdd(side,value){
   document.getElementById('cdd-'+side+'-menu').classList.remove('open');
   document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';
   updateCddDisplay(side);
+  updateBetingelsesLinks();
 }
 
 function updateCddDisplay(side){
@@ -864,6 +927,7 @@ function copyP(){
 }
 
 buildMenus();
+updateBetingelsesLinks();
 </script>
 </body>
 </html>
