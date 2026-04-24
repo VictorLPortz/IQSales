@@ -639,6 +639,41 @@ async function extractPdfText(base64data) {
   return text.trim();
 }
 
+async function hashText(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+}
+
+async function getCacheKey(textA, textB, nameA, nameB, type) {
+  const combined = textA + textB + nameA + nameB + type;
+  return 'cache_' + await hashText(combined);
+}
+
+function saveCache(key, data) {
+  try {
+    const item = { data, timestamp: Date.now() };
+    localStorage.setItem(key, JSON.stringify(item));
+  } catch(e) {}
+}
+
+function loadCache(key) {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+    const parsed = JSON.parse(item);
+    // Cache udløber efter 30 dage
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    if (Date.now() - parsed.timestamp > thirtyDays) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return parsed.data;
+  } catch(e) { return null; }
+}
+
 async function analyze() {
   const nameA=getName('a'),nameB=getName('b');
   if(!docsA.length||!docsB.length){alert('Upload PDF-betingelser fra begge selskaber.');return;}
@@ -662,6 +697,16 @@ async function analyze() {
   const MAX_CHARS = 60000;
   if(textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[tekst afkortet pga. længde]';
   if(textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[tekst afkortet pga. længde]';
+
+  // Check cache
+  const cacheKey = await getCacheKey(textA, textB, nameA, nameB, selectedType);
+  const cached = loadCache(cacheKey);
+  if (cached) {
+    document.getElementById('result').innerHTML=`<div class="status-box" style="color:var(--accent2)">✓ Hentet fra cache — betingelserne er uændrede siden sidst<br><small style="color:var(--muted)">Uploader du nye betingelser køres en frisk analyse automatisk</small></div>`;
+    setTimeout(() => { renderResult(cached); }, 800);
+    btn.disabled=false; btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+    return;
+  }
 
   document.getElementById('result').innerHTML=`<div class="status-box">Sammenligner ${selectedType}-betingelser for <strong>${nameA}</strong> og <strong>${nameB}</strong><br><div class="dots"><span></span><span></span><span></span></div></div>`;
   btn.innerHTML='Analyserer... <span class="btn-arrow">⟳</span>';
@@ -739,6 +784,7 @@ Regler:
       }
     }
     renderResult(parsed);
+    saveCache(cacheKey, parsed);
     logAnalysis(nameA,nameB,selectedType);
   }catch(err){document.getElementById('result').innerHTML=`<div class="status-box" style="color:var(--danger)">Fejl: ${err.message}<br><small style="color:var(--muted);display:block;margin-top:6px">Tjek API-nøglen og prøv igen.</small></div>`;}
   btn.disabled=false;btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
