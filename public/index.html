@@ -1067,17 +1067,23 @@ async function sendCoach(){
   coachHistory.push({role:'user',content:q});
   addCoachMsg('Tænker...','assistant');
 
-  const systemPrompt=`Du er IQSales Coach — en erfaren dansk forsikringssælger der hjælper kollegaer med at sælge og forstå forsikringer bedre.
+  const systemPrompt=`Du er IQSales Coach — en erfaren dansk forsikringssælger med 15 års erfaring der hjælper kollegaer.
 
 Aktuel analyse:
 - Dit selskab: ${d.companyA}
-- Kundens selskab: ${d.companyB}  
+- Kundens selskab: ${d.companyB}
 - Forsikringstype: ${d.type}
 - ${d.companyA} er bedre på: ${(d.pitch.advantages_a||d.pitch.advantages||[]).join(', ')}
 - ${d.companyB} er bedre på: ${(d.pitch.advantages_b||[]).join(', ')}
 - Dækningspunkter: ${d.coverage.map(c=>`${c.category} (${d.companyA}: ${c.a_status}, ${d.companyB}: ${c.b_status})`).join('; ')}
 
-Svar kort og præcist på dansk. Giv konkrete sætninger sælgeren kan bruge direkte. Max 3-4 sætninger med mindre der spørges om mere.`;
+Svar ALTID på denne måde:
+- Skriv som en kollega der taler direkte og uformelt — ikke som en rapport
+- Brug aldrig markdown, stjerner, hashtags eller punktopstillinger
+- Skriv i korte afsnit adskilt af linjeskift
+- Max 4-5 sætninger med mindre der specifikt spørges om mere
+- Giv konkrete sætninger sælgeren kan bruge direkte over for kunden
+- Hold fokus på det der er relevant for netop denne analyse`;
 
   try{
     const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -1086,7 +1092,8 @@ Svar kort og præcist på dansk. Giv konkrete sætninger sælgeren kan bruge dir
       history:coachHistory.slice(0,-1)
     })});
     const data=await res.json();
-    const answer=data.content?.map(i=>i.type==='text'?i.text:'').join('')||'Beklager, prøv igen.';
+    const rawAnswer=data.content?.map(i=>i.type==='text'?i.text:'').join('')||'Beklager, prøv igen.';
+    const answer=rawAnswer.replace(/#{1,6}\s/g,'').replace(/\*\*/g,'').replace(/\*/g,'').replace(/^-\s/gm,'').trim();
     const msgs=document.getElementById('coach-messages');
     if(msgs&&msgs.lastChild)msgs.removeChild(msgs.lastChild);
     addCoachMsg(answer,'assistant');
