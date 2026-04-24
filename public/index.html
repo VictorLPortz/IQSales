@@ -680,6 +680,7 @@ Returner KUN et JSON-objekt uden markdown:
   "companyB": "${nameB}",
   "type": "${selectedType}",
   "top3_a": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
+  "top3_b": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
   "coverage": [
     {
       "category": "Dækningskategori",
@@ -694,10 +695,10 @@ Returner KUN et JSON-objekt uden markdown:
     }
   ],
   "pitch": {
-    "opener": "Åbning til sælger fra ${nameA} mod ${nameB}-kunde (max 2 sæt.)",
-    "advantages": ["Fordel 1 med tal","Fordel 2","Fordel 3"],
-    "objection": "Svar på: jeg er tilfreds med ${nameB} (2-3 sæt.)",
-    "closing": "Call to action (1-2 sæt.)"
+    "advantages_a": ["Fordel 1 med konkrete tal","Fordel 2","Fordel 3"],
+    "advantages_b": ["Konkurrentens fordel 1","Fordel 2","Fordel 3"],
+    "remotivering": ["Spørgsmål 1 til telefonen","Spørgsmål 2","Spørgsmål 3","Spørgsmål 4","Spørgsmål 5"],
+    "enliner": "Én sætning der opsummerer den vigtigste forskel mellem ${nameA} og ${nameB}"
   },
   "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
 }
@@ -705,7 +706,10 @@ Returner KUN et JSON-objekt uden markdown:
 Regler:
 - inib = ikke nævnt i betingelserne, no = eksplicit undtaget
 - top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
+- top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
 - winner=a automatisk hvis b_status=no eller inib
+- remotivering = 3-5 korte telefonspørgsmål sælgeren kan bruge til at afdække kundens situation inden mødet, tilpasset ${selectedType}
+- enliner = max 1 sætning der fanger den vigtigste salgbare forskel
 - Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
 
   try{
@@ -840,27 +844,65 @@ function renderResult(d){
     </div>
 
     <div id="vp" class="hidden">
-      <div class="pitch-wrap">
-        <div class="pitch-col">
-          <div class="pitch-col-header ph-blue"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><circle cx="7" cy="7" r="6" stroke="rgba(255,255,255,.7)" stroke-width="1.2"/><line x1="7" y1="4" x2="7" y2="7.5" stroke="white" stroke-width="1.4" stroke-linecap="round"/><circle cx="7" cy="9.5" r=".8" fill="white"/></svg>Åbning – skab interesse</div>
-          <div class="pitch-body"><p>${p.opener}</p></div>
+
+      <!-- IQSALES COACH -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:1rem;overflow:hidden">
+        <div style="background:var(--accent);padding:10px 14px;display:flex;align-items:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,.8)" stroke-width="1.2"/><path d="M5.5 6.5C5.5 5.1 6.6 4 8 4s2.5 1.1 2.5 2.5c0 1.4-1.1 2.5-2.5 2.5v1.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12.5" r=".7" fill="white"/></svg>
+          <span style="font-size:13px;font-weight:600;color:#fff;letter-spacing:.02em">IQSales Coach</span>
+          <span style="font-size:11px;color:rgba(255,255,255,.55);margin-left:2px">— stil mig et spørgsmål om salg eller dækninger</span>
         </div>
-        <div class="pitch-col">
-          <div class="pitch-col-header ph-dark"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M7 2v5l3 2" stroke="rgba(255,255,255,.7)" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="7" r="5.5" stroke="rgba(255,255,255,.7)" stroke-width="1.2"/></svg>Afslutning</div>
-          <div class="pitch-body"><p>${p.closing}</p></div>
+        <div id="coach-messages" style="padding:12px 14px;min-height:80px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:13px;color:var(--muted);font-style:italic">Hej! Jeg kender hele analysen. Spørg mig om alt fra dækningsdetaljer til salgstaktik.</div>
         </div>
-        <div class="pitch-col pitch-col-full">
-          <div class="pitch-col-header ph-green"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><polyline points="1.5,7 5,10.5 12.5,3.5" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>De tre vigtigste fordele med ${d.companyA}</div>
-          <div class="pitch-body"><ul class="pitch-kp">${p.advantages.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        <div id="coach-suggestions" style="padding:0 14px 10px;display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px">
+          <input id="coach-input" type="text" placeholder="Stil et spørgsmål til coachen..." style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text)" onkeydown="if(event.key==='Enter')sendCoach()">
+          <button onclick="sendCoach()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap">Send →</button>
         </div>
-        <div class="pitch-col pitch-col-full">
-          <div class="pitch-col-header ph-red"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><path d="M7 2L1.5 11.5h11L7 2z" stroke="rgba(255,255,255,.8)" stroke-width="1.2" fill="none"/><line x1="7" y1="6" x2="7" y2="9" stroke="white" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10.5" r=".7" fill="white"/></svg>Når kunden siger "jeg er tilfreds med ${d.companyB}"</div>
-          <div class="pitch-body"><p>${p.objection}</p></div>
+      </div>
+
+      <!-- TOP 3 FORDELE -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+          <div class="pitch-col-header ph-green" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><polyline points="1,7 4.5,10.5 12,3" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            Top 3 fordele — ${d.companyA}
+          </div>
+          <ul class="pitch-kp" style="padding:4px 0">${(p.advantages_a||p.advantages||[]).map(x=>`<li style="padding:8px 14px 8px 32px;font-size:13px">${x}</li>`).join('')}</ul>
         </div>
-        <div class="pitch-actions">
-          <button class="btn-act btn-sec" id="cp-btn" onclick="copyP()">Kopiér pitch</button>
-          <button class="btn-act btn-pri" onclick="window.print()">Print / Gem som PDF</button>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+          <div class="pitch-col-header ph-red" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1L1 11.5h11L6.5 1z" stroke="rgba(255,255,255,.8)" stroke-width="1.2" fill="none"/><line x1="6.5" y1="5" x2="6.5" y2="8.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Top 3 fordele — ${d.companyB}
+          </div>
+          <ul class="pitch-kp" style="padding:4px 0">${(p.advantages_b||[]).map(x=>`<li style="padding:8px 14px 8px 32px;font-size:13px">${x}</li>`).join('')}</ul>
         </div>
+      </div>
+
+      <!-- REMOTIVERING -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1rem">
+        <div class="pitch-col-header ph-blue" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1a5.5 5.5 0 1 0 0 11A5.5 5.5 0 0 0 6.5 1z" stroke="rgba(255,255,255,.8)" stroke-width="1.2"/><path d="M4.5 5s.4-1.5 2-1.5 2 1 2 1.8c0 1.2-2 1.7-2 3" stroke="white" stroke-width="1.2" stroke-linecap="round"/><circle cx="6.5" cy="10" r=".7" fill="white"/></svg>
+          Remotivering — spørgsmål til telefonen
+        </div>
+        <ul style="list-style:none;padding:4px 0">
+          ${(p.remotivering||[]).map((q,i)=>`<li style="padding:9px 14px 9px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start"><span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${i+1}</span>${q}</li>`).join('')}
+        </ul>
+      </div>
+
+      <!-- EN-LINER -->
+      <div style="background:var(--accent);border-radius:var(--r);padding:14px 18px;margin-bottom:1rem;display:flex;align-items:center;gap:12px">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="flex-shrink:0"><path d="M9 2l1.8 3.6 4 .6-2.9 2.8.7 4L9 11l-3.6 1.9.7-4L3.2 6.2l4-.6L9 2z" stroke="rgba(255,255,255,.8)" stroke-width="1.3" fill="none"/></svg>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">En-liner</div>
+          <div style="font-size:14px;font-weight:500;color:#fff;line-height:1.5">${p.enliner||''}</div>
+        </div>
+      </div>
+
+      <div class="pitch-actions" style="display:flex;gap:8px">
+        <button class="btn-act btn-sec" id="cp-btn" onclick="copyP()">Kopiér pitch</button>
+        <button class="btn-act btn-pri" onclick="window.print()">Print / Gem som PDF</button>
       </div>
       <div class="disclaimer">${d.disclaimer}</div>
     </div>
@@ -885,6 +927,7 @@ function renderResult(d){
   </div>`;
 
   buildSelector(d);
+  initCoach(d);
 }
 
 function buildSelector(d){
@@ -978,8 +1021,81 @@ function sw(t){
 function copyP(){
   const d=window._d;if(!d)return;
   const p=d.pitch;
-  let t=`SALGSPITCH – ${d.companyA} til kunde hos ${d.companyB} (${d.type})\n\nÅBNING\n${p.opener}\n\nVIGTIGSTE FORDELE\n${p.advantages.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nNÅR KUNDEN ER TILFREDS MED ${d.companyB.toUpperCase()}\n${p.objection}\n\nAFSLUTNING\n${p.closing}\n\n---\n${d.disclaimer}`;
+  let t=`SALGSPITCH – ${d.companyA} til kunde hos ${d.companyB} (${d.type})\n\nTOP 3 FORDELE ${d.companyA.toUpperCase()}\n${(p.advantages_a||p.advantages||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nTOP 3 FORDELE ${d.companyB.toUpperCase()}\n${(p.advantages_b||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nREMOTIVERING\n${(p.remotivering||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nEN-LINER\n${p.enliner||''}\n\n---\n${d.disclaimer}`;
   navigator.clipboard.writeText(t).then(()=>{const btn=document.getElementById('cp-btn');btn.textContent='Kopieret!';setTimeout(()=>btn.textContent='Kopiér pitch',2000);});
+}
+
+let coachHistory=[];
+function initCoach(d){
+  coachHistory=[];
+  const suggestions=[
+    `Hvordan forklarer jeg den vigtigste fordel ved ${d.companyA}?`,
+    `Hvad siger jeg hvis kunden er tilfreds med ${d.companyB}?`,
+    `Forklar mig forskellen på "undtaget" og "INIB"`,
+    `Giv mig et eksempel på et godt åbningsspørgsmål`
+  ];
+  const sg=document.getElementById('coach-suggestions');
+  if(sg)sg.innerHTML=suggestions.map(s=>`<button onclick="useCoachSuggestion('${s.replace(/'/g,"\\'")}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">${s}</button>`).join('');
+}
+
+function useCoachSuggestion(s){
+  document.getElementById('coach-input').value=s;
+  sendCoach();
+}
+
+function addCoachMsg(text,role){
+  const msgs=document.getElementById('coach-messages');
+  if(!msgs)return;
+  const isUser=role==='user';
+  const div=document.createElement('div');
+  div.style.cssText=`display:flex;gap:8px;align-items:flex-start;${isUser?'flex-direction:row-reverse':''}`;
+  div.innerHTML=`
+    <div style="width:26px;height:26px;border-radius:50%;background:${isUser?'var(--accent2)':'var(--accent)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:#fff">${isUser?'Du':'IQ'}</div>
+    <div style="max-width:80%;background:${isUser?'var(--accent-light)':'var(--bg)'};border:1px solid var(--border);border-radius:${isUser?'12px 4px 12px 12px':'4px 12px 12px 12px'};padding:8px 12px;font-size:13px;color:var(--text);line-height:1.6">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendCoach(){
+  const d=window._d;if(!d)return;
+  const input=document.getElementById('coach-input');
+  const q=input.value.trim();
+  if(!q)return;
+  input.value='';
+  document.getElementById('coach-suggestions').innerHTML='';
+  addCoachMsg(q,'user');
+  coachHistory.push({role:'user',content:q});
+  addCoachMsg('Tænker...','assistant');
+
+  const systemPrompt=`Du er IQSales Coach — en erfaren dansk forsikringssælger der hjælper kollegaer med at sælge og forstå forsikringer bedre.
+
+Aktuel analyse:
+- Dit selskab: ${d.companyA}
+- Kundens selskab: ${d.companyB}  
+- Forsikringstype: ${d.type}
+- ${d.companyA} er bedre på: ${(d.pitch.advantages_a||d.pitch.advantages||[]).join(', ')}
+- ${d.companyB} er bedre på: ${(d.pitch.advantages_b||[]).join(', ')}
+- Dækningspunkter: ${d.coverage.map(c=>`${c.category} (${d.companyA}: ${c.a_status}, ${d.companyB}: ${c.b_status})`).join('; ')}
+
+Svar kort og præcist på dansk. Giv konkrete sætninger sælgeren kan bruge direkte. Max 3-4 sætninger med mindre der spørges om mere.`;
+
+  try{
+    const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      prompt:q,
+      system:systemPrompt,
+      history:coachHistory.slice(0,-1)
+    })});
+    const data=await res.json();
+    const answer=data.content?.map(i=>i.type==='text'?i.text:'').join('')||'Beklager, prøv igen.';
+    const msgs=document.getElementById('coach-messages');
+    if(msgs&&msgs.lastChild)msgs.removeChild(msgs.lastChild);
+    addCoachMsg(answer,'assistant');
+    coachHistory.push({role:'assistant',content:answer});
+  }catch(e){
+    const msgs=document.getElementById('coach-messages');
+    if(msgs&&msgs.lastChild)msgs.removeChild(msgs.lastChild);
+    addCoachMsg('Fejl — prøv igen.','assistant');
+  }
 }
 
 buildMenus();
