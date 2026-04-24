@@ -1075,6 +1075,10 @@ function coachFeedback(msgId, positive, question){
     document.getElementById(msgId+'-up').style.opacity=1;
     document.getElementById(msgId+'-dn').style.opacity=.3;
     saveCoachFeedback(question,'','positive');
+    const btn=document.getElementById(msgId+'-up');
+    btn.insertAdjacentHTML('afterend','<span style="font-size:11px;color:var(--accent2);margin-left:6px">Tak for din feedback ✓</span>');
+    document.getElementById(msgId+'-up').disabled=true;
+    document.getElementById(msgId+'-dn').disabled=true;
   } else {
     document.getElementById(msgId+'-dn').style.opacity=1;
     document.getElementById(msgId+'-up').style.opacity=.3;
@@ -1086,7 +1090,10 @@ function sendCoachFeedback(msgId, question, answer){
   const comment=document.getElementById(msgId+'-txt').value.trim();
   saveCoachFeedback(question, comment, 'negative', answer);
   document.getElementById(msgId+'-form').style.display='none';
-  document.getElementById(msgId+'-form').insertAdjacentHTML('afterend','<div style="font-size:11px;color:var(--accent2);margin-top:3px">Tak for feedback ✓</div>');
+  document.getElementById(msgId+'-up').disabled=true;
+  document.getElementById(msgId+'-dn').disabled=true;
+  const container=document.getElementById(msgId+'-form').parentElement;
+  container.insertAdjacentHTML('beforeend','<div style="font-size:11px;color:var(--accent2);margin-top:4px">Tak for din konstruktive feedback — det hjælper os med at forbedre coachen ✓</div>');
 }
 
 async function saveCoachFeedback(question, comment, type, answer=''){
