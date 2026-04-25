@@ -535,26 +535,21 @@ function updateBetingelsesLinks(){
 }
 
 function resetAnalysis(){
-  // Reset state
   selectedTypes=['Husforsikring'];
   docsA={};docsB={};allResults={};
 
-  // Reset type buttons
   document.querySelectorAll('.type-btn').forEach(b=>{
     b.classList.remove('selected');
     if(b.dataset.type==='Husforsikring')b.classList.add('selected');
   });
 
-  // Clear result
   document.getElementById('result').innerHTML='';
-
-  // Hide reset button
   document.getElementById('reset-btn').style.display='none';
 
-  // Re-render upload zones
+  updateCddDisplay('a');
+  updateCddDisplay('b');
   renderUploadZones();
 
-  // Scroll to top
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1438,6 +1433,7 @@ Vigtig begrænsning: Du må KUN svare på spørgsmål der handler om forsikringe
 buildMenus();
 updateBetingelsesLinks();
 renderUploadZones();
+setTimeout(()=>{updateCddDisplay('a');updateCddDisplay('b');},50);
 </script>
 </body>
 </html>
