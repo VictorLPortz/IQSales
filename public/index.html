@@ -1054,6 +1054,16 @@ function buildResultHtml(d){
         <span class="sum-dot"></span>
         Ens på ${eq} punkter
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">
+        <div style="background:var(--accent-light);border-left:3px solid var(--accent2);border-radius:0 var(--rs) var(--rs) 0;padding:10px 12px">
+          <div style="font-size:11px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Top fordele — ${d.companyA}</div>
+          ${(d.top3_a||[]).map(x=>`<div style="display:flex;gap:6px;margin-bottom:3px;font-size:12px;color:var(--text)"><span style="color:var(--accent2);font-weight:700">→</span>${x}</div>`).join('')}
+        </div>
+        <div style="background:#FEF2F2;border-left:3px solid var(--danger);border-radius:0 var(--rs) var(--rs) 0;padding:10px 12px">
+          <div style="font-size:11px;font-weight:600;color:var(--danger);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Top fordele — ${d.companyB}</div>
+          ${(d.top3_b||[]).map(x=>`<div style="display:flex;gap:6px;margin-bottom:3px;font-size:12px;color:var(--text)"><span style="color:var(--danger);font-weight:700">→</span>${x}</div>`).join('')}
+        </div>
+      </div>
       <table class="sync-table">
         <thead><tr>
           <th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyA)}</div><div><div class="co-nm">${d.companyA}<span class="yours-tag">Dit selskab</span></div><div class="co-sub">Hold musen over rækker for salgstips</div></div></div></th>
@@ -1283,10 +1293,16 @@ function addCoachMsg(text,role,question=''){
       <input id="${msgId}-txt" type="text" placeholder="Hvad var galt?" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;width:100%;font-family:'DM Sans',sans-serif">
       <button onclick="sendCoachFeedback('${msgId}','${question.replace(/'/g,"\\'")}','${text.substring(0,100).replace(/'/g,"\\'")}')" style="margin-top:4px;font-size:12px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif">Send feedback</button>
     </div>` : '';
+  const formatted=text.split('\n').map(line=>{
+    const l=line.trim();
+    if(l.startsWith('•'))return`<div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--accent2);flex-shrink:0;font-weight:600">•</span><span>${l.substring(1).trim()}</span></div>`;
+    if(l==='')return'';
+    return`<div style="margin-bottom:4px">${l}</div>`;
+  }).join('');
   div.innerHTML=`
     <div style="width:26px;height:26px;border-radius:50%;background:${isUser?'var(--accent2)':'var(--accent)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:#fff">${isUser?'Du':'IQ'}</div>
     <div style="max-width:80%">
-      <div style="background:${isUser?'var(--accent-light)':'var(--bg)'};border:1px solid var(--border);border-radius:${isUser?'12px 4px 12px 12px':'4px 12px 12px 12px'};padding:8px 12px;font-size:13px;color:var(--text);line-height:1.6">${text}</div>
+      <div style="background:${isUser?'var(--accent-light)':'var(--bg)'};border:1px solid var(--border);border-radius:${isUser?'12px 4px 12px 12px':'4px 12px 12px 12px'};padding:8px 12px;font-size:13px;color:var(--text);line-height:1.6">${isUser?text:formatted}</div>
       ${feedbackHtml}
     </div>`;
   msgs.appendChild(div);
@@ -1369,7 +1385,7 @@ Vigtig begrænsning: Du må KUN svare på spørgsmål der handler om forsikringe
     })});
     const data=await res.json();
     const rawAnswer=data.content?.map(i=>i.type==='text'?i.text:'').join('')||'Beklager, prøv igen.';
-    const answer=rawAnswer.replace(/#{1,6}\s/g,'').replace(/\*\*/g,'').replace(/\*/g,'').replace(/^-\s/gm,'').trim();
+    const answer=rawAnswer.replace(/#{1,6}\s/g,'').replace(/\*\*/g,'').replace(/\*/g,'').replace(/^-\s/gm,'•').trim();
     const msgs=document.getElementById('coach-messages');
     if(msgs&&msgs.lastChild)msgs.removeChild(msgs.lastChild);
     addCoachMsg(answer,'assistant',q);
