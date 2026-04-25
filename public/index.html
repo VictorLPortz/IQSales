@@ -91,12 +91,12 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .ch-w{background:var(--danger-light);color:var(--danger)}
 .ch-inib{background:#FEF9EC;color:#92400E;border:1px solid #FDE68A}
 .has-tip{position:relative;display:inline-block;cursor:help}
-.has-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:240px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.6;z-index:300;font-weight:400;pointer-events:none}
+.has-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:300px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.6;z-index:300;font-weight:400;pointer-events:none}
 .has-tip .tip-box::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
 .has-tip:hover .tip-box{display:block}
 .ch-exc{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
 .badge-tip{position:relative;display:inline-block}
-.badge-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:240px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.55;z-index:300;font-weight:400}
+.badge-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:300px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.55;z-index:300;font-weight:400}
 .badge-tip .tip-box::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
 .badge-tip:hover .tip-box{display:block}
 
@@ -834,6 +834,8 @@ Regler:
 - top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
 - top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
 - winner=a automatisk hvis b_status=no eller inib
+- Sæt ALDRIG winner=b hvis ${nameB}s dækning indeholder uspecificerede beløb som "fremgår af police", "ifølge police" eller "beløb angivet i police" — det er ikke muligt at vurdere om det er bedre. Sæt i stedet winner=equal
+- Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne
 - Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
 
   try{
@@ -1011,8 +1013,8 @@ function buildResultHtml(d){
     const aTop=isTop?' is-top':'';
     let aBadges=`<div class="cv-badges">`;
     if(c.a_status==='inib'||c.a_status==='no')aBadges+=inibBadge(c.a_status);
-    if(isTop&&c.a_status!=='inib'&&c.a_status!=='no'){aBadges+=`<div class="badge-tip"><span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span><div class="tip-box">Dette er en af de vigtigste fordele ${d.companyA} har over ${d.companyB} på ${d.type}. ${c.a_detail.substring(0,100)}${c.a_detail.length>100?'...':''}</div></div>`;}
-    else if(c.winner==='a'&&!isTop)aBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyA} er bedre: ${c.a_detail.substring(0,120)}${c.a_detail.length>120?'...':''}</div></div>`;
+    if(isTop&&c.a_status!=='inib'&&c.a_status!=='no'){aBadges+=`<div class="badge-tip"><span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span><div class="tip-box">Dette er en af de vigtigste fordele ${d.companyA} har over ${d.companyB} på ${d.type}. ${c.a_detail.substring(0,200)}${c.a_detail.length>100?'...':''}</div></div>`;}
+    else if(c.winner==='a'&&!isTop)aBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyA} er bedre: ${c.a_detail.substring(0,200)}${c.a_detail.length>120?'...':''}</div></div>`;
     aBadges+=`</div>`;
     const aSalesTip=c.sales_tip&&(isTop||c.winner==='a')?`<div class="sales-hint"><span class="sales-hint-icon">→</span><p>${c.sales_tip}</p></div>`:'';
     const cat=c.category.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -1025,8 +1027,8 @@ function buildResultHtml(d){
     const bWeak=c.winner==='a'?' is-yours-weak':'';
     let bBadges=`<div class="cv-badges">`;
     if(c.b_status==='inib'||c.b_status==='no')bBadges+=inibBadge(c.b_status);
-    else if(c.winner==='b')bBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyB} er bedre: ${c.b_detail.substring(0,120)}${c.b_detail.length>120?'...':''}</div></div>`;
-    else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.b_detail.substring(0,120)}${c.b_detail.length>120?'...':''}</div></div>`;
+    else if(c.winner==='b')bBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyB} er bedre: ${c.b_detail.substring(0,200)}${c.b_detail.length>120?'...':''}</div></div>`;
+    else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.b_detail.substring(0,200)}${c.b_detail.length>120?'...':''}</div></div>`;
     bBadges+=`</div>`;
     const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
 
@@ -1299,7 +1301,7 @@ function addCoachMsg(text,role,question=''){
     </div>
     <div id="${msgId}-form" style="display:none;margin-top:5px">
       <input id="${msgId}-txt" type="text" placeholder="Hvad var galt?" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;width:100%;font-family:'DM Sans',sans-serif">
-      <button onclick="sendCoachFeedback('${msgId}','${question.replace(/'/g,"\\'")}','${text.substring(0,100).replace(/'/g,"\\'")}')" style="margin-top:4px;font-size:12px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif">Send feedback</button>
+      <button onclick="sendCoachFeedback('${msgId}','${question.replace(/'/g,"\\'")}','${text.substring(0,200).replace(/'/g,"\\'")}')" style="margin-top:4px;font-size:12px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif">Send feedback</button>
     </div>` : '';
   const formatted=text.split('\n').map(line=>{
     const l=line.trim();
