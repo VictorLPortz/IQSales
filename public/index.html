@@ -296,7 +296,10 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         </div>
       </div>
     </div>
-    <button class="analyze-btn" id="analyze-btn" onclick="analyze()">Analysér og generér salgspitch <span class="btn-arrow">→</span></button>
+    <div style="display:flex;gap:10px">
+      <button class="analyze-btn" id="analyze-btn" onclick="analyze()" style="flex:1">Analysér og generér salgspitch <span class="btn-arrow">→</span></button>
+      <button id="reset-btn" onclick="resetAnalysis()" style="display:none;padding:14px 20px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↩ Ny analyse</button>
+    </div>
   </div>
   <div id="result"></div>
 </main>
@@ -531,7 +534,31 @@ function updateBetingelsesLinks(){
   });
 }
 
-function buildMenus(){
+function resetAnalysis(){
+  // Reset state
+  selectedTypes=['Husforsikring'];
+  docsA={};docsB={};allResults={};
+
+  // Reset type buttons
+  document.querySelectorAll('.type-btn').forEach(b=>{
+    b.classList.remove('selected');
+    if(b.dataset.type==='Husforsikring')b.classList.add('selected');
+  });
+
+  // Clear result
+  document.getElementById('result').innerHTML='';
+
+  // Hide reset button
+  document.getElementById('reset-btn').style.display='none';
+
+  // Re-render upload zones
+  renderUploadZones();
+
+  // Scroll to top
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+
   ['a','b'].forEach(side=>{
     const menu=document.getElementById('cdd-'+side+'-menu');
     menu.innerHTML=COMPANIES.map(name=>{
@@ -759,6 +786,7 @@ async function analyze() {
   await Promise.all(typesToAnalyze.map(type=>analyzeType(type, nameA, nameB)));
 
   renderMultiResult(nameA, nameB);
+  document.getElementById('reset-btn').style.display='block';
   btn.disabled=false;
   btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
@@ -830,7 +858,7 @@ Returner KUN et JSON-objekt uden markdown:
 }
 
 Regler:
-- inib = ikke nævnt i betingelserne, no = eksplicit undtaget
+- inib = ikke nævnt i betingelserne, no = eksplicit undtaget — brug KUN no hvis dækningen eksplicit er fravalgt eller afvist. Hvis dækningen kræver tilvalg, har geografiske begrænsninger eller er delvist dækket skal du bruge partial i stedet for no
 - top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
 - top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
 - winner=a automatisk hvis b_status=no eller inib
