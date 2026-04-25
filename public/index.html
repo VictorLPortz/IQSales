@@ -22,7 +22,7 @@ main{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
 .type-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
 .type-btn{padding:10px 4px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;color:var(--muted);background:var(--surface);transition:all .15s;text-align:center;line-height:1.3}
 .type-btn:hover{border-color:var(--accent2);color:var(--accent2);background:var(--accent-light)}
-.type-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.type-btn.selected{background:var(--accent2);color:#fff;border-color:var(--accent2)}.type-btn.selected:hover{opacity:.9}.type-max-note{font-size:12px;color:var(--muted);margin-top:8px;display:none}.type-max-note.show{display:block}
 .type-icon{font-size:18px;display:block;margin-bottom:3px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
 .company-select-wrap{position:relative;margin-bottom:10px}
@@ -213,7 +213,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .send-actions{display:flex;gap:8px}
 
 @media print{header,#setup-area,.api-bar,.analyze-btn,.tabs,.disclaimer,.pitch-actions,.send-actions,.send-intro,.coverage-selector,.sel-controls{display:none!important}.result-section{margin:0}}
-@media(max-width:640px){.two-col,.sel-grid{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(3,1fr)}.pitch-wrap{grid-template-columns:1fr}.sync-table th,.sync-table td{font-size:12px}}
+@media(max-width:640px){.two-col,.sel-grid{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(3,1fr);}.type-grid.extended{grid-template-columns:repeat(3,1fr)}.pitch-wrap{grid-template-columns:1fr}.sync-table th,.sync-table td{font-size:12px}}
 </style>
 </head>
 <body>
@@ -228,15 +228,22 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
   <div id="setup-area">
     <div class="card">
-      <div class="section-lbl">1. Forsikringstype</div>
-      <div class="type-grid">
-        <button class="type-btn active" onclick="setType(this,'Indboforsikring')"><span class="type-icon">🏠</span>Indbo</button>
-        <button class="type-btn" onclick="setType(this,'Bilforsikring')"><span class="type-icon">🚗</span>Bil</button>
-        <button class="type-btn" onclick="setType(this,'Husforsikring')"><span class="type-icon">🏡</span>Hus</button>
-        <button class="type-btn" onclick="setType(this,'Ulykkesforsikring')"><span class="type-icon">🩹</span>Ulykke</button>
-        <button class="type-btn" onclick="setType(this,'Rejseforsikring')"><span class="type-icon">✈️</span>Rejse</button>
-        <button class="type-btn" onclick="setType(this,'Hundeforsikring')"><span class="type-icon">🐶</span>Hund</button>
+      <div class="section-lbl">1. Forsikringstyper <span style="font-weight:400;color:var(--muted)">(vælg op til 5)</span></div>
+      <div class="type-grid" style="grid-template-columns:repeat(6,1fr)">
+        <button class="type-btn selected" data-type="Husforsikring" onclick="toggleType(this)"><span class="type-icon">🏡</span>Hus</button>
+        <button class="type-btn" data-type="Bilforsikring" onclick="toggleType(this)"><span class="type-icon">🚗</span>Bil</button>
+        <button class="type-btn" data-type="Indboforsikring" onclick="toggleType(this)"><span class="type-icon">🏠</span>Indbo</button>
+        <button class="type-btn" data-type="Ulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">🩹</span>Ulykke</button>
+        <button class="type-btn" data-type="Rejseforsikring" onclick="toggleType(this)"><span class="type-icon">✈️</span>Rejse</button>
+        <button class="type-btn" data-type="Hundeforsikring" onclick="toggleType(this)"><span class="type-icon">🐶</span>Hund</button>
+        <button class="type-btn" data-type="Fritidshusforsikring" onclick="toggleType(this)"><span class="type-icon">🏕️</span>Fritidshus</button>
+        <button class="type-btn" data-type="Motorcykelforsikring" onclick="toggleType(this)"><span class="type-icon">🏍️</span>Motorcykel</button>
+        <button class="type-btn" data-type="Lystfartøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🚤</span>Lystfartøj</button>
+        <button class="type-btn" data-type="Campingvognsforsikring" onclick="toggleType(this)"><span class="type-icon">🚐</span>Campingvogn</button>
+        <button class="type-btn" data-type="Børneulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">👶</span>Børneulykke</button>
+        <button class="type-btn" data-type="Veterankøretøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🏎️</span>Veterankøretøj</button>
       </div>
+      <div class="type-max-note" id="type-max-note">Du kan max vælge 5 forsikringstyper ad gangen</div>
     </div>
     <div class="card">
       <div class="section-lbl">2. Vælg selskaber og upload betingelser</div>
@@ -258,12 +265,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
             <div class="cdd-menu" id="cdd-a-menu"></div>
           </div>
           <input type="text" id="custom-a" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('a')" onchange="onCustomInput('a')">
-          <div class="upload-zone" id="zone-a" onclick="document.getElementById('file-a').click()">
-            <svg class="uz-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 2H8a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="16 2 16 9 22 9"/><line x1="14" y1="13" x2="14" y2="20"/><line x1="10.5" y1="16.5" x2="17.5" y2="16.5"/></svg>
-            <div class="uz-title">Upload betingelser (PDF)</div><div class="uz-hint">Klik for at vælge én fil — max ca. 50 sider</div>
-            <div class="uz-files" id="files-a"></div>
-          </div>
-          <input type="file" id="file-a" accept=".pdf" style="display:none" onchange="handleFiles('a',this)">
+          <div id="upload-zones-a"></div>
         </div>
         <div>
           <div class="col-label-row">
@@ -282,12 +284,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
             <div class="cdd-menu" id="cdd-b-menu"></div>
           </div>
           <input type="text" id="custom-b" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('b')" onchange="onCustomInput('b')">
-          <div class="upload-zone" id="zone-b" onclick="document.getElementById('file-b').click()">
-            <svg class="uz-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 2H8a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="16 2 16 9 22 9"/><line x1="14" y1="13" x2="14" y2="20"/><line x1="10.5" y1="16.5" x2="17.5" y2="16.5"/></svg>
-            <div class="uz-title">Upload betingelser (PDF)</div><div class="uz-hint">Klik for at vælge én fil — max ca. 50 sider</div>
-            <div class="uz-files" id="files-b"></div>
-          </div>
-          <input type="file" id="file-b" accept=".pdf" style="display:none" onchange="handleFiles('b',this)">
+          <div id="upload-zones-b"></div>
         </div>
       </div>
     </div>
@@ -411,7 +408,7 @@ const BRAND_COLORS={
   'Dansk Bilforsikring':           {bg:'#1A5C8A',text:'#fff',initials:'DB'},
 };
 
-let selectedType='Indboforsikring',docsA=[],docsB=[];
+let selectedTypes=['Husforsikring'],docsA={},docsB={},allResults={};
 
 
 function makeFallback(name, size, id) {
@@ -593,22 +590,67 @@ document.addEventListener('click',e=>{
     document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));
   }
 });
-function setType(btn,type){selectedType=type;document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
-function handleFiles(side,input){
+function toggleType(btn){
+  const type=btn.dataset.type;
+  if(selectedTypes.includes(type)){
+    if(selectedTypes.length===1){return;}
+    selectedTypes=selectedTypes.filter(t=>t!==type);
+    btn.classList.remove('selected');
+    delete docsA[type];
+    delete docsB[type];
+  } else {
+    if(selectedTypes.length>=5){
+      document.getElementById('type-max-note').classList.add('show');
+      setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);
+      return;
+    }
+    selectedTypes.push(type);
+    btn.classList.add('selected');
+  }
+  renderUploadZones();
+}
+
+const TYPE_LABELS={
+  'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo',
+  'Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund',
+  'Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel',
+  'Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn',
+  'Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'
+};
+
+function renderUploadZones(){
+  ['a','b'].forEach(side=>{
+    const container=document.getElementById('upload-zones-'+side);
+    if(!container)return;
+    container.innerHTML=selectedTypes.map(type=>{
+      const label=TYPE_LABELS[type]||type;
+      const hasFile=side==='a'?docsA[type]:docsB[type];
+      return`<div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+        <div class="upload-zone${hasFile?' ready':''}" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem">
+          <div class="uz-title" style="font-size:12px">${hasFile?'✓ '+hasFile.name:'Klik for at uploade PDF'}</div>
+          ${!hasFile?'<div class="uz-hint">Max ca. 50 sider</div>':''}
+        </div>
+        <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+      </div>`;
+    }).join('');
+  });
+}
+function handleFileMulti(input){
+  const side=input.dataset.side;
+  const type=input.dataset.type;
   const file=input.files[0];
   if(!file)return;
   const mb=(file.size/1024/1024).toFixed(1);
   if(file.size>15*1024*1024){
-    alert(`Filen er ${mb} MB — det er for stor (max ca. 15 MB). Prøv at komprimere PDF'en eller brug en kortere version af betingelserne.`);
+    alert(`Filen er ${mb} MB — for stor. Max ca. 15 MB.`);
     input.value='';return;
   }
-  const store=side==='a'?docsA:docsB;
-  store.length=0;
   const reader=new FileReader();
   reader.onload=e=>{
-    store.push({name:file.name,data:e.target.result.split(',')[1]});
-    document.getElementById('files-'+side).textContent=`${file.name} (${mb} MB)`;
-    document.getElementById('zone-'+side).classList.add('ready');
+    const store=side==='a'?docsA:docsB;
+    store[type]={name:file.name,data:e.target.result.split(',')[1]};
+    renderUploadZones();
   };
   reader.readAsDataURL(file);
 }
@@ -676,42 +718,66 @@ function loadCache(key) {
 
 async function analyze() {
   const nameA=getName('a'),nameB=getName('b');
-  if(!docsA.length||!docsB.length){alert('Upload PDF-betingelser fra begge selskaber.');return;}
   if(nameA===nameB){alert('Vælg to forskellige selskaber.');return;}
-  const btn=document.getElementById('analyze-btn');
-  btn.disabled=true;
-  document.getElementById('result').innerHTML=`<div class="status-box">Udtrækker tekst fra PDF'er...<br><div class="dots"><span></span><span></span><span></span></div></div>`;
 
-  let textA='', textB='';
-  try {
-    btn.innerHTML='Læser ${nameA}... <span class="btn-arrow">⟳</span>';
-    textA = await extractPdfText(docsA[0].data);
-    btn.innerHTML='Læser ${nameB}... <span class="btn-arrow">⟳</span>';
-    textB = await extractPdfText(docsB[0].data);
-  } catch(e) {
-    document.getElementById('result').innerHTML=`<div class="status-box" style="color:var(--danger)">Kunne ikke læse PDF: ${e.message}</div>`;
-    btn.disabled=false; btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>'; return;
+  // Check that at least one type has both files uploaded
+  const typesToAnalyze=selectedTypes.filter(t=>docsA[t]&&docsB[t]);
+  if(typesToAnalyze.length===0){
+    alert('Upload betingelser for mindst én forsikringstype fra begge selskaber.');return;
   }
 
-  // Truncate to stay well within token limits (~60k chars each ≈ ~15k tokens)
-  const MAX_CHARS = 60000;
-  if(textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[tekst afkortet pga. længde]';
-  if(textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[tekst afkortet pga. længde]';
+  const btn=document.getElementById('analyze-btn');
+  btn.disabled=true;
+  allResults={};
 
-  // Check cache
-  const cacheKey = await getCacheKey(textA, textB, nameA, nameB, selectedType);
-  const cached = loadCache(cacheKey);
-  if (cached) {
-    document.getElementById('result').innerHTML=`<div class="status-box" style="color:var(--accent2)">✓ Hentet fra cache — betingelserne er uændrede siden sidst<br><small style="color:var(--muted)">Uploader du nye betingelser køres en frisk analyse automatisk</small></div>`;
-    setTimeout(() => { renderResult(cached); }, 800);
-    btn.disabled=false; btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+  // Show status with all types
+  document.getElementById('result').innerHTML=`
+    <div class="result-section">
+      <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+        ${typesToAnalyze.map(t=>`<span id="status-${t}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`).join('')}
+      </div>
+      <div id="multi-result"></div>
+    </div>`;
+
+  btn.innerHTML='Analyserer... <span class="btn-arrow">⟳</span>';
+
+  // Run all analyses in parallel
+  await Promise.all(typesToAnalyze.map(type=>analyzeType(type, nameA, nameB)));
+
+  renderMultiResult(nameA, nameB);
+  btn.disabled=false;
+  btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+}
+
+async function analyzeType(type, nameA, nameB) {
+  // Update status to running
+  const statusEl=document.getElementById('status-'+type);
+  if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ⟳`;
+
+  let textA='',textB='';
+  try {
+    textA = await extractPdfText(docsA[type].data);
+    textB = await extractPdfText(docsB[type].data);
+  } catch(e) {
+    if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;
+    if(statusEl)statusEl.style.color='var(--danger)';
     return;
   }
 
-  document.getElementById('result').innerHTML=`<div class="status-box">Sammenligner ${selectedType}-betingelser for <strong>${nameA}</strong> og <strong>${nameB}</strong><br><div class="dots"><span></span><span></span><span></span></div></div>`;
-  btn.innerHTML='Analyserer... <span class="btn-arrow">⟳</span>';
+  const MAX_CHARS=60000;
+  if(textA.length>MAX_CHARS)textA=textA.substring(0,MAX_CHARS)+'\n[afkortet]';
+  if(textB.length>MAX_CHARS)textB=textB.substring(0,MAX_CHARS)+'\n[afkortet]';
 
-  const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${selectedType}-betingelser.
+  // Check cache
+  const cacheKey=await getCacheKey(textA,textB,nameA,nameB,type);
+  const cached=loadCache(cacheKey);
+  if(cached){
+    allResults[type]=cached;
+    if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓ (cache)`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}
+    return;
+  }
+
+  const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
 
 === BETINGELSER FRA ${nameA} ===
 ${textA}
@@ -723,7 +789,7 @@ Returner KUN et JSON-objekt uden markdown:
 {
   "companyA": "${nameA}",
   "companyB": "${nameB}",
-  "type": "${selectedType}",
+  "type": "${type}",
   "top3_a": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
   "top3_b": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
   "coverage": [
@@ -742,8 +808,8 @@ Returner KUN et JSON-objekt uden markdown:
   "pitch": {
     "advantages_a": ["Fordel 1 med konkrete tal","Fordel 2","Fordel 3"],
     "advantages_b": ["Konkurrentens fordel 1","Fordel 2","Fordel 3"],
-    "remotivering": ["Spørgsmål 1 til telefonen","Spørgsmål 2","Spørgsmål 3","Spørgsmål 4","Spørgsmål 5"],
-    "enliner": "Én sætning der opsummerer den vigtigste forskel mellem ${nameA} og ${nameB}"
+    "remotivering": ["Spørgsmål 1","Spørgsmål 2","Spørgsmål 3","Spørgsmål 4","Spørgsmål 5"],
+    "enliner": "Én sætning der opsummerer den vigtigste forskel"
   },
   "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
 }
@@ -753,42 +819,142 @@ Regler:
 - top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
 - top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
 - winner=a automatisk hvis b_status=no eller inib
-- remotivering = 3-5 korte telefonspørgsmål sælgeren kan bruge til at afdække kundens situation inden mødet, tilpasset ${selectedType}
-- enliner = max 1 sætning der fanger den vigtigste salgbare forskel
 - Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
 
   try{
     const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
     const data=await res.json();
-    if(data.error)throw new Error(data.error.message);
+    if(data.error)throw new Error(data.error);
     const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');
     const m=txt.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('Kunne ikke fortolke svar fra AI');
+    if(!m)throw new Error('Parse fejl');
     let parsed;
     try{parsed=JSON.parse(m[0]);}
     catch(e){
-      let fixed=m[0];
-      fixed=fixed.replace(/[\u0000-\u001F\u007F]/g,' ');
-      fixed=fixed.replace(/,\s*([}\]])/g,'$1');
-      const stringFields=['a_detail','b_detail','sales_tip','objection_tip','customer_explanation','opener','objection','closing'];
-      stringFields.forEach(field=>{
-        fixed=fixed.replace(new RegExp(`("${field}":\\s*")((?:[^"\\\\]|\\\\.)*)`,'g'),(match,prefix,content)=>{
-          return prefix+content.replace(/\n/g,' ').replace(/\r/g,' ').replace(/"/g,"'");
-        });
-      });
+      let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
       try{parsed=JSON.parse(fixed);}
-      catch(e2){
-        const lastGood=fixed.lastIndexOf('}',fixed.lastIndexOf('}')-1);
-        try{parsed=JSON.parse(fixed.substring(0,lastGood+1)+']}');}
-        catch(e3){throw new Error('JSON parse fejl — prøv igen');}
-      }
+      catch(e2){throw new Error('JSON fejl');}
     }
-    renderResult(parsed);
-    saveCache(cacheKey, parsed);
-    logAnalysis(nameA,nameB,selectedType);
-  }catch(err){document.getElementById('result').innerHTML=`<div class="status-box" style="color:var(--danger)">Fejl: ${err.message}<br><small style="color:var(--muted);display:block;margin-top:6px">Tjek API-nøglen og prøv igen.</small></div>`;}
-  btn.disabled=false;btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+    allResults[type]=parsed;
+    saveCache(cacheKey,parsed);
+    logAnalysis(nameA,nameB,type);
+    if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}
+  }catch(err){
+    if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;statusEl.style.color='var(--danger)';}
+  }
 }
+
+function renderMultiResult(nameA, nameB) {
+  const types=Object.keys(allResults);
+  if(types.length===0){
+    document.getElementById('multi-result').innerHTML='<div class="status-box" style="color:var(--danger)">Ingen analyser lykkedes.</div>';
+    return;
+  }
+
+  // Build tabs
+  const tabsHtml=types.map((t,i)=>`<button class="tab${i===0?' active':''}" id="mtab-${t}" onclick="switchMultiTab('${t}')">${TYPE_LABELS[t]}</button>`).join('');
+
+  // Build overview scorecards
+  let totalA=0,totalB=0,totalEq=0;
+  types.forEach(t=>{
+    const d=allResults[t];
+    totalA+=d.coverage.filter(c=>c.winner==='a').length;
+    totalB+=d.coverage.filter(c=>c.winner==='b').length;
+    totalEq+=d.coverage.filter(c=>c.winner==='equal').length;
+  });
+
+  const overviewRows=types.map(t=>{
+    const d=allResults[t];
+    const aW=d.coverage.filter(c=>c.winner==='a').length;
+    const bW=d.coverage.filter(c=>c.winner==='b').length;
+    const total=aW+bW||1;
+    const aP=Math.round(aW/total*100);
+    return`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:90px;font-size:13px;font-weight:500;color:var(--text)">${TYPE_LABELS[t]}</div>
+      <div style="flex:1;height:8px;border-radius:4px;background:var(--bg);overflow:hidden">
+        <div style="height:100%;width:${aP}%;background:var(--accent2);border-radius:4px;transition:width .4s"></div>
+      </div>
+      <div style="font-size:12px;color:var(--accent2);width:60px;text-align:right">${aW} point</div>
+      <div style="font-size:12px;color:var(--danger);width:60px;text-align:right">${bW} point</div>
+    </div>`;
+  }).join('');
+
+  // Collect all top advantages across types
+  const allAdvA=[];
+  types.forEach(t=>{
+    const d=allResults[t];
+    (d.pitch.advantages_a||[]).slice(0,2).forEach(a=>allAdvA.push(`[${TYPE_LABELS[t]}] ${a}`));
+  });
+
+  const overviewHtml=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem">
+      <div style="background:var(--accent-light);border-radius:var(--r);padding:1rem;text-align:center">
+        <div style="font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${nameA} vinder på</div>
+        <div style="font-size:28px;font-weight:600;color:var(--accent2)">${totalA}</div>
+        <div style="font-size:11px;color:var(--muted)">punkter samlet</div>
+      </div>
+      <div style="background:#FEF2F2;border-radius:var(--r);padding:1rem;text-align:center">
+        <div style="font-size:11px;color:var(--danger);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${nameB} vinder på</div>
+        <div style="font-size:28px;font-weight:600;color:var(--danger)">${totalB}</div>
+        <div style="font-size:11px;color:var(--muted)">punkter samlet</div>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r);padding:1rem;text-align:center">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Ens på</div>
+        <div style="font-size:28px;font-weight:600;color:var(--muted)">${totalEq}</div>
+        <div style="font-size:11px;color:var(--muted)">punkter samlet</div>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:500;color:var(--text)">Fordeling pr. forsikringstype</span>
+        <span style="font-size:11px;color:var(--accent2)">${nameA}</span>
+        <span style="font-size:11px;color:var(--danger)">${nameB}</span>
+      </div>
+      ${overviewRows}
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
+      <div style="font-size:12px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Top salgsargumenter på tværs af alle produkter</div>
+      <ul style="list-style:none;padding:0">${allAdvA.map(a=>`<li style="font-size:13px;padding:5px 0 5px 18px;position:relative;border-bottom:1px solid var(--border);color:var(--text)"><span style="position:absolute;left:0;color:var(--accent2);font-weight:600">→</span>${a}</li>`).join('')}</ul>
+    </div>`;
+
+  document.getElementById('multi-result').innerHTML=`
+    <div class="tabs" style="margin-bottom:1rem">
+      ${tabsHtml}
+    </div>
+    <div id="tab-overview" class="multi-tab-content">${overviewHtml}</div>
+    ${types.map((t,i)=>`<div id="tab-${t}" class="multi-tab-content" style="display:none"></div>`).join('')}`;
+
+  // Render first type
+  if(types.length>0) renderTypeInTab(types[0]);
+}
+
+function switchMultiTab(type){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+type).style.display='block';
+  document.getElementById('mtab-'+type).classList.add('active');
+  if(allResults[type])renderTypeInTab(type);
+}
+
+function switchToOverview(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-overview').style.display='block';
+  document.getElementById('mtab-overview').classList.add('active');
+}
+
+function renderTypeInTab(type){
+  const container=document.getElementById('tab-'+type);
+  if(!container||!allResults[type])return;
+  window._d=allResults[type];
+  const tmpDiv=document.createElement('div');
+  document.body.appendChild(tmpDiv);
+  const resultHtml=buildResultHtml(allResults[type]);
+  container.innerHTML=resultHtml;
+  document.body.removeChild(tmpDiv);
+  initCoach(allResults[type]);
+}
+
 
 function ico(s){
   if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
@@ -805,6 +971,12 @@ function inibBadge(type){
 
 function renderResult(d){
   window._d=d;
+  document.getElementById('result').innerHTML=`<div class="result-section">${buildResultHtml(d)}</div>`;
+  buildSelector(d);
+  initCoach(d);
+}
+
+function buildResultHtml(d){
   const aW=d.coverage.filter(c=>c.winner==='a').length;
   const bW=d.coverage.filter(c=>c.winner==='b').length;
   const eq=d.coverage.filter(c=>c.winner==='equal').length;
@@ -857,8 +1029,7 @@ function renderResult(d){
   
   const p=d.pitch;
 
-  document.getElementById('result').innerHTML=`
-  <div class="result-section">
+  return `
     <div class="tabs">
       <button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button>
       <button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button>
@@ -969,11 +1140,7 @@ function renderResult(d){
         <button class="btn-act btn-sec" onclick="printCustomer()">Gem som PDF</button>
         <button class="btn-act btn-pri" onclick="mailCustomer()">Åbn i mail</button>
       </div>
-    </div>
-  </div>`;
-
-  buildSelector(d);
-  initCoach(d);
+    </div>`;
 }
 
 function buildSelector(d){
@@ -1206,6 +1373,7 @@ Vigtig begrænsning: Du må KUN svare på spørgsmål der handler om forsikringe
 
 buildMenus();
 updateBetingelsesLinks();
+renderUploadZones();
 </script>
 </body>
 </html>
