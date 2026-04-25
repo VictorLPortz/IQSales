@@ -730,18 +730,24 @@ async function analyze() {
   btn.disabled=true;
   allResults={};
 
-  // Show status with all types
+  // Init result area with tabs upfront
+  const tabsInitHtml = `
+    <button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button>
+    ${typesToAnalyze.map(t=>`<button class="tab" id="mtab-${t}" onclick="switchMultiTab('${t}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_LABELS[t]} ⏳</button>`).join('')}`;
+
   document.getElementById('result').innerHTML=`
     <div class="result-section">
       <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
         ${typesToAnalyze.map(t=>`<span id="status-${t}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`).join('')}
       </div>
-      <div id="multi-result"></div>
+      <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
+      <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
+      ${typesToAnalyze.map(t=>`<div id="tab-${t}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`).join('')}
     </div>`;
 
   btn.innerHTML='Analyserer... <span class="btn-arrow">⟳</span>';
 
-  // Run all analyses in parallel
+  // Run all analyses in parallel - update UI as each completes
   await Promise.all(typesToAnalyze.map(type=>analyzeType(type, nameA, nameB)));
 
   renderMultiResult(nameA, nameB);
@@ -774,6 +780,7 @@ async function analyzeType(type, nameA, nameB) {
   if(cached){
     allResults[type]=cached;
     if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓ (cache)`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}
+    enableTypeTab(type);
     return;
   }
 
@@ -839,9 +846,21 @@ Regler:
     saveCache(cacheKey,parsed);
     logAnalysis(nameA,nameB,type);
     if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}
+    enableTypeTab(type);
   }catch(err){
     if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;statusEl.style.color='var(--danger)';}
   }
+}
+
+function enableTypeTab(type){
+  const tabBtn=document.getElementById('mtab-'+type);
+  if(tabBtn){
+    tabBtn.disabled=false;
+    tabBtn.style.opacity='1';
+    tabBtn.style.cursor='pointer';
+    tabBtn.innerHTML=TYPE_LABELS[type]+' ✓';
+  }
+  renderTypeInTab(type);
 }
 
 function renderMultiResult(nameA, nameB) {
@@ -850,9 +869,6 @@ function renderMultiResult(nameA, nameB) {
     document.getElementById('multi-result').innerHTML='<div class="status-box" style="color:var(--danger)">Ingen analyser lykkedes.</div>';
     return;
   }
-
-  // Build tabs
-  const tabsHtml=types.map((t,i)=>`<button class="tab${i===0?' active':''}" id="mtab-${t}" onclick="switchMultiTab('${t}')">${TYPE_LABELS[t]}</button>`).join('');
 
   // Build overview scorecards
   let totalA=0,totalB=0,totalEq=0;
@@ -917,15 +933,9 @@ function renderMultiResult(nameA, nameB) {
       <ul style="list-style:none;padding:0">${allAdvA.map(a=>`<li style="font-size:13px;padding:5px 0 5px 18px;position:relative;border-bottom:1px solid var(--border);color:var(--text)"><span style="position:absolute;left:0;color:var(--accent2);font-weight:600">→</span>${a}</li>`).join('')}</ul>
     </div>`;
 
-  document.getElementById('multi-result').innerHTML=`
-    <div class="tabs" style="margin-bottom:1rem">
-      ${tabsHtml}
-    </div>
-    <div id="tab-overview" class="multi-tab-content">${overviewHtml}</div>
-    ${types.map((t,i)=>`<div id="tab-${t}" class="multi-tab-content" style="display:none"></div>`).join('')}`;
-
-  // Render first type
-  if(types.length>0) renderTypeInTab(types[0]);
+  // Update overview tab content
+  const overviewEl=document.getElementById('tab-overview');
+  if(overviewEl)overviewEl.innerHTML=overviewHtml;
 }
 
 function switchMultiTab(type){
