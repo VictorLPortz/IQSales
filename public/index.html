@@ -90,7 +90,15 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .ch-b{background:var(--green-light);color:var(--green)}
 .ch-w{background:var(--danger-light);color:var(--danger)}
 .ch-inib{background:#FEF9EC;color:#92400E;border:1px solid #FDE68A}
+.has-tip{position:relative;display:inline-block;cursor:help}
+.has-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:240px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.6;z-index:300;font-weight:400;pointer-events:none}
+.has-tip .tip-box::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
+.has-tip:hover .tip-box{display:block}
 .ch-exc{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
+.badge-tip{position:relative;display:inline-block}
+.badge-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:240px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.55;z-index:300;font-weight:400}
+.badge-tip .tip-box::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
+.badge-tip:hover .tip-box{display:block}
 
 /* INIB tooltip */
 .inib-wrap{position:relative;display:inline-block}
@@ -779,7 +787,7 @@ async function analyzeType(type, nameA, nameB) {
   const cached=loadCache(cacheKey);
   if(cached){
     allResults[type]=cached;
-    if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓ (cache)`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}
+    if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}
     enableTypeTab(type);
     return;
   }
@@ -1003,8 +1011,8 @@ function buildResultHtml(d){
     const aTop=isTop?' is-top':'';
     let aBadges=`<div class="cv-badges">`;
     if(c.a_status==='inib'||c.a_status==='no')aBadges+=inibBadge(c.a_status);
-    if(isTop&&c.a_status!=='inib'&&c.a_status!=='no'){aBadges+=`<span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span>`;}
-    else if(c.winner==='a'&&!isTop)aBadges+=`<span class="chip ch-b">Bedre dækning</span>`;
+    if(isTop&&c.a_status!=='inib'&&c.a_status!=='no'){aBadges+=`<div class="badge-tip"><span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span><div class="tip-box">Dette er en af de vigtigste fordele ${d.companyA} har over ${d.companyB} på ${d.type}. ${c.a_detail.substring(0,100)}${c.a_detail.length>100?'...':''}</div></div>`;}
+    else if(c.winner==='a'&&!isTop)aBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyA} er bedre: ${c.a_detail.substring(0,120)}${c.a_detail.length>120?'...':''}</div></div>`;
     aBadges+=`</div>`;
     const aSalesTip=c.sales_tip&&(isTop||c.winner==='a')?`<div class="sales-hint"><span class="sales-hint-icon">→</span><p>${c.sales_tip}</p></div>`:'';
     const cat=c.category.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -1017,8 +1025,8 @@ function buildResultHtml(d){
     const bWeak=c.winner==='a'?' is-yours-weak':'';
     let bBadges=`<div class="cv-badges">`;
     if(c.b_status==='inib'||c.b_status==='no')bBadges+=inibBadge(c.b_status);
-    else if(c.winner==='b')bBadges+=`<span class="chip ch-b">Bedre dækning</span>`;
-    else if(c.winner==='a')bBadges+=`<span class="chip ch-w">Svagere dækning</span>`;
+    else if(c.winner==='b')bBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyB} er bedre: ${c.b_detail.substring(0,120)}${c.b_detail.length>120?'...':''}</div></div>`;
+    else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.b_detail.substring(0,120)}${c.b_detail.length>120?'...':''}</div></div>`;
     bBadges+=`</div>`;
     const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
 
