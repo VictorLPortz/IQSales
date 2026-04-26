@@ -907,67 +907,77 @@ function renderMultiResult(nameA, nameB) {
     return;
   }
 
-  // Build overview scorecards
-  let totalA=0,totalB=0,totalEq=0;
+  // Build sales-focused overview
+  // Collect strong advantages for nameA
+  const strongA=[];
   types.forEach(t=>{
     const d=allResults[t];
-    totalA+=d.coverage.filter(c=>c.winner==='a').length;
-    totalB+=d.coverage.filter(c=>c.winner==='b').length;
-    totalEq+=d.coverage.filter(c=>c.winner==='equal').length;
+    d.coverage.filter(c=>c.winner==='a'&&(c.b_status==='no'||c.b_status==='inib'||c.sales_tip)).slice(0,2).forEach(c=>{
+      strongA.push({type:TYPE_LABELS[t],category:c.category,detail:c.a_detail,tip:c.sales_tip});
+    });
   });
 
-  const overviewRows=types.map(t=>{
+  // Collect points where nameB is stronger (to prepare for)
+  const strongB=[];
+  types.forEach(t=>{
     const d=allResults[t];
-    const aW=d.coverage.filter(c=>c.winner==='a').length;
-    const bW=d.coverage.filter(c=>c.winner==='b').length;
-    const total=aW+bW||1;
-    const aP=Math.round(aW/total*100);
-    return`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
-      <div style="width:90px;font-size:13px;font-weight:500;color:var(--text)">${TYPE_LABELS[t]}</div>
-      <div style="flex:1;height:8px;border-radius:4px;background:var(--bg);overflow:hidden">
-        <div style="height:100%;width:${aP}%;background:var(--accent2);border-radius:4px;transition:width .4s"></div>
-      </div>
-      <div style="font-size:12px;color:var(--accent2);width:60px;text-align:right">${aW} point</div>
-      <div style="font-size:12px;color:var(--danger);width:60px;text-align:right">${bW} point</div>
-    </div>`;
-  }).join('');
+    d.coverage.filter(c=>c.winner==='b').slice(0,2).forEach(c=>{
+      strongB.push({type:TYPE_LABELS[t],category:c.category,detail:c.b_detail,tip:c.objection_tip});
+    });
+  });
 
-  // Collect all top advantages across types
+  // Top advantages across all types
   const allAdvA=[];
   types.forEach(t=>{
     const d=allResults[t];
-    (d.pitch.advantages_a||[]).slice(0,2).forEach(a=>allAdvA.push(`[${TYPE_LABELS[t]}] ${a}`));
+    (d.pitch.advantages_a||[]).slice(0,2).forEach(a=>allAdvA.push({label:TYPE_LABELS[t],text:a}));
   });
 
   const overviewHtml=`
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem">
-      <div style="background:var(--accent-light);border-radius:var(--r);padding:1rem;text-align:center">
-        <div style="font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${nameA} vinder på</div>
-        <div style="font-size:28px;font-weight:600;color:var(--accent2)">${totalA}</div>
-        <div style="font-size:11px;color:var(--muted)">punkter samlet</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+
+      <div style="background:var(--accent-light);border:1px solid #A7D7B8;border-radius:var(--r);overflow:hidden">
+        <div style="background:var(--accent2);padding:10px 14px;display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1.5,7 5,10.5 12.5,3.5" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+          <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Dine stærkeste kort — ${nameA}</span>
+        </div>
+        <div style="padding:10px 14px">
+          ${strongA.slice(0,5).map(s=>`
+            <div style="padding:8px 0;border-bottom:1px solid #A7D7B8">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+                <span style="font-size:11px;color:var(--accent2);font-weight:500">${s.type}</span>
+                <div class="has-tip" style="display:inline-block"><span style="font-size:13px;font-weight:500;color:var(--text);cursor:help">${s.category}</span><div class="tip-box">${s.detail}</div></div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">${s.detail.substring(0,100)}${s.detail.length>100?'...':''}</div>
+              ${s.tip?`<div style="margin-top:5px;font-size:12px;color:var(--accent2);font-style:italic">→ "${s.tip}"</div>`:''}
+            </div>`).join('')}
+          ${strongA.length===0?`<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Kør en analyse for at se dine stærkeste kort</div>`:''}
+        </div>
       </div>
-      <div style="background:#FEF2F2;border-radius:var(--r);padding:1rem;text-align:center">
-        <div style="font-size:11px;color:var(--danger);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${nameB} vinder på</div>
-        <div style="font-size:28px;font-weight:600;color:var(--danger)">${totalB}</div>
-        <div style="font-size:11px;color:var(--muted)">punkter samlet</div>
-      </div>
-      <div style="background:var(--bg);border-radius:var(--r);padding:1rem;text-align:center">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Ens på</div>
-        <div style="font-size:28px;font-weight:600;color:var(--muted)">${totalEq}</div>
-        <div style="font-size:11px;color:var(--muted)">punkter samlet</div>
+
+      <div style="background:#FFF8F8;border:1px solid #FECACA;border-radius:var(--r);overflow:hidden">
+        <div style="background:#9B1C1C;padding:10px 14px;display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L1.5 11.5h11L7 2z" stroke="rgba(255,255,255,.8)" stroke-width="1.2" fill="none"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r=".7" fill="white"/></svg>
+          <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Vær forberedt på — ${nameB}</span>
+        </div>
+        <div style="padding:10px 14px">
+          ${strongB.slice(0,5).map(s=>`
+            <div style="padding:8px 0;border-bottom:1px solid #FECACA">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+                <span style="font-size:11px;color:var(--danger);font-weight:500">${s.type}</span>
+                <div class="has-tip" style="display:inline-block"><span style="font-size:13px;font-weight:500;color:var(--text);cursor:help">${s.category}</span><div class="tip-box">${s.detail}</div></div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.5">${s.detail.substring(0,100)}${s.detail.length>100?'...':''}</div>
+              ${s.tip?`<div style="margin-top:5px;font-size:12px;color:#9B1C1C;font-style:italic">↩ "${s.tip}"</div>`:''}
+            </div>`).join('')}
+          ${strongB.length===0?`<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Ingen væsentlige ulemper fundet</div>`:''}
+        </div>
       </div>
     </div>
-    <div style="margin-bottom:1rem">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:500;color:var(--text)">Fordeling pr. forsikringstype</span>
-        <span style="font-size:11px;color:var(--accent2)">${nameA}</span>
-        <span style="font-size:11px;color:var(--danger)">${nameB}</span>
-      </div>
-      ${overviewRows}
-    </div>
+
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
       <div style="font-size:12px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Top salgsargumenter på tværs af alle produkter</div>
-      <ul style="list-style:none;padding:0">${allAdvA.map(a=>`<li style="font-size:13px;padding:5px 0 5px 18px;position:relative;border-bottom:1px solid var(--border);color:var(--text)"><span style="position:absolute;left:0;color:var(--accent2);font-weight:600">→</span>${a}</li>`).join('')}</ul>
+      <ul style="list-style:none;padding:0">${allAdvA.map(a=>`<li style="font-size:13px;padding:6px 0 6px 18px;position:relative;border-bottom:1px solid var(--border);color:var(--text)"><span style="position:absolute;left:0;color:var(--accent2);font-weight:600">→</span><span style="font-size:11px;color:var(--accent2);font-weight:500;margin-right:6px">[${a.label}]</span>${a.text}</li>`).join('')}</ul>
     </div>`;
 
   // Update overview tab content
