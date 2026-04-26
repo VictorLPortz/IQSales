@@ -91,9 +91,12 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .ch-w{background:var(--danger-light);color:var(--danger)}
 .ch-inib{background:#FEF9EC;color:#92400E;border:1px solid #FDE68A}
 .has-tip{position:relative;display:inline-block;cursor:help}
-.has-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:300px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.6;z-index:300;font-weight:400;pointer-events:none}
+.has-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:300px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.6;z-index:300;font-weight:400;pointer-events:auto}
 .has-tip .tip-box::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
 .has-tip:hover .tip-box{display:block}
+.tip-more{color:rgba(255,255,255,.7);text-decoration:underline;cursor:pointer;font-size:11px;margin-top:4px;display:inline-block}
+.tip-more:hover{color:#fff}
+.tip-full{display:none;margin-top:4px;border-top:1px solid rgba(255,255,255,.2);padding-top:4px}
 .ch-exc{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
 .badge-tip{position:relative;display:inline-block}
 .badge-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:300px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.55;z-index:300;font-weight:400}
