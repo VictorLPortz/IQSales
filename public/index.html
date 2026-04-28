@@ -33,7 +33,7 @@ header{background:var(--accent);padding:0 2rem;display:flex;align-items:center;j
 .logo-sub{font-size:12px;color:rgba(255,255,255,.45);font-weight:300;letter-spacing:.03em}
 .header-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(255,255,255,.7)}
 main{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
- 
+
 .section-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1.25rem}
 .type-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
@@ -255,7 +255,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   </script>
 </header>
 <main>
- 
+
   <div id="setup-area">
     <div class="card">
       <div class="section-lbl">1. Forsikringstyper <span style="font-weight:400;color:var(--muted)">(vælg op til 5)</span></div>
@@ -325,10 +325,10 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   </div>
   <div id="result"></div>
 </main>
- 
+
 <section style="background:#F4F3EF;border-top:1px solid #E3E1D9;padding:3rem 1.5rem;margin-top:2rem">
   <div style="max-width:960px;margin:0 auto">
- 
+
     <div style="background:#fff;border:1px solid #E3E1D9;border-radius:14px;padding:1.5rem;margin-bottom:2rem">
       <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:#0A2540;margin-bottom:4px">💬 Giv os generel feedback</div>
       <div style="font-size:13px;color:#7A7870;margin-bottom:1rem;line-height:1.6">Har du idéer til forbedringer, oplevet noget der ikke virker, eller vil du rose noget? Skriv det her — vi læser alt og bruger det til at gøre IQSales bedre.</div>
@@ -338,12 +338,12 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         <div id="general-fb-success" style="display:none;font-size:13px;color:#1B7F4F;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,8 6,12 14,4" stroke="#1B7F4F" stroke-width="2" stroke-linecap="round" fill="none"/></svg> Tak! Vi læser din feedback.</div>
       </div>
     </div>
- 
+
     <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:600;color:#7A7870;text-transform:uppercase;letter-spacing:.07em;margin-bottom:1.5rem">Ofte stillede spørgsmål</div>
     <div id="faq-list" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
 </section>
- 
+
 <script>
 const FAQS=[
   {q:'Hvordan bruger jeg IQSales?',a:'Vælg forsikringstype øverst, vælg dit selskab i venstre kolonne og kundens nuværende selskab i højre. Klik "Hent betingelser" for at gå til selskabets hjemmeside og download betingelserne som PDF. Upload begge PDF\'er og klik "Analysér". AI\'en sammenligner betingelserne og genererer en dækningsoversigt og et salgspitch på under et minut.'},
@@ -361,7 +361,7 @@ FAQS.forEach((faq,i)=>{
 });
 function toggleFaq(i){const body=document.getElementById('faq-body-'+i);const arrow=document.getElementById('faq-arrow-'+i);const open=body.style.display==='block';body.style.display=open?'none':'block';arrow.style.transform=open?'':'rotate(180deg)';}
 </script>
- 
+
 <div class="fb-modal-bg" id="fb-modal-bg">
   <div class="fb-modal">
     <div class="fb-modal-title">Giv feedback på dækning</div>
@@ -380,22 +380,22 @@ function toggleFaq(i){const body=document.getElementById('faq-body-'+i);const ar
     </div>
   </div>
 </div>
- 
+
 <script>
 const SUPABASE_URL='https://pnzpdgjstzuapgknagsa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
- 
+
 const BRAND_COLORS={'Alm. Brand':{bg:'#00AEEF',text:'#fff',initials:'AB'},'Tryg':{bg:'#E2001A',text:'#fff',initials:'TR'},'Topdanmark':{bg:'#12205F',text:'#fff',initials:'TD'},'Codan':{bg:'#2B3FDB',text:'#fff',initials:'CO'},'IF Forsikring':{bg:'#1A56DB',text:'#fff',initials:'IF'},'Gjensidige':{bg:'#1B2473',text:'#fff',initials:'GJ'},'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},'Privatsikring':{bg:'#F5A623',text:'#fff',initials:'PS'},'Lærerstandens Brandforsikring':{bg:'#5B8DB8',text:'#fff',initials:'LB'},'GF Forsikring':{bg:'#2E8B2E',text:'#fff',initials:'GF'},'Vesta Forsikring':{bg:'#6EE7B7',text:'#1B4D3E',initials:'VE'},'Thisted Forsikring':{bg:'#1E5FA6',text:'#fff',initials:'TF'},'Runa Forsikring':{bg:'#D41A3A',text:'#fff',initials:'RU'},'Bauta Forsikring':{bg:'#4DB89A',text:'#fff',initials:'BA'},'Alka':{bg:'#5C5757',text:'#fff',initials:'AL'},'Vejle Brand':{bg:'#1E4D2B',text:'#fff',initials:'VB'},'Vestjylland Forsikring':{bg:'#2D4B7A',text:'#fff',initials:'VJ'},'Køgbstædernes Forsikring':{bg:'#C8102E',text:'#fff',initials:'KF'},'Jyske Forsikring':{bg:'#1A4D2E',text:'#fff',initials:'JF'},'Aros Forsikring':{bg:'#4A2D82',text:'#fff',initials:'AR'},'Nærsikring':{bg:'#4A90C4',text:'#fff',initials:'NS'},'Bornholms Brandforsikring':{bg:'#5C5757',text:'#fff',initials:'BB'},'Spira Forsikring':{bg:'#2D6A2D',text:'#fff',initials:'SP'},'Concordia Forsikring':{bg:'#1A56A0',text:'#fff',initials:'CF'},'IDA Forsikring':{bg:'#5B7499',text:'#fff',initials:'ID'},'TJM Forsikring':{bg:'#E85D0A',text:'#fff',initials:'TJ'},'Storstrom Forsikring':{bg:'#1A5C1A',text:'#fff',initials:'ST'},'OK Forsikring':{bg:'#C8102E',text:'#fff',initials:'OK'},'FDM Forsikring':{bg:'#1A5C8A',text:'#fff',initials:'FD'},'Himmerland Forsikring':{bg:'#C8102E',text:'#fff',initials:'HI'},'Sønderjysk Forsikring':{bg:'#1A3A6B',text:'#fff',initials:'SJ'},'Frida Forsikring':{bg:'#E85D9A',text:'#fff',initials:'FR'},'Dansk Bilforsikring':{bg:'#1A5C8A',text:'#fff',initials:'DB'}};
- 
+
 let selectedTypes=['Husforsikring'],docsA={},docsB={},allResults={};
- 
+
 function getBrandEl(name,size=32,id=''){const brand=BRAND_COLORS[name];const initials=brand?brand.initials:name.substring(0,2).toUpperCase();const bg=brand?brand.bg:'#E3E1D9';const color=brand?brand.text:'#7A7870';const r=size>24?8:4;const idAttr=id?` id="${id}"`:'';return`<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;}
 function makeFallback(name,size,id){return getBrandEl(name,size,id);}
 function logoHtml(n,size=28){return getBrandEl(n,size);}
- 
+
 const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring','Privatsikring','Lærerstandens Brandforsikring','GF Forsikring','Vesta Forsikring','Thisted Forsikring','Runa Forsikring','Bauta Forsikring','Alka','Vejle Brand','Vestjylland Forsikring','Køgbstædernes Forsikring','Jyske Forsikring','Aros Forsikring','Nærsikring','Bornholms Brandforsikring','Spira Forsikring','Concordia Forsikring','IDA Forsikring','TJM Forsikring','Storstrom Forsikring','OK Forsikring','FDM Forsikring','Himmerland Forsikring','Sønderjysk Forsikring','Frida Forsikring','Dansk Bilforsikring'];
 const cddState={a:'Alm. Brand',b:'Tryg'};
- 
+
 let fbState={};
 function openFb(category,companyA,companyB,type,side){fbState={category,companyA,companyB,type,side:side||'a',issueType:''};const sideLabel=side==='b'?' (→ '+companyB+')':'';document.getElementById('fb-cat').textContent=category+sideLabel;document.getElementById('fb-comment').value='';document.getElementById('fb-success').classList.add('hidden');document.getElementById('fb-actions').style.display='flex';document.querySelectorAll('.fb-type-btn').forEach(b=>b.classList.remove('active'));document.getElementById('fb-modal-bg').classList.add('open');}
 function closeFb(){document.getElementById('fb-modal-bg').classList.remove('open');}
@@ -408,13 +408,13 @@ async function sendFb(){
   document.getElementById('fb-actions').style.display='none';
   setTimeout(()=>closeFb(),1500);
 }
- 
+
 const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://www.tryg.dk','Topdanmark':'https://www.topdanmark.dk','Codan':'https://www.codan.dk','IF Forsikring':'https://www.if.dk','Gjensidige':'https://www.gjensidige.dk','LB Forsikring':'https://www.lb.dk','Privatsikring':'https://www.privatsikring.dk','Lærerstandens Brandforsikring':'https://www.lb.dk','GF Forsikring':'https://www.gfforsikring.dk','Vesta Forsikring':'https://www.vesta.dk','Thisted Forsikring':'https://www.thistedforsikring.dk','Runa Forsikring':'https://www.lb.dk','Bauta Forsikring':'https://www.lb.dk','Alka':'https://www.alka.dk','Vejle Brand':'https://www.vejlebrand.dk','Vestjylland Forsikring':'https://www.vestjyllandforsikring.dk','Køgbstædernes Forsikring':'https://www.kforsikring.dk','Jyske Forsikring':'https://www.jyskeforsikring.dk','Aros Forsikring':'https://www.arosforsikring.dk','Nærsikring':'https://www.naersikring.dk','Bornholms Brandforsikring':'https://www.bornholmsbrand.dk','Spira Forsikring':'https://www.spiraforsikring.dk','Concordia Forsikring':'https://www.concordia.dk','IDA Forsikring':'https://www.idaforsikring.dk','TJM Forsikring':'https://www.tjm.dk','Storstrom Forsikring':'https://www.storstromforsikring.dk','OK Forsikring':'https://www.ok.dk','FDM Forsikring':'https://www.fdm.dk','Himmerland Forsikring':'https://www.himmerlandforsikring.dk','Sønderjysk Forsikring':'https://www.sonderjyskforsikring.dk','Frida Forsikring':'https://www.fridaforsikring.dk','Dansk Bilforsikring':'https://www.danskbilforsikring.dk'};
- 
+
 function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[side];const link=document.getElementById('link-'+side);if(!link)return;const url=BETINGELSER_LINKS[name];if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}else{link.href='#';link.style.display='none';}});}
- 
+
 function resetAnalysis(){selectedTypes=['Husforsikring'];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');if(b.dataset.type==='Husforsikring')b.classList.add('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
- 
+
 function buildMenus(){['a','b'].forEach(side=>{const menu=document.getElementById('cdd-'+side+'-menu');menu.innerHTML=COMPANIES.map(name=>`<div class="cdd-option" data-side="${side}" data-name="${name}">${getBrandEl(name,24)}<span class="cdd-option-label">${name}</span></div>`).join('')+`<hr class="cdd-divider"><div class="cdd-option" data-side="${side}" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>`;menu.addEventListener('click',e=>{const opt=e.target.closest('.cdd-option');if(!opt)return;selectCdd(opt.dataset.side,opt.dataset.name);});});updateCddDisplay('a');updateCddDisplay('b');}
 function toggleCdd(side){const trigger=document.getElementById('cdd-'+side+'-trigger');const menu=document.getElementById('cdd-'+side+'-menu');const isOpen=trigger.classList.contains('open');document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));if(!isOpen){trigger.classList.add('open');menu.classList.add('open');}}
 function selectCdd(side,value){cddState[side]=value;document.getElementById('cdd-'+side+'-trigger').classList.remove('open');document.getElementById('cdd-'+side+'-menu').classList.remove('open');document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';updateCddDisplay(side);updateBetingelsesLinks();}
@@ -422,25 +422,25 @@ function updateCddDisplay(side){const value=cddState[side];const logoSlot=docume
 function onCustomInput(side){const val=document.getElementById('custom-'+side).value.trim();document.getElementById('cdd-'+side+'-label').textContent=val||'Andet selskab...';}
 function getName(side){if(cddState[side]==='andet')return document.getElementById('custom-'+side).value.trim()||'Selskab '+side.toUpperCase();return cddState[side];}
 document.addEventListener('click',e=>{if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));}});
- 
+
 function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(type)){if(selectedTypes.length===1){return;}selectedTypes=selectedTypes.filter(t=>t!==type);btn.classList.remove('selected');delete docsA[type];delete docsB[type];}else{if(selectedTypes.length>=5){document.getElementById('type-max-note').classList.add('show');setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);return;}selectedTypes.push(type);btn.classList.add('selected');}renderUploadZones();}
- 
+
 const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
- 
+
 function renderUploadZones(){['a','b'].forEach(side=>{const container=document.getElementById('upload-zones-'+side);if(!container)return;container.innerHTML=selectedTypes.map(type=>{const label=TYPE_LABELS[type]||type;const hasFile=side==='a'?docsA[type]:docsB[type];return`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div><div class="upload-zone${hasFile?' ready':''}" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem"><div class="uz-title" style="font-size:12px">${hasFile?'✓ '+hasFile.name:'Klik for at uploade PDF'}</div>${!hasFile?'<div class="uz-hint">Max ca. 50 sider</div>':''}</div><input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)"></div>`;}).join('');});}
- 
+
 function handleFileMulti(input){const side=input.dataset.side;const type=input.dataset.type;const file=input.files[0];if(!file)return;const mb=(file.size/1024/1024).toFixed(1);if(file.size>15*1024*1024){alert(`Filen er ${mb} MB — for stor. Max ca. 15 MB.`);input.value='';return;}const reader=new FileReader();reader.onload=e=>{const store=side==='a'?docsA:docsB;store[type]={name:file.name,data:e.target.result.split(',')[1]};renderUploadZones();};reader.readAsDataURL(file);}
- 
+
 function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+Math.random().toString(36).substring(2,10);localStorage.setItem('iqsales_uid',id);}return id;}
 async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getUserId()})});}catch(e){}}
- 
+
 async function extractPdfText(base64data){if(!window.pdfjsLib){await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s);});window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}const binary=atob(base64data);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;let text='';for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(' ')+'\n';}return text.trim();}
- 
+
 async function hashText(text){const encoder=new TextEncoder();const data=encoder.encode(text);const hashBuffer=await crypto.subtle.digest('SHA-256',data);const hashArray=Array.from(new Uint8Array(hashBuffer));return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,16);}
 async function getCacheKey(textA,textB,nameA,nameB,type){const combined=textA+textB+nameA+nameB+type;return'cache_'+await hashText(combined);}
 function saveCache(key,data){try{const item={data,timestamp:Date.now()};localStorage.setItem(key,JSON.stringify(item));}catch(e){}}
 function loadCache(key){try{const item=localStorage.getItem(key);if(!item)return null;const parsed=JSON.parse(item);const thirtyDays=30*24*60*60*1000;if(Date.now()-parsed.timestamp>thirtyDays){localStorage.removeItem(key);return null;}return parsed.data;}catch(e){return null;}}
- 
+
 async function analyze(){
   const nameA=getName('a'),nameB=getName('b');
   if(nameA===nameB){alert('Vælg to forskellige selskaber.');return;}
@@ -458,7 +458,7 @@ async function analyze(){
   btn.disabled=false;
   btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
- 
+
 async function analyzeType(type,nameA,nameB){
   const statusEl=document.getElementById('status-'+type);
   if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ⟳`;
@@ -473,9 +473,9 @@ async function analyzeType(type,nameA,nameB){
   const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.\n\n=== BETINGELSER FRA ${nameA} ===\n${textA}\n\n=== BETINGELSER FRA ${nameB} ===\n${textB}\n\nReturner KUN et JSON-objekt uden markdown:\n{\n  "companyA": "${nameA}",\n  "companyB": "${nameB}",\n  "type": "${type}",\n  "top3_a": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],\n  "top3_b": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],\n  "coverage": [\n    {\n      "category": "Dækningskategori",\n      "a_status": "yes|no|partial|inib",\n      "a_detail": "Præcis dækning fra ${nameA} med beløb og vilkår.",\n      "b_status": "yes|no|partial|inib",\n      "b_detail": "Præcis dækning fra ${nameB} med beløb og vilkår.",\n      "winner": "a|b|equal",\n      "sales_tip": "Max 1 sætning. Kun hvis winner=a. Ellers tom streng.",\n      "objection_tip": "Max 1 sætning. Kun hvis winner=b. Ellers tom streng.",\n      "customer_explanation": "Max 1 sætning i enkelt dansk med hverdagseksempel."\n    }\n  ],\n  "pitch": {\n    "advantages_a": ["Fordel 1 med konkrete tal","Fordel 2","Fordel 3"],\n    "advantages_b": ["Konkurrentens fordel 1","Fordel 2","Fordel 3"],\n    "remotivering": ["Spørgsmål 1","Spørgsmål 2","Spørgsmål 3","Spørgsmål 4","Spørgsmål 5"],\n    "enliner": "Én sætning der opsummerer den vigtigste forskel"\n  },\n  "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."\n}\n\nRegler:\n- inib = ikke nævnt i betingelserne, no = eksplicit undtaget — brug KUN no hvis dækningen eksplicit er fravalgt eller afvist. Hvis dækningen kræver tilvalg, har geografiske begrænsninger eller er delvist dækket skal du bruge partial i stedet for no\n- top3_a = 3 kategorinavne hvor ${nameA} har størst fordel\n- top3_b = 3 kategorinavne hvor ${nameB} har størst fordel\n- winner=a automatisk hvis b_status=no eller inib\n- Sæt ALDRIG winner=b hvis ${nameB}s dækning indeholder uspecificerede beløb som "fremgår af police", "ifølge police" eller "beløb angivet i police" — det er ikke muligt at vurdere om det er bedre. Sæt i stedet winner=equal\n- Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne\n- Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
   try{const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});const data=await res.json();if(data.error)throw new Error(data.error);const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');const m=txt.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);if(!m)throw new Error('Parse fejl');let parsed;try{parsed=JSON.parse(m[0]);}catch(e){let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');try{parsed=JSON.parse(fixed);}catch(e2){throw new Error('JSON fejl');}}allResults[type]=parsed;saveCache(cacheKey,parsed);logAnalysis(nameA,nameB,type);if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}enableTypeTab(type);}catch(err){if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;statusEl.style.color='var(--danger)';}}
 }
- 
+
 function enableTypeTab(type){const tabBtn=document.getElementById('mtab-'+type);if(tabBtn){tabBtn.disabled=false;tabBtn.style.opacity='1';tabBtn.style.cursor='pointer';tabBtn.innerHTML=TYPE_LABELS[type]+' ✓';}renderTypeInTab(type);}
- 
+
 function renderMultiResult(nameA,nameB){
   const types=Object.keys(allResults);
   if(types.length===0){document.getElementById('tab-overview').innerHTML='<div class="status-box" style="color:var(--danger)">Ingen analyser lykkedes.</div>';return;}
@@ -486,15 +486,15 @@ function renderMultiResult(nameA,nameB){
   const overviewEl=document.getElementById('tab-overview');
   if(overviewEl)overviewEl.innerHTML=overviewHtml;
 }
- 
+
 function switchMultiTab(type){document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+type).style.display='block';document.getElementById('mtab-'+type).classList.add('active');if(allResults[type])renderTypeInTab(type);}
 function switchToOverview(){document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-overview').style.display='block';document.getElementById('mtab-overview').classList.add('active');}
 function renderTypeInTab(type){const container=document.getElementById('tab-'+type);if(!container||!allResults[type])return;window._d=allResults[type];const resultHtml=buildResultHtml(allResults[type]);container.innerHTML=resultHtml;initCoach(allResults[type]);}
- 
+
 function ico(s){if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;if(s==='no')return`<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='inib')return`<svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="8.5" r="1" fill="#92400E"/></svg>`;return`<svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>`;}
 function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':'dp';}
 function inibBadge(type){const label=type==='inib'?'Ikke nævnt':'Undtaget';const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;}
- 
+
 function buildResultHtml(d){
   const aW=d.coverage.filter(c=>c.winner==='a').length;
   const bW=d.coverage.filter(c=>c.winner==='b').length;
@@ -521,13 +521,15 @@ function buildResultHtml(d){
     else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.b_detail.substring(0,200)}${c.b_detail.length>120?'...':''}</div></div>`;
     bBadges+=`</div>`;
     const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
-    return`<tr><td><div class="cv-cell${aTop}"><div class="cv-cat"><div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div><div class="cv-det">${c.a_detail}</div>${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div><div class="cv-det">${c.b_detail}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button>t p=d.pitch;
+    return`<tr><td><div class="cv-cell${aTop}"><div class="cv-cat"><div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div><div class="cv-det">${c.a_detail}</div>${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div><div class="cv-det">${c.b_detail}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
+  }).join('');
+  const p=d.pitch;
   return`<div class="tabs"><button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button><button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button><button class="tab" id="t3" onclick="sw('send')">Send til kunde</button></div>
 <div id="vc"><div class="sum-bar"><strong>${d.companyA}</strong> bedre på ${aW} punkter<span class="sum-dot"></span><strong>${d.companyB}</strong> bedre på ${bW} punkter<span class="sum-dot"></span>Ens på ${eq} punkter</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem"><div style="background:var(--accent-light);border-left:3px solid var(--accent2);border-radius:0 var(--rs) var(--rs) 0;padding:10px 12px"><div style="font-size:11px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Top fordele — ${d.companyA}</div>${(d.top3_a||[]).map(x=>`<div style="display:flex;gap:6px;margin-bottom:3px;font-size:12px;color:var(--text)"><span style="color:var(--accent2);font-weight:700">→</span>${x}</div>`).join('')}</div><div style="background:#FEF2F2;border-left:3px solid var(--danger);border-radius:0 var(--rs) var(--rs) 0;padding:10px 12px"><div style="font-size:11px;font-weight:600;color:var(--danger);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Top fordele — ${d.companyB}</div>${(d.top3_b||[]).map(x=>`<div style="display:flex;gap:6px;margin-bottom:3px;font-size:12px;color:var(--text)"><span style="color:var(--danger);font-weight:700">→</span>${x}</div>`).join('')}</div></div>
 <table class="sync-table"><thead><tr><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyA)}</div><div><div class="co-nm">${d.companyA}<span class="yours-tag">Dit selskab</span></div><div class="co-sub">Hold musen over rækker for salgstips</div></div></div></th><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyB)}</div><div><div class="co-nm">${d.companyB}</div><div class="co-sub">Kundens nuværende selskab</div></div></div></th></tr></thead><tbody>${rows}</tbody></table>
 <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center"><span style="display:flex;align-items:center;gap:4px"><span class="dot dy" style="width:14px;height:14px">${ico('yes')}</span>Dækket</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">${ico('partial')}</span>Delvist dækket</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dn" style="width:14px;height:14px">${ico('no')}</span>Undtaget</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">${ico('inib')}</span>Ikke nævnt i betingelserne</span></div>
 <div class="disclaimer" style="margin-top:10px">${d.disclaimer}</div></div>
- 
+
 <div id="vp" class="hidden">
 <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:1rem;overflow:hidden"><div style="background:var(--accent);padding:10px 14px;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,.8)" stroke-width="1.2"/><path d="M5.5 6.5C5.5 5.1 6.6 4 8 4s2.5 1.1 2.5 2.5c0 1.4-1.1 2.5-2.5 2.5v1.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12.5" r=".7" fill="white"/></svg><span style="font-size:13px;font-weight:600;color:#fff;letter-spacing:.02em">IQSales Coach</span><span style="font-size:11px;color:rgba(255,255,255,.55);margin-left:2px">— stil mig et spørgsmål om salg eller dækninger</span></div><div id="coach-messages" style="padding:12px 14px;min-height:80px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"><div style="font-size:13px;color:var(--muted);font-style:italic">Hej! Jeg kender hele analysen. Spørg mig om alt fra dækningsdetaljer til salgstaktik.</div></div><div id="coach-suggestions" style="padding:0 14px 10px;display:flex;gap:6px;flex-wrap:wrap"></div><div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px"><input id="coach-input" type="text" placeholder="Stil et spørgsmål til coachen..." style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text)" onkeydown="if(event.key==='Enter')sendCoach()"><button onclick="sendCoach()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap">Send →</button></div></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem"><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden"><div class="pitch-col-header ph-green" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><polyline points="1,7 4.5,10.5 12,3" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>Top 3 fordele — ${d.companyA}</div><ul class="pitch-kp" style="padding:4px 0">${(p.advantages_a||p.advantages||[]).map(x=>`<li style="padding:8px 14px 8px 32px;font-size:13px">${x}</li>`).join('')}</ul></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden"><div class="pitch-col-header ph-red" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1L1 11.5h11L6.5 1z" stroke="rgba(255,255,255,.8)" stroke-width="1.2" fill="none"/><line x1="6.5" y1="5" x2="6.5" y2="8.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>Top 3 fordele — ${d.companyB}</div><ul class="pitch-kp" style="padding:4px 0">${(p.advantages_b||[]).map(x=>`<li style="padding:8px 14px 8px 32px;font-size:13px">${x}</li>`).join('')}</ul></div></div>
@@ -535,16 +537,16 @@ function buildResultHtml(d){
 <div style="background:var(--accent);border-radius:var(--r);padding:14px 18px;margin-bottom:1rem;display:flex;align-items:center;gap:12px"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="flex-shrink:0"><path d="M9 2l1.8 3.6 4 .6-2.9 2.8.7 4L9 11l-3.6 1.9.7-4L3.2 6.2l4-.6L9 2z" stroke="rgba(255,255,255,.8)" stroke-width="1.3" fill="none"/></svg><div><div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">En-liner</div><div style="font-size:14px;font-weight:500;color:#fff;line-height:1.5">${p.enliner||''}</div></div></div>
 <div class="pitch-actions" style="display:flex;gap:8px"><button class="btn-act btn-sec" id="cp-btn" onclick="copyP()">Kopiér pitch</button><button class="btn-act btn-pri" onclick="window.print()">Print / Gem som PDF</button></div>
 <div class="disclaimer">${d.disclaimer}</div></div>
- 
+
 <div id="vs" class="hidden">
 <div class="send-intro">Vælg de dækninger du vil sende til kunden. Rapporten forklarer hver dækning i simpelt sprog — ingen forsikringsjargon.</div>
 <div class="coverage-selector"><div class="sel-controls"><button class="sel-ctrl-btn" onclick="selAll(true)">Vælg alle</button><button class="sel-ctrl-btn" onclick="selAll(false)">Fravælg alle</button><button class="sel-ctrl-btn" onclick="selOnlyTop()">Kun top fordele</button></div><div class="sel-grid" id="sel-grid"></div></div>
 <div id="customer-preview"></div>
 <div class="send-actions"><button class="btn-act btn-sec" onclick="printCustomer()">Gem som PDF</button><button class="btn-act btn-pri" onclick="mailCustomer()">Åbn i mail</button></div></div>`;
 }
- 
+
 function renderResult(d){window._d=d;document.getElementById('result').innerHTML=`<div class="result-section">${buildResultHtml(d)}</div>`;buildSelector(d);initCoach(d);}
- 
+
 function buildSelector(d){
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
   const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
@@ -553,11 +555,11 @@ function buildSelector(d){
   grid.innerHTML=d.coverage.map((c,i)=>{const isTop=isTopA(c);return`<label class="sel-item${isTop?' selected':''}" id="sel-${i}" onclick="toggleSel(${i})"><input type="checkbox" id="chk-${i}"${isTop?' checked':''} onclick="event.stopPropagation();toggleSel(${i})"><div class="sel-item-text"><div class="sel-item-cat">${c.category}${isTop?` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">Top</span>`:''}</div><div class="sel-item-det">${c.a_detail.substring(0,60)}${c.a_detail.length>60?'...':''}</div></div></label>`;}).join('');
   updateCustomerPreview();
 }
- 
+
 function toggleSel(i){const chk=document.getElementById('chk-'+i);const lbl=document.getElementById('sel-'+i);chk.checked=!chk.checked;lbl.classList.toggle('selected',chk.checked);updateCustomerPreview();}
 function selAll(v){const d=window._d;d.coverage.forEach((_,i)=>{document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
 function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
- 
+
 function updateCustomerPreview(){
   const d=window._d;if(!d)return;
   const selected=d.coverage.filter((_,i)=>document.getElementById('chk-'+i)?.checked);
@@ -565,27 +567,27 @@ function updateCustomerPreview(){
   const rows=selected.map(c=>{const aIcon=ico(c.a_status),bIcon=ico(c.b_status);const aCls=dotCls(c.a_status),bCls=dotCls(c.b_status);const isBetter=c.winner==='a';return`<div class="pdf-row"><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${aCls}" style="width:14px;height:14px">${aIcon}</span>${c.category}${isBetter?` <span class="pdf-better">Bedre hos os</span>`:''}</div><div class="pdf-det">${c.a_detail}</div>${c.customer_explanation?`<div class="pdf-exp">${c.customer_explanation}</div>`:''}</div><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${bCls}" style="width:14px;height:14px">${bIcon}</span>${c.category}</div><div class="pdf-det">${c.b_detail}</div></div></div>`;}).join('');
   document.getElementById('customer-preview').innerHTML=`<div class="customer-pdf-preview" id="pdf-content"><div class="pdf-header"><div class="pdf-title">Forsikringssammenligning</div><div class="pdf-sub">${d.companyA} vs. ${d.companyB} · ${d.type} · ${new Date().toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'})}</div></div><div class="pdf-body" style="padding:0"><div class="pdf-row-header"><div class="pdf-col-head">${d.companyA}</div><div class="pdf-col-head">${d.companyB}</div></div>${rows}</div><div class="pdf-footer">${d.disclaimer}</div></div>`;
 }
- 
+
 function printCustomer(){window.print();}
 function mailCustomer(){const d=window._d;if(!d)return;const subject=encodeURIComponent(`Forsikringssammenligning: ${d.companyA} vs. ${d.companyB}`);const body=encodeURIComponent(`Hej,\n\nHermed en sammenligning af din nuværende forsikring hos ${d.companyB} og vores tilbud hos ${d.companyA}.\n\nJeg vedlægger en detaljeret sammenligning. Kontakt mig endelig hvis du har spørgsmål.\n\nMed venlig hilsen`);window.location.href=`mailto:?subject=${subject}&body=${body}`;}
- 
+
 function sw(t){document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));const map={compare:'t1',pitch:'t2',send:'t3'};document.getElementById(map[t]).classList.add('active');document.getElementById('vc').classList.toggle('hidden',t!=='compare');document.getElementById('vp').classList.toggle('hidden',t!=='pitch');document.getElementById('vs').classList.toggle('hidden',t!=='send');if(t==='send'&&window._d){buildSelector(window._d);}}
- 
+
 function copyP(){const d=window._d;if(!d)return;const p=d.pitch;let t=`SALGSPITCH – ${d.companyA} til kunde hos ${d.companyB} (${d.type})\n\nTOP 3 FORDELE ${d.companyA.toUpperCase()}\n${(p.advantages_a||p.advantages||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nTOP 3 FORDELE ${d.companyB.toUpperCase()}\n${(p.advantages_b||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nREMOTIVERING\n${(p.remotivering||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nEN-LINER\n${p.enliner||''}\n\n---\n${d.disclaimer}`;navigator.clipboard.writeText(t).then(()=>{const btn=document.getElementById('cp-btn');btn.textContent='Kopieret!';setTimeout(()=>btn.textContent='Kopiér pitch',2000);});}
- 
+
 let coachHistory=[];
 function initCoach(d){coachHistory=[];const suggestions=[`Hvordan forklarer jeg den vigtigste fordel ved ${d.companyA}?`,`Hvad siger jeg hvis kunden er tilfreds med ${d.companyB}?`,'Forklar mig forskellen på "undtaget" og "INIB"','Giv mig et eksempel på et godt åbningsspørgsmål'];const sg=document.getElementById('coach-suggestions');if(sg)sg.innerHTML=suggestions.map(s=>`<button onclick="useCoachSuggestion('${s.replace(/'/g,"\\'")}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">${s}</button>`).join('');}
 function useCoachSuggestion(s){document.getElementById('coach-input').value=s;sendCoach();}
- 
+
 let coachMsgCount=0;
 function addCoachMsg(text,role,question=''){const msgs=document.getElementById('coach-messages');if(!msgs)return;const isUser=role==='user';const msgId='cmsg-'+(++coachMsgCount);const div=document.createElement('div');div.style.cssText=`display:flex;gap:8px;align-items:flex-start;${isUser?'flex-direction:row-reverse':''}`;const feedbackHtml=!isUser&&text!=='Tænker...'?`<div style="display:flex;gap:4px;margin-top:5px"><button onclick="coachFeedback('${msgId}',true,'${question.replace(/'/g,"\\'")}')" id="${msgId}-up" title="Godt svar" style="font-size:13px;background:none;border:none;cursor:pointer;opacity:.5;transition:opacity .15s;padding:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">👍</button><button onclick="coachFeedback('${msgId}',false,'${question.replace(/'/g,"\\'")}')" id="${msgId}-dn" title="Dårligt svar" style="font-size:13px;background:none;border:none;cursor:pointer;opacity:.5;transition:opacity .15s;padding:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">👎</button></div><div id="${msgId}-form" style="display:none;margin-top:5px"><input id="${msgId}-txt" type="text" placeholder="Hvad var galt?" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;width:100%;font-family:'DM Sans',sans-serif"><button onclick="sendCoachFeedback('${msgId}','${question.replace(/'/g,"\\'")}','${text.substring(0,200).replace(/'/g,"\\'")}')" style="margin-top:4px;font-size:12px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif">Send feedback</button></div>`:'';const formatted=text.split('\n').map(line=>{const l=line.trim();if(l.startsWith('•'))return`<div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--accent2);flex-shrink:0;font-weight:600">•</span><span>${l.substring(1).trim()}</span></div>`;if(l==='')return'';return`<div style="margin-bottom:4px">${l}</div>`;}).join('');div.innerHTML=`<div style="width:26px;height:26px;border-radius:50%;background:${isUser?'var(--accent2)':'var(--accent)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:#fff">${isUser?'Du':'IQ'}</div><div style="max-width:80%"><div style="background:${isUser?'var(--accent-light)':'var(--bg)'};border:1px solid var(--border);border-radius:${isUser?'12px 4px 12px 12px':'4px 12px 12px 12px'};padding:8px 12px;font-size:13px;color:var(--text);line-height:1.6">${isUser?text:formatted}</div>${feedbackHtml}</div>`;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
- 
+
 function coachFeedback(msgId,positive,question){if(positive){document.getElementById(msgId+'-up').style.opacity=1;document.getElementById(msgId+'-dn').style.opacity=.3;saveCoachFeedback(question,'','positive');const btn=document.getElementById(msgId+'-up');btn.insertAdjacentHTML('afterend','<span style="font-size:11px;color:var(--accent2);margin-left:6px">Tak for din feedback ✓</span>');document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;}else{document.getElementById(msgId+'-dn').style.opacity=1;document.getElementById(msgId+'-up').style.opacity=.3;document.getElementById(msgId+'-form').style.display='block';}}
 function sendCoachFeedback(msgId,question,answer){const comment=document.getElementById(msgId+'-txt').value.trim();saveCoachFeedback(question,comment,'negative',answer);document.getElementById(msgId+'-form').style.display='none';document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;const container=document.getElementById(msgId+'-form').parentElement;container.insertAdjacentHTML('beforeend','<div style="font-size:11px;color:var(--accent2);margin-top:4px">Tak for din konstruktive feedback — det hjælper os med at forbedre coachen ✓</div>');}
 async function saveCoachFeedback(question,comment,type,answer=''){const d=window._d;if(!d)return;try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:d.companyA,company_b:d.companyB,insurance_type:d.type,category:'IQSales Coach',issue_type:type==='positive'?'coach_positiv':'coach_negativ',comment:question+(comment?'\nFeedback: '+comment:''),user_id:getUserId()})});}catch(e){}}
- 
+
 async function sendCoach(){const d=window._d;if(!d)return;const input=document.getElementById('coach-input');const q=input.value.trim();if(!q)return;input.value='';document.getElementById('coach-suggestions').innerHTML='';addCoachMsg(q,'user');coachHistory.push({role:'user',content:q});addCoachMsg('Tænker...','assistant');const systemPrompt=`Du er IQSales Coach — en erfaren dansk forsikringssælger med 15 års erfaring der hjælper kollegaer.\n\nAktuel analyse:\n- Dit selskab: ${d.companyA}\n- Kundens selskab: ${d.companyB}\n- Forsikringstype: ${d.type}\n- ${d.companyA} er bedre på: ${(d.pitch.advantages_a||d.pitch.advantages||[]).join(', ')}\n- ${d.companyB} er bedre på: ${(d.pitch.advantages_b||[]).join(', ')}\n- Dækningspunkter: ${d.coverage.map(c=>`${c.category} (${d.companyA}: ${c.a_status}, ${d.companyB}: ${c.b_status})`).join('; ')}\n\nSvar ALTID på denne måde:\n- Skriv som en kollega der taler direkte og uformelt\n- Brug aldrig markdown, stjerner, hashtags eller punktopstillinger\n- Skriv i korte afsnit adskilt af linjeskift\n- Max 4-5 sætninger\n- Giv konkrete sætninger sælgeren kan bruge direkte\n\nVigtig begrænsning: Du må KUN svare på spørgsmål om forsikringer, dækninger, salg eller denne analyse.`;try{const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:q,system:systemPrompt,history:coachHistory.slice(0,-1)})});const data=await res.json();const rawAnswer=data.content?.map(i=>i.type==='text'?i.text:'').join('')||'Beklager, prøv igen.';const answer=rawAnswer.replace(/#{1,6}\s/g,'').replace(/\*\*/g,'').replace(/\*/g,'').replace(/^-\s/gm,'•').trim();const msgs=document.getElementById('coach-messages');if(msgs&&msgs.lastChild)msgs.removeChild(msgs.lastChild);addCoachMsg(answer,'assistant',q);coachHistory.push({role:'assistant',content:answer});}catch(e){const msgs=document.getElementById('coach-messages');if(msgs&&msgs.lastChild)msgs.removeChild(msgs.lastChild);addCoachMsg('Fejl — prøv igen.','assistant');}}
- 
+
 async function sendGeneralFb(btn){
   const textarea=document.getElementById('general-fb-text');
   const text=textarea.value.trim();
@@ -604,7 +606,7 @@ async function sendGeneralFb(btn){
   btn.disabled=false;btn.textContent='Send feedback';
   setTimeout(()=>ok.style.display='none',4000);
 }
- 
+
 buildMenus();
 updateBetingelsesLinks();
 renderUploadZones();
