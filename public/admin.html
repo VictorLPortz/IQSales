@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQSales — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1A3C2E;
+    --green-mid: #2D6A4F;
+    --green-light: #52B788;
+    --accent: #95D5B2;
+    --cream: #F8F6F1;
+    --text: #1A1A1A;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --surface: #fff;
+    --error: #DC2626;
+    --error-bg: #FEF2F2;
+    --success: #166534;
+    --success-bg: #F0FDF4;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Nav */
+  nav {
+    background: var(--green);
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+
+  .nav-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: #fff;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .nav-brand span { color: var(--accent); font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+
+  .nav-user { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+  .btn-logout {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+  .nav-link {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+  .nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+  /* Layout */
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--green); letter-spacing: -0.5px; }
+  .page-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+
+  .stat-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--green); margin-top: 4px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-header h2 { font-size: 16px; font-weight: 600; color: var(--text); }
+  .card-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .card-body { padding: 24px; }
+
+  /* Invite form */
+  .invite-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  input[type="text"], input[type="email"], select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--green-light);
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.12);
+  }
+
+  .btn-primary {
+    padding: 10px 20px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--green-mid); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-danger {
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--error);
+    border: 1px solid #FECACA;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-danger:hover { background: var(--error-bg); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--success-bg); color: var(--success); border: 1px solid #BBF7D0; }
+  .toast.error { background: var(--error-bg); color: var(--error); border: 1px solid #FECACA; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: #FAFAFA;
+  }
+  tbody tr { border-bottom: 1px solid #F3F4F6; transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #FAFAFA; }
+  tbody td { padding: 14px 16px; font-size: 14px; vertical-align: middle; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge-admin { background: #FEF3C7; color: #92400E; }
+  .badge-seller { background: #ECFDF5; color: #065F46; }
+  .badge-invited { background: #EFF6FF; color: #1D4ED8; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Login history */
+  .history-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #F3F4F6;
+    font-size: 14px;
+  }
+  .history-entry:last-child { border-bottom: none; }
+  .history-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-light); flex-shrink: 0; }
+  .history-time { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  #authGuard { display: none; }
+</style>
+</head>
+<body>
+
+<div id="authGuard">
+  <nav>
+    <div class="nav-brand">
+      ⚡ IQSales <span>Admin</span>
+    </div>
+    <div class="nav-right">
+      <a href="/" class="nav-link">← Tilbage til app</a>
+      <span class="nav-user" id="navUser"></span>
+      <button class="btn-logout" onclick="logout()">Log ud</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>Brugerstyring</h1>
+      <p>Opret og administrer adgang til IQSales</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Aktive brugere</div>
+        <div class="stat-value" id="statTotal">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sælgere</div>
+        <div class="stat-value" id="statSellers">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Afdelinger</div>
+        <div class="stat-value" id="statDepts">—</div>
+      </div>
+    </div>
+
+    <!-- Invite form -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>Inviter ny bruger</h2>
+          <p>Brugeren modtager en email og sætter selv sin adgangskode</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="invite-grid">
+          <div class="form-group">
+            <label>Fulde navn</label>
+            <input type="text" id="inviteName" placeholder="Fornavn Efternavn">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="inviteEmail" placeholder="navn@selskab.dk">
+          </div>
+          <div class="form-group">
+            <label>Afdeling</label>
+            <select id="inviteDept">
+              <option value="">Vælg afdeling</option>
+              <option>Salg</option>
+              <option>Rådgivning</option>
+              <option>Erhverv</option>
+              <option>Privat</option>
+              <option>Ledelse</option>
+              <option>IT</option>
+              <option>Andet</option>
+            </select>
+          </div>
+          <button class="btn-primary" id="inviteBtn" onclick="inviteUser()">
+            Send invitation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- User list -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>Alle brugere</h2>
+          <p id="userCount">Indlæser...</p>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Navn</th>
+              <th>Email</th>
+              <th>Afdeling</th>
+              <th>Rolle</th>
+              <th>Oprettet</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="userTable">
+            <tr><td colspan="6"><div class="empty-state">Indlæser brugere...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Login history -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>Seneste logins</h2>
+          <p>De 20 seneste login-hændelser</p>
+        </div>
+      </div>
+      <div class="card-body" id="loginHistory">
+        <div class="empty-state">Indlæser historik...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  async function init() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/login.html'; return; }
+
+    currentUser = session.user;
+
+    // Check admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (!profile || profile.role !== 'admin') {
+      window.location.href = '/';
+      return;
+    }
+
+    document.getElementById('authGuard').style.display = 'block';
+    document.getElementById('navUser').textContent = profile.full_name || currentUser.email;
+
+    await loadUsers();
+    await loadLoginHistory();
+  }
+
+  async function loadUsers() {
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !profiles) return;
+
+    // Stats
+    document.getElementById('statTotal').textContent = profiles.length;
+    document.getElementById('statSellers').textContent = profiles.filter(p => p.role === 'seller').length;
+    const depts = new Set(profiles.map(p => p.department).filter(Boolean));
+    document.getElementById('statDepts').textContent = depts.size;
+    document.getElementById('userCount').textContent = `${profiles.length} bruger${profiles.length !== 1 ? 'e' : ''}`;
+
+    const tbody = document.getElementById('userTable');
+    if (profiles.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Ingen brugere endnu</div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = profiles.map(p => `
+      <tr>
+        <td><strong>${p.full_name || '—'}</strong></td>
+        <td style="color:var(--muted)">${p.email || '—'}</td>
+        <td>${p.department || '—'}</td>
+        <td><span class="badge badge-${p.role}">${p.role === 'admin' ? 'Admin' : 'Sælger'}</span></td>
+        <td style="color:var(--muted);font-size:13px">${formatDate(p.created_at)}</td>
+        <td>
+          ${p.id !== currentUser.id
+            ? `<button class="btn-danger" onclick="deleteUser('${p.id}', '${p.full_name || p.email}')">Slet</button>`
+            : '<span style="font-size:12px;color:var(--muted)">Dig</span>'
+          }
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function loadLoginHistory() {
+    const { data, error } = await supabase
+      .from('login_history')
+      .select('*')
+      .order('logged_in_at', { ascending: false })
+      .limit(20);
+
+    const container = document.getElementById('loginHistory');
+
+    if (error || !data || data.length === 0) {
+      container.innerHTML = '<div class="empty-state">Ingen login-historik endnu — den opbygges automatisk når brugere logger ind.</div>';
+      return;
+    }
+
+    container.innerHTML = data.map(h => `
+      <div class="history-entry">
+        <div class="history-dot"></div>
+        <span><strong>${h.full_name || h.email}</strong> loggede ind</span>
+        <span class="history-time">${formatDate(h.logged_in_at)}</span>
+      </div>
+    `).join('');
+  }
+
+  async function inviteUser() {
+    const name = document.getElementById('inviteName').value.trim();
+    const email = document.getElementById('inviteEmail').value.trim();
+    const dept = document.getElementById('inviteDept').value;
+    const btn = document.getElementById('inviteBtn');
+
+    if (!name || !email) { showToast('Udfyld navn og email', 'error'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Sender...';
+
+    // Use Supabase admin invite via edge function or direct auth admin
+    // Since we only have anon key, we use signUp with a random password and send invite
+    const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: tempPassword,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: 'https://iqsales.dk/login.html'
+      }
+    });
+
+    if (error) {
+      showToast('Fejl: ' + error.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Send invitation';
+      return;
+    }
+
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        email,
+        full_name: name,
+        department: dept || null,
+        role: 'seller'
+      });
+    }
+
+    showToast(`✅ Invitation sendt til ${email}`, 'success');
+    document.getElementById('inviteName').value = '';
+    document.getElementById('inviteEmail').value = '';
+    document.getElementById('inviteDept').value = '';
+    btn.disabled = false;
+    btn.innerHTML = 'Send invitation';
+
+    await loadUsers();
+  }
+
+  async function deleteUser(id, name) {
+    if (!confirm(`Slet ${name}? Brugeren mister adgang til IQSales.`)) return;
+
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (error) { showToast('Kunne ikke slette bruger', 'error'); return; }
+
+    showToast(`${name} er slettet`, 'success');
+    await loadUsers();
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    window.location.href = '/login.html';
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('da-DK', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>
