@@ -2,6 +2,10 @@
 <html lang="da">
 <head>
 <meta charset="UTF-8">
+<script>
+// Only load Supabase if not already loaded by parent page
+if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/sc'+'ript>');}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IQSales — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
