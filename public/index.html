@@ -225,6 +225,50 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .send-actions{display:flex;gap:8px}
 @media print{header,#setup-area,.api-bar,.analyze-btn,.tabs,.disclaimer,.pitch-actions,.send-actions,.send-intro,.coverage-selector,.sel-controls{display:none!important}.result-section{margin:0}}
 @media(max-width:640px){.two-col,.sel-grid{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(3,1fr);}.type-grid.extended{grid-template-columns:repeat(3,1fr)}.pitch-wrap{grid-template-columns:1fr}.sync-table th,.sync-table td{font-size:12px}}
+
+/* KOLLEGA CACHE PANEL */
+.cache-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:1.25rem;overflow:hidden}
+.cache-panel-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cache-panel-header:hover{background:#FAFAFA}
+.cache-panel-title{font-size:13px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px}
+.cache-panel-count{font-size:11px;color:var(--muted);font-weight:400}
+.cache-panel-body{border-top:1px solid var(--border);padding:8px 0;display:none}
+.cache-panel-body.open{display:block}
+.cache-group{border-bottom:1px solid var(--border)}
+.cache-group:last-child{border-bottom:none}
+.cache-group-header{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px}
+.cache-group-header:hover{background:#FAFAFA}
+.cache-group-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.cache-group-companies{font-size:13px;font-weight:500;color:var(--text)}
+.cache-group-date{font-size:11px;color:var(--muted);white-space:nowrap}
+.cache-group-arrow{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.cache-group-arrow.open{transform:rotate(180deg)}
+.cache-products{padding:4px 16px 8px 48px;display:none}
+.cache-products.open{display:block}
+.cache-product-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F3F4F6}
+.cache-product-row:last-child{border-bottom:none}
+.cache-product-left{display:flex;align-items:center;gap:8px}
+.cache-product-label{font-size:13px;color:var(--text)}
+.freshness-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fresh-green{background:#22C55E}
+.fresh-yellow{background:#F59E0B}
+.fresh-red{background:#EF4444}
+.freshness-text{font-size:11px}
+.fresh-green-text{color:#166534}
+.fresh-yellow-text{color:#92400E}
+.fresh-red-text{color:#991B1B}
+.cache-load-btn{padding:4px 12px;font-size:12px;font-weight:500;border:1px solid var(--accent2);border-radius:6px;cursor:pointer;background:var(--accent-light);color:var(--accent2);font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .15s}
+.cache-load-btn:hover{background:var(--accent2);color:#fff}
+.cache-reanalyze-btn{padding:4px 12px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;white-space:nowrap}
+
+/* DRAG AND DROP */
+.upload-zone.drag-over{border-color:var(--accent2);background:var(--accent-light);transform:scale(1.01)}
+
+/* COMPANY SEARCH */
+.cdd-search{padding:8px 12px;border-bottom:1px solid var(--border)}
+.cdd-search input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);outline:none}
+.cdd-search input:focus{border-color:var(--accent2)}
+.cdd-option.hidden{display:none}
 </style>
 </head>
 <body>
@@ -255,6 +299,19 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   </script>
 </header>
 <main>
+
+  <!-- KOLLEGA CACHE PANEL -->
+  <div class="cache-panel" id="cache-panel" style="display:none">
+    <div class="cache-panel-header" onclick="toggleCachePanel()">
+      <div class="cache-panel-title">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--accent2)" stroke-width="1.5"/><path d="M8 5v3l2 1.5" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Dine kollegaer har analyseret
+        <span class="cache-panel-count" id="cache-count"></span>
+      </div>
+      <svg id="cache-panel-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" style="transition:transform .2s"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+    <div class="cache-panel-body" id="cache-panel-body"></div>
+  </div>
 
   <div id="setup-area">
     <div class="card">
@@ -415,7 +472,10 @@ function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[s
 
 function resetAnalysis(){selectedTypes=['Husforsikring'];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');if(b.dataset.type==='Husforsikring')b.classList.add('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
 
-function buildMenus(){['a','b'].forEach(side=>{const menu=document.getElementById('cdd-'+side+'-menu');menu.innerHTML=COMPANIES.map(name=>`<div class="cdd-option" data-side="${side}" data-name="${name}">${getBrandEl(name,24)}<span class="cdd-option-label">${name}</span></div>`).join('')+`<hr class="cdd-divider"><div class="cdd-option" data-side="${side}" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>`;menu.addEventListener('click',e=>{const opt=e.target.closest('.cdd-option');if(!opt)return;selectCdd(opt.dataset.side,opt.dataset.name);});});updateCddDisplay('a');updateCddDisplay('b');}
+function buildMenus(){['a','b'].forEach(side=>{const menu=document.getElementById('cdd-'+side+'-menu');menu.innerHTML='<div class="cdd-search"><input type="text" placeholder="Søg selskab..." oninput="filterCdd(''+side+'',this.value)" onclick="event.stopPropagation()"></div>'+COMPANIES.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('')+'<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';menu.addEventListener('click',e=>{const opt=e.target.closest('.cdd-option');if(!opt)return;selectCdd(opt.dataset.side,opt.dataset.name);});});updateCddDisplay('a');updateCddDisplay('b');}
+
+function filterCdd(side,query){const q=query.toLowerCase().trim();const menu=document.getElementById('cdd-'+side+'-menu');menu.querySelectorAll('.cdd-option').forEach(opt=>{const label=opt.querySelector('.cdd-option-label')?.textContent||'';opt.classList.toggle('hidden',q.length>0&&!label.toLowerCase().includes(q));});}
+
 function toggleCdd(side){const trigger=document.getElementById('cdd-'+side+'-trigger');const menu=document.getElementById('cdd-'+side+'-menu');const isOpen=trigger.classList.contains('open');document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));if(!isOpen){trigger.classList.add('open');menu.classList.add('open');}}
 function selectCdd(side,value){cddState[side]=value;document.getElementById('cdd-'+side+'-trigger').classList.remove('open');document.getElementById('cdd-'+side+'-menu').classList.remove('open');document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';updateCddDisplay(side);updateBetingelsesLinks();}
 function updateCddDisplay(side){const value=cddState[side];const logoSlot=document.getElementById('cdd-'+side+'-logo');const labelEl=document.getElementById('cdd-'+side+'-label');if(value==='andet'){logoSlot.outerHTML=`<div id="cdd-${side}-logo" style="width:24px;height:24px;border-radius:4px;background:#E3E1D9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#7A7870;font-family:'Syne',sans-serif;flex-shrink:0">?</div>`;labelEl.textContent='Andet selskab...';}else{logoSlot.outerHTML=getBrandEl(value,24,'cdd-'+side+'-logo');labelEl.textContent=value;}document.querySelectorAll(`#cdd-${side}-menu .cdd-option`).forEach(opt=>{opt.classList.toggle('active',opt.querySelector('.cdd-option-label')?.textContent===value);});}
@@ -429,6 +489,22 @@ const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indbof
 
 function renderUploadZones(){['a','b'].forEach(side=>{const container=document.getElementById('upload-zones-'+side);if(!container)return;container.innerHTML=selectedTypes.map(type=>{const label=TYPE_LABELS[type]||type;const hasFile=side==='a'?docsA[type]:docsB[type];return`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div><div class="upload-zone${hasFile?' ready':''}" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem"><div class="uz-title" style="font-size:12px">${hasFile?'✓ '+hasFile.name:'Klik for at uploade PDF'}</div>${!hasFile?'<div class="uz-hint">Max ca. 50 sider</div>':''}</div><input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)"></div>`;}).join('');});}
 
+function handleDrop(event, side, type){
+  event.preventDefault();
+  const zone=document.getElementById('zone-'+side+'-'+type);
+  if(zone)zone.classList.remove('drag-over');
+  const file=event.dataTransfer.files[0];
+  if(!file||!file.name.endsWith('.pdf')){alert('Træk venligst en PDF-fil ind.');return;}
+  if(file.size>15*1024*1024){alert('Filen er for stor. Max ca. 15 MB.');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const store=side==='a'?docsA:docsB;
+    store[type]={name:file.name,data:e.target.result.split(',')[1]};
+    renderUploadZones();
+  };
+  reader.readAsDataURL(file);
+}
+
 function handleFileMulti(input){const side=input.dataset.side;const type=input.dataset.type;const file=input.files[0];if(!file)return;const mb=(file.size/1024/1024).toFixed(1);if(file.size>15*1024*1024){alert(`Filen er ${mb} MB — for stor. Max ca. 15 MB.`);input.value='';return;}const reader=new FileReader();reader.onload=e=>{const store=side==='a'?docsA:docsB;store[type]={name:file.name,data:e.target.result.split(',')[1]};renderUploadZones();};reader.readAsDataURL(file);}
 
 function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+Math.random().toString(36).substring(2,10);localStorage.setItem('iqsales_uid',id);}return id;}
@@ -436,10 +512,107 @@ async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyse
 
 async function extractPdfText(base64data){if(!window.pdfjsLib){await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s);});window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}const binary=atob(base64data);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;let text='';for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(' ')+'\n';}return text.trim();}
 
-async function hashText(text){const encoder=new TextEncoder();const data=encoder.encode(text);const hashBuffer=await crypto.subtle.digest('SHA-256',data);const hashArray=Array.from(new Uint8Array(hashBuffer));return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,16);}
-async function getCacheKey(textA,textB,nameA,nameB,type){const combined=textA+textB+nameA+nameB+type;return'cache_'+await hashText(combined);}
-function saveCache(key,data){try{const item={data,timestamp:Date.now()};localStorage.setItem(key,JSON.stringify(item));}catch(e){}}
-function loadCache(key){try{const item=localStorage.getItem(key);if(!item)return null;const parsed=JSON.parse(item);const thirtyDays=30*24*60*60*1000;if(Date.now()-parsed.timestamp>thirtyDays){localStorage.removeItem(key);return null;}return parsed.data;}catch(e){return null;}}
+// ============================================================
+// DELT SUPABASE CACHE
+// ============================================================
+
+function getAuthToken(){
+  try{const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(raw){const p=JSON.parse(raw);return p.access_token||null;}}catch(e){}return null;
+}
+
+async function saveSupabaseCache(nameA,nameB,type,data){
+  const token=getAuthToken();if(!token)return;
+  try{await fetch(SUPABASE_URL+'/rest/v1/analysis_cache',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({company_a:nameA,company_b:nameB,insurance_type:type,result:data})});}catch(e){}
+}
+
+async function loadSupabaseCache(nameA,nameB,type){
+  const token=getAuthToken();if(!token)return null;
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/analysis_cache?company_a=eq.'+encodeURIComponent(nameA)+'&company_b=eq.'+encodeURIComponent(nameB)+'&insurance_type=eq.'+encodeURIComponent(type)+'&select=result,created_at',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}});
+    const rows=await res.json();
+    if(!Array.isArray(rows)||rows.length===0)return null;
+    const row=rows[0];
+    const age=(Date.now()-new Date(row.created_at).getTime())/(1000*60*60*24);
+    if(age>14)return null;
+    return{data:row.result,created_at:row.created_at,age_days:Math.floor(age)};
+  }catch(e){return null;}
+}
+
+async function loadAllCacheGroups(){
+  const token=getAuthToken();if(!token)return[];
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/analysis_cache?select=company_a,company_b,insurance_type,created_at&order=created_at.desc&limit=100',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}});
+    const rows=await res.json();
+    if(!Array.isArray(rows))return[];
+    const now=Date.now();const groups={};
+    rows.forEach(r=>{
+      const age=(now-new Date(r.created_at).getTime())/(1000*60*60*24);
+      if(age>14)return;
+      const key=r.company_a+'|||'+r.company_b;
+      if(!groups[key]){groups[key]={company_a:r.company_a,company_b:r.company_b,products:[],latest:r.created_at};}
+      groups[key].products.push({type:r.insurance_type,created_at:r.created_at,age_days:Math.floor(age)});
+      if(new Date(r.created_at)>new Date(groups[key].latest))groups[key].latest=r.created_at;
+    });
+    return Object.values(groups).sort((a,b)=>new Date(b.latest)-new Date(a.latest)).slice(0,20);
+  }catch(e){return[];}
+}
+
+function getFreshnessInfo(age_days){
+  if(age_days<=7)return{dot:'fresh-green',text:'fresh-green-text',label:age_days===0?'I dag':age_days===1?'1 dag gammel':age_days+' dage gammel'};
+  if(age_days<=14)return{dot:'fresh-yellow',text:'fresh-yellow-text',label:age_days+' dage — overvej at opdatere'};
+  return{dot:'fresh-red',text:'fresh-red-text',label:'Udløbet'};
+}
+
+async function renderCachePanel(){
+  const groups=await loadAllCacheGroups();
+  const panel=document.getElementById('cache-panel');
+  const body=document.getElementById('cache-panel-body');
+  const count=document.getElementById('cache-count');
+  if(!groups||groups.length===0){panel.style.display='none';return;}
+  panel.style.display='block';
+  count.textContent='('+groups.length+' selskabspar)';
+  body.innerHTML=groups.map((g,gi)=>{
+    const latestDate=new Date(g.latest).toLocaleDateString('da-DK',{day:'numeric',month:'short'});
+    const products=g.products.map(p=>{
+      const f=getFreshnessInfo(p.age_days);
+      const label=TYPE_LABELS[p.type]||p.type;
+      return`<div class="cache-product-row"><div class="cache-product-left"><div class="freshness-dot ${f.dot}"></div><span class="cache-product-label">${label}</span><span class="freshness-text ${f.text}">${f.label}</span></div><button class="cache-load-btn" onclick="loadFromCache('${g.company_a.replace(/'/g,"\'")}','${g.company_b.replace(/'/g,"\'")}','${p.type}')">Åbn →</button></div>`;
+    }).join('');
+    return`<div class="cache-group"><div class="cache-group-header" onclick="toggleCacheGroup(${gi})"><div class="cache-group-left">${getBrandEl(g.company_a,24)}${getBrandEl(g.company_b,24)}<span class="cache-group-companies">${g.company_a} vs. ${g.company_b}</span></div><span class="cache-group-date">${latestDate}</span><span class="cache-group-arrow" id="cg-arrow-${gi}">▼</span></div><div class="cache-products" id="cg-products-${gi}">${products}</div></div>`;
+  }).join('');
+}
+
+function toggleCachePanel(){
+  const body=document.getElementById('cache-panel-body');
+  const arrow=document.getElementById('cache-panel-arrow');
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  arrow.style.transform=isOpen?'':'rotate(180deg)';
+}
+
+function toggleCacheGroup(gi){
+  const products=document.getElementById('cg-products-'+gi);
+  const arrow=document.getElementById('cg-arrow-'+gi);
+  const isOpen=products.classList.contains('open');
+  products.classList.toggle('open',!isOpen);
+  arrow.classList.toggle('open',!isOpen);
+}
+
+async function loadFromCache(nameA,nameB,type){
+  const cached=await loadSupabaseCache(nameA,nameB,type);
+  if(!cached||!cached.data){alert('Analysen er ikke tilgængelig. Lav en ny analyse.');return;}
+  allResults[type]=cached.data;
+  if(COMPANIES.includes(nameA))selectCdd('a',nameA);
+  if(COMPANIES.includes(nameB))selectCdd('b',nameB);
+  selectedTypes=[type];
+  document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');if(b.dataset.type===type)b.classList.add('selected');});
+  renderUploadZones();
+  const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')">${TYPE_LABELS[type]} ✓</button>`;
+  document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div></div>`;
+  renderMultiResult(nameA,nameB);renderTypeInTab(type);switchMultiTab(type);
+  document.getElementById('reset-btn').style.display='block';
+  window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
+}
 
 async function analyze(){
   const nameA=getName('a'),nameB=getName('b');
@@ -611,6 +784,8 @@ buildMenus();
 updateBetingelsesLinks();
 renderUploadZones();
 setTimeout(()=>{updateCddDisplay('a');updateCddDisplay('b');},50);
+// Load cache panel after slight delay to ensure auth is ready
+setTimeout(()=>renderCachePanel(),800);
 </script>
 </body>
 </html>
