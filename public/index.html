@@ -830,7 +830,7 @@ function buildResultHtml(d,prefs){
     const fbBtn=`<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}')">⚑ Giv feedback</button>`;
     const isFav=window._prefs&&window._prefs.favorites&&window._prefs.favorites.includes(c.category);
     const favBtn=`<button class="fav-btn${isFav?' active':''}" onclick="toggleFav('${cat}','${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" title="${isFav?'Fjern favorit':'Tilføj favorit'}">★</button>`;
-    const dragHandle=`<span class="drag-handle" draggable="true" onmousedown="startRowDrag(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')">⋮⋮</span>`;
+    const dragHandle=`<span class="drag-handle" draggable="true" ondragstart="rowDragStart(event,${rowIdx})" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" ondragend="rowDragEnd(event)">⋮⋮</span>`;
     const bCls=dotCls(c.b_status);const bWeak=c.winner==='a'?' is-yours-weak':'';
     let bBadges=`<div class="cv-badges">`;
     if(c.b_status==='inib'||c.b_status==='no')bBadges+=inibBadge(c.b_status);
@@ -838,7 +838,7 @@ function buildResultHtml(d,prefs){
     else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.b_detail.substring(0,200)}${c.b_detail.length>120?'...':''}</div></div>`;
     bBadges+=`</div>`;
     const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
-    return`<tr class="${isFav?'fav-row':''}" data-category="${cat}" data-row="${rowIdx}"><td><div class="cv-cell${aTop}"><div class="cv-cat">${dragHandle}${favBtn}<div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div><div class="cv-det">${c.a_detail}</div>${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div><div class="cv-det">${c.b_detail}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
+    return`<tr class="${isFav?'fav-row':''}" data-category="${cat}" data-row="${rowIdx}" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')"><td><div class="cv-cell${aTop}"><div class="cv-cat">${dragHandle}${favBtn}<div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div><div class="cv-det">${c.a_detail}</div>${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div><div class="cv-det">${c.b_detail}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
   }).join('');
   const p=d.pitch;
   return`<div class="tabs"><button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button><button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button><button class="tab" id="t3" onclick="sw('send')">Send til kunde</button></div>
@@ -943,34 +943,48 @@ async function toggleFav(category, nameA, nameB, type){
   }
 }
 
-let dragState={};
-function startRowDrag(event, rowIdx, nameA, nameB, type){
-  dragState={rowIdx,nameA,nameB,type,startY:event.clientY};
-  document.addEventListener('mousemove',onRowDragMove,{once:false});
-  document.addEventListener('mouseup',onRowDragEnd,{once:true});
+let dragSrcRow=-1;
+
+function rowDragStart(event, rowIdx){
+  dragSrcRow=rowIdx;
+  event.dataTransfer.effectAllowed='move';
+  event.dataTransfer.setData('text/plain', rowIdx);
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('tr[data-row="'+rowIdx+'"]');
+    rows.forEach(r=>r.style.opacity='0.4');
+  },0);
 }
 
-function onRowDragMove(event){
-  if(!dragState.type)return;
-  const rows=document.querySelectorAll('tr[data-row]');
-  rows.forEach(row=>row.classList.remove('drag-over'));
-  const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('tr[data-row]');
-  if(target)target.classList.add('drag-over');
+function rowDragOver(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect='move';
+  const tr=event.target.closest('tr[data-row]');
+  document.querySelectorAll('tr[data-row]').forEach(r=>r.classList.remove('drag-over'));
+  if(tr)tr.classList.add('drag-over');
 }
 
-async function onRowDragEnd(event){
-  document.removeEventListener('mousemove',onRowDragMove);
-  const{rowIdx,nameA,nameB,type}=dragState;
-  dragState={};
-  const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('tr[data-row]');
-  if(!target||!type)return;
-  const targetIdx=parseInt(target.dataset.row);
-  if(isNaN(targetIdx)||targetIdx===rowIdx)return;
+function rowDragEnd(event){
+  document.querySelectorAll('tr[data-row]').forEach(r=>{
+    r.style.opacity='';
+    r.classList.remove('drag-over');
+  });
+  dragSrcRow=-1;
+}
+
+async function rowDrop(event, targetIdx, nameA, nameB, type){
+  event.preventDefault();
+  event.stopPropagation();
+  const srcIdx=dragSrcRow;
+  document.querySelectorAll('tr[data-row]').forEach(r=>{
+    r.style.opacity='';
+    r.classList.remove('drag-over');
+  });
+  if(srcIdx===-1||srcIdx===targetIdx)return;
 
   const d=allResults[type];
   if(!d)return;
   const prefs=window._prefs||{favorites:[],sort_order:[]};
-  // Build current order
+  // Build current display order
   let coverage=[...d.coverage];
   if(prefs.sort_order&&prefs.sort_order.length>0){
     const orderMap={};prefs.sort_order.forEach((cat,i)=>orderMap[cat]=i);
@@ -983,7 +997,7 @@ async function onRowDragEnd(event){
     coverage=[...favs,...rest];
   }
   // Move row
-  const [moved]=coverage.splice(rowIdx,1);
+  const [moved]=coverage.splice(srcIdx,1);
   coverage.splice(targetIdx,0,moved);
   prefs.sort_order=coverage.map(c=>c.category);
   window._prefs=prefs;
@@ -991,7 +1005,6 @@ async function onRowDragEnd(event){
   // Re-render
   const container=document.getElementById('tab-'+type);
   if(container){container.innerHTML=buildResultHtml(d,prefs);initCoach(d);}
-  document.querySelectorAll('tr[data-row]').forEach(r=>r.classList.remove('drag-over'));
 }
 
 buildMenus();
