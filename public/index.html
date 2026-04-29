@@ -269,6 +269,27 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .cdd-search input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);outline:none}
 .cdd-search input:focus{border-color:var(--accent2)}
 .cdd-option.hidden{display:none}
+
+/* MULTI UPLOAD */
+.upload-file-list{margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.upload-file-item{display:flex;align-items:center;justify-content:space-between;background:var(--green-light);border:1px solid var(--green);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--green)}
+.upload-file-remove{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;transition:color .15s}
+.upload-file-remove:hover{color:var(--danger)}
+.upload-add-more{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:11px;color:var(--accent2);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:2px 0}
+.upload-add-more:hover{text-decoration:underline}
+
+/* FAVORITES & SORT */
+.cv-row-wrap{display:contents}
+.cv-row-wrap.dragging tr{opacity:.4}
+.cv-row-wrap.drag-over-above tr td{border-top:2px solid var(--accent2)}
+.cv-row-wrap.drag-over-below tr td{border-bottom:2px solid var(--accent2)}
+.fav-btn{background:none;border:none;cursor:pointer;padding:0 4px;font-size:14px;line-height:1;opacity:.4;transition:all .15s;vertical-align:middle}
+.fav-btn:hover{opacity:1;transform:scale(1.2)}
+.fav-btn.active{opacity:1;color:#F59E0B}
+.drag-handle{cursor:grab;padding:0 6px;color:var(--muted);opacity:.35;font-size:14px;transition:opacity .15s;vertical-align:middle;user-select:none}
+.drag-handle:hover{opacity:.8}
+.drag-handle:active{cursor:grabbing}
+.fav-row td{background:#FFFBEB!important;border-left:3px solid #F59E0B!important}
 </style>
 </head>
 <body>
@@ -472,6 +493,43 @@ function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[s
 
 function resetAnalysis(){selectedTypes=['Husforsikring'];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');if(b.dataset.type==='Husforsikring')b.classList.add('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
 
+// ============================================================
+// USER PREFERENCES (Favoritter + Sortering)
+// ============================================================
+
+async function loadPreferences(nameA, nameB, type){
+  const token=getAuthToken();
+  if(!token)return{favorites:[],sort_order:[]};
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/user_preferences?user_id=eq.'+getUserId()+'&company_a=eq.'+encodeURIComponent(nameA)+'&company_b=eq.'+encodeURIComponent(nameB)+'&insurance_type=eq.'+encodeURIComponent(type)+'&select=favorites,sort_order',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}
+    });
+    const rows=await res.json();
+    if(!Array.isArray(rows)||rows.length===0)return{favorites:[],sort_order:[]};
+    return{favorites:rows[0].favorites||[],sort_order:rows[0].sort_order||[]};
+  }catch(e){return{favorites:[],sort_order:[]};}
+}
+
+async function savePreferences(nameA, nameB, type, favorites, sortOrder){
+  const token=getAuthToken();
+  if(!token)return;
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/user_preferences',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({user_id:getUserId(),company_a:nameA,company_b:nameB,insurance_type:type,favorites:favorites,sort_order:sortOrder,updated_at:new Date().toISOString()})
+    });
+  }catch(e){}
+}
+
+function getUserId(){
+  try{
+    const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');
+    if(raw){const p=JSON.parse(raw);return p.user?.id||p.sub||'anonymous';}
+  }catch(e){}
+  return'anonymous';
+}
+
 function buildMenus(){
   ['a','b'].forEach(side=>{
     const menu=document.getElementById('cdd-'+side+'-menu');
@@ -505,22 +563,24 @@ function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(t
 
 const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
 
-function renderUploadZones(){['a','b'].forEach(side=>{const container=document.getElementById('upload-zones-'+side);if(!container)return;container.innerHTML=selectedTypes.map(type=>{const label=TYPE_LABELS[type]||type;const hasFile=side==='a'?docsA[type]:docsB[type];return`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div><div class="upload-zone${hasFile?' ready':''}" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem"><div class="uz-title" style="font-size:12px">${hasFile?'✓ '+hasFile.name:'Klik for at uploade PDF'}</div>${!hasFile?'<div class="uz-hint">Max ca. 50 sider</div>':''}</div><input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)"></div>`;}).join('');});}
+function renderUploadZones(){
+  ['a','b'].forEach(side=>{
+    const container=document.getElementById('upload-zones-'+side);
+    if(!container)return;
+    container.innerHTML=selectedTypes.map(type=>{
+      const label=TYPE_LABELS[type]||type;
+      const files=side==='a'?(docsA[type]||[]):(docsB[type]||[]);
+      const fileList=files.length>0?'<div class="upload-file-list">'+files.map((f,fi)=>'<div class="upload-file-item"><span>'+f.name+'</span><button class="upload-file-remove" onclick="removeFile(event,\''+side+'\',\''+type+'\','+fi+')">×</button></div>').join('')+'</div><button class="upload-add-more" onclick="document.getElementById(\'file-'+side+'-'+type+'\').click()">+ Tilføj flere PDF\'er</button>':'';
+      return'<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">'+label+'</div><div class="upload-zone'+(files.length>0?' ready':'')+'" id="zone-'+side+'-'+type+'" onclick="document.getElementById(\'file-'+side+'-'+type+'\').click()" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="handleDrop(event,\''+side+'\',\''+type+'\')" style="padding:.75rem 1rem"><div class="uz-title" style="font-size:12px">'+(files.length>0?'✓ '+files.length+' fil'+(files.length>1?'er':'')+' klar':'Klik eller træk PDF hertil')+'</div>'+(files.length===0?'<div class="uz-hint">Kan uploade flere PDF\'er</div>':'')+'</div>'+fileList+'<input type="file" id="file-'+side+'-'+type+'" accept=".pdf" multiple style="display:none" data-side="'+side+'" data-type="'+type+'" onchange="handleFileMulti(this)"></div>';
+    }).join('');
+  });
+}
 
-function handleDrop(event, side, type){
-  event.preventDefault();
-  const zone=document.getElementById('zone-'+side+'-'+type);
-  if(zone)zone.classList.remove('drag-over');
-  const file=event.dataTransfer.files[0];
-  if(!file||!file.name.endsWith('.pdf')){alert('Træk venligst en PDF-fil ind.');return;}
-  if(file.size>15*1024*1024){alert('Filen er for stor. Max ca. 15 MB.');return;}
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const store=side==='a'?docsA:docsB;
-    store[type]={name:file.name,data:e.target.result.split(',')[1]};
-    renderUploadZones();
-  };
-  reader.readAsDataURL(file);
+function removeFile(event,side,type,idx){
+  event.stopPropagation();
+  const store=side==='a'?docsA:docsB;
+  if(store[type])store[type].splice(idx,1);
+  renderUploadZones();
 }
 
 function handleFileMulti(input){const side=input.dataset.side;const type=input.dataset.type;const file=input.files[0];if(!file)return;const mb=(file.size/1024/1024).toFixed(1);if(file.size>15*1024*1024){alert(`Filen er ${mb} MB — for stor. Max ca. 15 MB.`);input.value='';return;}const reader=new FileReader();reader.onload=e=>{const store=side==='a'?docsA:docsB;store[type]={name:file.name,data:e.target.result.split(',')[1]};renderUploadZones();};reader.readAsDataURL(file);}
@@ -635,7 +695,7 @@ async function loadFromCache(nameA,nameB,type){
 async function analyze(){
   const nameA=getName('a'),nameB=getName('b');
   if(nameA===nameB){alert('Vælg to forskellige selskaber.');return;}
-  const typesToAnalyze=selectedTypes.filter(t=>docsA[t]&&docsB[t]);
+  const typesToAnalyze=selectedTypes.filter(t=>(docsA[t]&&docsA[t].length>0)&&(docsB[t]&&docsB[t].length>0));
   if(typesToAnalyze.length===0){alert('Upload betingelser for mindst én forsikringstype fra begge selskaber.');return;}
   const btn=document.getElementById('analyze-btn');
   btn.disabled=true;
@@ -654,7 +714,22 @@ async function analyzeType(type,nameA,nameB){
   const statusEl=document.getElementById('status-'+type);
   if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ⟳`;
   let textA='',textB='';
-  try{textA=await extractPdfText(docsA[type].data);textB=await extractPdfText(docsB[type].data);}catch(e){if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;if(statusEl)statusEl.style.color='var(--danger)';return;}
+  try{
+    const filesA=Array.isArray(docsA[type])?docsA[type]:[docsA[type]];
+    const filesB=Array.isArray(docsB[type])?docsB[type]:[docsB[type]];
+    const textsA=await Promise.all(filesA.map(f=>extractPdfText(f.data)));
+    const textsB=await Promise.all(filesB.map(f=>extractPdfText(f.data)));
+    textA=textsA.join('
+
+--- NÆSTE DOKUMENT ---
+
+');
+    textB=textsB.join('
+
+--- NÆSTE DOKUMENT ---
+
+');
+  }catch(e){if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;if(statusEl)statusEl.style.color='var(--danger)';return;}
   const MAX_CHARS=60000;
   if(textA.length>MAX_CHARS)textA=textA.substring(0,MAX_CHARS)+'\n[afkortet]';
   if(textB.length>MAX_CHARS)textB=textB.substring(0,MAX_CHARS)+'\n[afkortet]';
@@ -721,14 +796,35 @@ function ico(s){if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1
 function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':'dp';}
 function inibBadge(type){const label=type==='inib'?'Ikke nævnt':'Undtaget';const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;}
 
-function buildResultHtml(d){
+function buildResultHtml(d,prefs){
+  prefs=prefs||{favorites:[],sort_order:[]};
+  window._prefs=prefs;
   const aW=d.coverage.filter(c=>c.winner==='a').length;
   const bW=d.coverage.filter(c=>c.winner==='b').length;
   const eq=d.coverage.filter(c=>c.winner==='equal').length;
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
   const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
   const topRank=c=>{if(c.b_status==='no'||c.b_status==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));return r!==-1?r+1:null;};
-  const rows=d.coverage.map(c=>{
+
+  // Apply saved sort order and favorites
+  let coverage=[...d.coverage];
+  if(prefs.sort_order&&prefs.sort_order.length>0){
+    const orderMap={};prefs.sort_order.forEach((cat,i)=>orderMap[cat]=i);
+    coverage.sort((a,b)=>{
+      const ai=orderMap[a.category]!==undefined?orderMap[a.category]:999;
+      const bi=orderMap[b.category]!==undefined?orderMap[b.category]:999;
+      return ai-bi;
+    });
+  }
+  // Favorites always on top
+  if(prefs.favorites&&prefs.favorites.length>0){
+    const favSet=new Set(prefs.favorites);
+    const favs=coverage.filter(c=>favSet.has(c.category));
+    const rest=coverage.filter(c=>!favSet.has(c.category));
+    coverage=[...favs,...rest];
+  }
+
+  const rows=coverage.map((c,rowIdx)=>{
     const isTop=isTopA(c);const rank=topRank(c);
     const aCls=dotCls(c.a_status);const aTop=isTop?' is-top':'';
     let aBadges=`<div class="cv-badges">`;
@@ -740,6 +836,9 @@ function buildResultHtml(d){
     const cat=c.category.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const coA=d.companyA.replace(/'/g,"\\'");const coB=d.companyB.replace(/'/g,"\\'");
     const fbBtn=`<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}')">⚑ Giv feedback</button>`;
+    const isFav=window._prefs&&window._prefs.favorites&&window._prefs.favorites.includes(c.category);
+    const favBtn=`<button class="fav-btn${isFav?' active':''}" onclick="toggleFav('${cat}','${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" title="${isFav?'Fjern favorit':'Tilføj favorit'}">★</button>`;
+    const dragHandle=`<span class="drag-handle" draggable="true" onmousedown="startRowDrag(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')">⋮⋮</span>`;
     const bCls=dotCls(c.b_status);const bWeak=c.winner==='a'?' is-yours-weak':'';
     let bBadges=`<div class="cv-badges">`;
     if(c.b_status==='inib'||c.b_status==='no')bBadges+=inibBadge(c.b_status);
@@ -747,7 +846,7 @@ function buildResultHtml(d){
     else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.b_detail.substring(0,200)}${c.b_detail.length>120?'...':''}</div></div>`;
     bBadges+=`</div>`;
     const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
-    return`<tr><td><div class="cv-cell${aTop}"><div class="cv-cat"><div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div><div class="cv-det">${c.a_detail}</div>${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div><div class="cv-det">${c.b_detail}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
+    return`<tr class="${isFav?'fav-row':''}" data-category="${cat}" data-row="${rowIdx}"><td><div class="cv-cell${aTop}"><div class="cv-cat">${dragHandle}${favBtn}<div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}</div><div class="cv-det">${c.a_detail}</div>${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div><div class="cv-det">${c.b_detail}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
   }).join('');
   const p=d.pitch;
   return`<div class="tabs"><button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button><button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button><button class="tab" id="t3" onclick="sw('send')">Send til kunde</button></div>
@@ -831,6 +930,76 @@ async function sendGeneralFb(btn){
   ok.style.display='flex';
   btn.disabled=false;btn.textContent='Send feedback';
   setTimeout(()=>ok.style.display='none',4000);
+}
+
+// ============================================================
+// FAVORITES & ROW SORTING
+// ============================================================
+
+async function toggleFav(category, nameA, nameB, type){
+  const prefs=window._prefs||{favorites:[],sort_order:[]};
+  const idx=prefs.favorites.indexOf(category);
+  if(idx===-1)prefs.favorites.push(category);
+  else prefs.favorites.splice(idx,1);
+  window._prefs=prefs;
+  await savePreferences(nameA,nameB,type,prefs.favorites,prefs.sort_order);
+  // Re-render
+  const d=allResults[type];
+  if(d){
+    const container=document.getElementById('tab-'+type);
+    if(container){container.innerHTML=buildResultHtml(d,prefs);initCoach(d);}
+  }
+}
+
+let dragState={};
+function startRowDrag(event, rowIdx, nameA, nameB, type){
+  dragState={rowIdx,nameA,nameB,type,startY:event.clientY};
+  document.addEventListener('mousemove',onRowDragMove,{once:false});
+  document.addEventListener('mouseup',onRowDragEnd,{once:true});
+}
+
+function onRowDragMove(event){
+  if(!dragState.type)return;
+  const rows=document.querySelectorAll('tr[data-row]');
+  rows.forEach(row=>row.classList.remove('drag-over'));
+  const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('tr[data-row]');
+  if(target)target.classList.add('drag-over');
+}
+
+async function onRowDragEnd(event){
+  document.removeEventListener('mousemove',onRowDragMove);
+  const{rowIdx,nameA,nameB,type}=dragState;
+  dragState={};
+  const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('tr[data-row]');
+  if(!target||!type)return;
+  const targetIdx=parseInt(target.dataset.row);
+  if(isNaN(targetIdx)||targetIdx===rowIdx)return;
+
+  const d=allResults[type];
+  if(!d)return;
+  const prefs=window._prefs||{favorites:[],sort_order:[]};
+  // Build current order
+  let coverage=[...d.coverage];
+  if(prefs.sort_order&&prefs.sort_order.length>0){
+    const orderMap={};prefs.sort_order.forEach((cat,i)=>orderMap[cat]=i);
+    coverage.sort((a,b)=>(orderMap[a.category]??999)-(orderMap[b.category]??999));
+  }
+  if(prefs.favorites&&prefs.favorites.length>0){
+    const favSet=new Set(prefs.favorites);
+    const favs=coverage.filter(c=>favSet.has(c.category));
+    const rest=coverage.filter(c=>!favSet.has(c.category));
+    coverage=[...favs,...rest];
+  }
+  // Move row
+  const [moved]=coverage.splice(rowIdx,1);
+  coverage.splice(targetIdx,0,moved);
+  prefs.sort_order=coverage.map(c=>c.category);
+  window._prefs=prefs;
+  await savePreferences(nameA,nameB,type,prefs.favorites,prefs.sort_order);
+  // Re-render
+  const container=document.getElementById('tab-'+type);
+  if(container){container.innerHTML=buildResultHtml(d,prefs);initCoach(d);}
+  document.querySelectorAll('tr[data-row]').forEach(r=>r.classList.remove('drag-over'));
 }
 
 buildMenus();
