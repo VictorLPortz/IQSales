@@ -175,20 +175,45 @@ async function init(){
 
 async function loadUsers(){
   const token=getToken();
-  const res=await fetch(URL+'/rest/v1/profiles?select=*&order=created_at.desc',{
+  const profRes=await fetch(URL+'/rest/v1/profiles?select=*&order=created_at.desc',{
     headers:{'apikey':KEY,'Authorization':'Bearer '+token}
   });
-  const profiles=await res.json();
-  if(!Array.isArray(profiles)){document.getElementById('user-table').innerHTML='<tr><td colspan="6"><div class="empty">Ingen brugere fundet</div></td></tr>';return;}
-  document.getElementById('user-count').textContent=profiles.length+' bruger'+(profiles.length!==1?'e':'');
-  document.getElementById('user-table').innerHTML=profiles.map(p=>`
+  const profiles=await profRes.json();
+  const profileMap={};
+  if(Array.isArray(profiles))profiles.forEach(p=>profileMap[p.id]=p);
+
+  const authRes=await fetch(URL+'/auth/v1/admin/users?per_page=200',{
+    headers:{'apikey':KEY,'Authorization':'Bearer '+token}
+  });
+  const authData=await authRes.json();
+  const authUsers=authData.users||[];
+
+  const merged=authUsers.map(u=>{
+    const p=profileMap[u.id]||{};
+    return{
+      id:u.id,
+      email:u.email||p.email||'—',
+      full_name:p.full_name||u.user_metadata?.full_name||'—',
+      department:p.department||'—',
+      role:p.role||'seller',
+      created_at:u.created_at||p.created_at,
+      last_sign_in:u.last_sign_in_at,
+      has_profile:!!profileMap[u.id]
+    };
+  }).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+
+  document.getElementById('user-count').textContent=merged.length+' bruger'+(merged.length!==1?'e':'');
+  document.getElementById('user-table').innerHTML=merged.map(p=>`
     <tr>
-      <td><strong>${p.full_name||'—'}</strong></td>
-      <td style="color:var(--muted)">${p.email||'—'}</td>
-      <td>${p.department||'—'}</td>
+      <td><strong>${p.full_name}</strong>${!p.has_profile?'<span style="font-size:10px;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:10px;margin-left:6px">Mangler profil</span>':''}</td>
+      <td style="color:var(--muted)">${p.email}</td>
+      <td>${p.department}</td>
       <td><span class="badge badge-${p.role}">${p.role==='admin'?'Admin':'Sælger'}</span></td>
-      <td style="color:var(--muted);font-size:12px">${p.created_at?new Date(p.created_at).toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'}):''}</td>
-      <td><button class="btn-edit" onclick="openEdit('${p.id}','${(p.full_name||"").replace(/'/g,"\'")}','${(p.email||"").replace(/'/g,"\'")}','${(p.department||"").replace(/'/g,"\'")}','${p.role||"seller"}')">Rediger</button><button class="btn-danger" onclick="deleteUser('${p.id}','${(p.full_name||p.email).replace(/'/g,"\\'")}')">Slet</button></td>
+      <td style="color:var(--muted);font-size:12px">${p.last_sign_in?new Date(p.last_sign_in).toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'}):'Aldrig logget ind'}</td>
+      <td>
+        <button class="btn-edit" onclick="openEdit('${p.id}','${(p.full_name||'').replace(/'/g,"\'")}','${p.email.replace(/'/g,"\'")}','${(p.department||'').replace(/'/g,"\'")}','${p.role}')">Rediger</button>
+        <button class="btn-danger" onclick="deleteUser('${p.id}','${(p.full_name||p.email).replace(/'/g,"\'")}')">Slet</button>
+      </td>
     </tr>`).join('');
 }
 
@@ -202,18 +227,13 @@ async function inviteUser(){
   if(pw.length<6){toast('Kodeord skal være mindst 6 tegn','err');return;}
   btn.disabled=true;btn.textContent='Opretter...';
   try{
-    const res=await fetch(URL+'/auth/v1/admin/users',{
+    const res=await fetch('/api/create-user',{
       method:'POST',
-      headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+getToken()},
-      body:JSON.stringify({email,password:pw,email_confirm:true,user_metadata:{full_name:name}})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},
+      body:JSON.stringify({email,password:pw,full_name:name,department:dept||null,role:'seller'})
     });
     const data=await res.json();
-    if(!res.ok)throw new Error(data.message||'Fejl');
-    await fetch(URL+'/rest/v1/profiles',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+getToken(),'Prefer':'return=minimal'},
-      body:JSON.stringify({id:data.id,email,full_name:name,department:dept||null,role:'seller'})
-    });
+    if(!res.ok)throw new Error(data.error||'Fejl');
     toast('✓ '+name+' er oprettet','ok');
     document.getElementById('inv-name').value='';
     document.getElementById('inv-email').value='';
@@ -266,11 +286,11 @@ async function saveEdit(){
   const pw=document.getElementById('edit-pw').value.trim();
   if(!name||!email){toast('Navn og email er påkrævet','err');return;}
   const token=getToken();
-  // Update profile
-  const r=await fetch(URL+'/rest/v1/profiles?id=eq.'+id,{
-    method:'PATCH',
-    headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+token,'Prefer':'return=minimal'},
-    body:JSON.stringify({full_name:name,email:email,department:dept||null,role:role})
+  // Upsert profile (create if missing, update if exists)
+  const r=await fetch(URL+'/rest/v1/profiles',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+token,'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({id:id,full_name:name,email:email,department:dept||null,role:role})
   });
   if(!r.ok){toast('Kunne ikke opdatere profil','err');return;}
   // Update password if provided
