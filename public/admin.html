@@ -56,6 +56,20 @@ tr:hover td{background:#FAFAFA}
 .btn-save{flex:1;padding:9px;background:var(--accent2);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;font-family:"DM Sans",sans-serif;cursor:pointer}
 .btn-cancel{padding:9px 16px;background:transparent;border:1.5px solid var(--border);border-radius:var(--rs);font-size:13px;cursor:pointer;font-family:"DM Sans",sans-serif;color:var(--muted)}
 .btn-edit{padding:5px 10px;background:transparent;color:var(--accent2);border:1px solid #A7D7B8;border-radius:6px;font-size:12px;cursor:pointer;font-family:"DM Sans",sans-serif;margin-right:4px}
+.history-row{display:none;background:#F8F7FF}
+.history-row.open{display:table-row}
+.history-inline{padding:12px 16px}
+.history-timeline{display:flex;flex-wrap:wrap;gap:8px}
+.history-chip{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #C7D2FE;border-radius:8px;padding:6px 12px;font-size:12px}
+.history-chip-dot{width:8px;height:8px;border-radius:50%;background:#6366F1;flex-shrink:0}
+.history-chip-date{font-weight:500;color:var(--text)}
+.history-chip-ago{color:var(--muted)}
+.history-chip.latest{border-color:#6366F1;background:#EEF2FF}
+.history-empty{color:var(--muted);font-size:13px;font-style:italic;padding:4px 0}
+tr.user-row{cursor:pointer}
+tr.user-row:hover td{background:#FAFAFA}
+tr.user-row td:first-child::before{content:'▶';font-size:9px;color:var(--muted);margin-right:8px;transition:transform .2s;display:inline-block}
+tr.user-row.expanded td:first-child::before{transform:rotate(90deg)}
 .btn-edit:hover{background:var(--accent-light)}
 </style>
 </head>
@@ -186,16 +200,19 @@ async function loadUsers(){
   }
   document.getElementById('user-count').textContent=profiles.length+' bruger'+(profiles.length!==1?'e':'');
   document.getElementById('user-table').innerHTML=profiles.map(p=>`
-    <tr>
+    <tr class="user-row" id="row-${p.id}" onclick="toggleHistory('${p.id}','${(p.email||'').replace(/'/g,"\'")}')">
       <td><strong>${p.full_name||'—'}</strong></td>
       <td style="color:var(--muted)">${p.email||'—'}</td>
       <td>${p.department||'—'}</td>
       <td><span class="badge badge-${p.role}">${p.role==='admin'?'Admin':'Sælger'}</span></td>
       <td style="color:var(--muted);font-size:12px">${p.created_at?new Date(p.created_at).toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'}):''}</td>
-      <td>
+      <td onclick="event.stopPropagation()">
         <button class="btn-edit" onclick="openEdit('${p.id}','${(p.full_name||'').replace(/'/g,"\'")}','${(p.email||'').replace(/'/g,"\'")}','${(p.department||'').replace(/'/g,"\'")}','${p.role||'seller'}')">Rediger</button>
         <button class="btn-danger" onclick="deleteUser('${p.id}','${(p.full_name||p.email||'').replace(/'/g,"\'")}')">Slet</button>
       </td>
+    </tr>
+    <tr class="history-row" id="history-${p.id}">
+      <td colspan="6"><div class="history-inline" id="history-content-${p.id}"><div class="history-empty">Klik for at indlæse historik...</div></div></td>
     </tr>`).join('');
 }
 
@@ -287,6 +304,46 @@ async function saveEdit(){
   toast('✓ Bruger opdateret','ok');
   closeEdit();
   await loadUsers();
+}
+
+async function toggleHistory(userId, email){
+  const row=document.getElementById('row-'+userId);
+  const histRow=document.getElementById('history-'+userId);
+  const content=document.getElementById('history-content-'+userId);
+  const isOpen=histRow.classList.contains('open');
+
+  // Close all other open rows
+  document.querySelectorAll('.history-row.open').forEach(r=>r.classList.remove('open'));
+  document.querySelectorAll('.user-row.expanded').forEach(r=>r.classList.remove('expanded'));
+
+  if(isOpen)return;
+  histRow.classList.add('open');
+  row.classList.add('expanded');
+  content.innerHTML='<div class="history-empty">Indlæser...</div>';
+
+  try{
+    const res=await fetch(URL+'/rest/v1/login_history?user_id=eq.'+userId+'&order=logged_in_at.desc&limit=10',{
+      headers:{'apikey':KEY,'Authorization':'Bearer '+getToken()}
+    });
+    const rows=await res.json();
+    if(!Array.isArray(rows)||rows.length===0){
+      content.innerHTML='<div class="history-empty">Ingen login-historik — brugeren har ikke logget ind endnu.</div>';
+      return;
+    }
+    const now=new Date();
+    content.innerHTML='<div style="font-size:11px;font-weight:600;color:#6366F1;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Seneste '+rows.length+' logins</div><div class="history-timeline">'+rows.map((r,i)=>{
+      const d=new Date(r.logged_in_at);
+      const dateStr=d.toLocaleDateString('da-DK',{weekday:'short',day:'numeric',month:'short'});
+      const timeStr=d.toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'});
+      const diffMs=now-d;
+      const diffDays=Math.floor(diffMs/(1000*60*60*24));
+      const diffHours=Math.floor(diffMs/(1000*60*60));
+      const ago=diffHours<1?'Lige nu':diffHours<24?diffHours+' t siden':diffDays===1?'I går':diffDays+' dage siden';
+      return'<div class="history-chip'+(i===0?' latest':'')+'"><div class="history-chip-dot"></div><span class="history-chip-date">'+dateStr+' kl. '+timeStr+'</span><span class="history-chip-ago">'+ago+'</span></div>';
+    }).join('')+'</div>';
+  }catch(e){
+    content.innerHTML='<div class="history-empty">Kunne ikke hente historik.</div>';
+  }
 }
 
 init();
