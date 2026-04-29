@@ -719,16 +719,8 @@ async function analyzeType(type,nameA,nameB){
     const filesB=Array.isArray(docsB[type])?docsB[type]:[docsB[type]];
     const textsA=await Promise.all(filesA.map(f=>extractPdfText(f.data)));
     const textsB=await Promise.all(filesB.map(f=>extractPdfText(f.data)));
-    textA=textsA.join('
-
---- NÆSTE DOKUMENT ---
-
-');
-    textB=textsB.join('
-
---- NÆSTE DOKUMENT ---
-
-');
+    textA=textsA.join('\n\n--- NÆSTE DOKUMENT ---\n\n');
+    textB=textsB.join('\n\n--- NÆSTE DOKUMENT ---\n\n');
   }catch(e){if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;if(statusEl)statusEl.style.color='var(--danger)';return;}
   const MAX_CHARS=60000;
   if(textA.length>MAX_CHARS)textA=textA.substring(0,MAX_CHARS)+'\n[afkortet]';
