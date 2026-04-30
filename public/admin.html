@@ -589,13 +589,16 @@ function renderFeedback(){
 function showMoreFeedback(){fbLimit+=20;renderFeedback();}
 
 function exportToExcel(data,filename){
+  if(!data||data.length===0){toast('Ingen data at eksportere','err');return;}
   const headers=Object.keys(data[0]);
-  const rows=[headers,...data.map(r=>headers.map(h=>r[h]||''))];
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('
-');
-  const BOM='﻿';
-  const blob=new Blob([BOM+csv],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename+'.csv';a.click();
+  const escape=v=>'"'+String(v||'').replace(/"/g,'""')+'"';
+  const rows=[headers.map(escape),...data.map(r=>headers.map(h=>escape(r[h])))];
+  const csv='\uFEFF'+rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=window.URL.createObjectURL(blob);
+  a.download=filename+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
 function exportFeedback(){
