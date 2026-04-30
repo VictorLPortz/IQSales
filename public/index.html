@@ -539,16 +539,16 @@ function getUserId(){
   return'anonymous';
 }
 
-async async function buildMenus(){
+async function buildMenus(){
   let companyRanks={};
-  try{
-    const token=getAuthToken();
-    if(token){
-      const res=await fetch(SUPABASE_URL+'/rest/v1/analyses?select=company_a,company_b',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}});
-      const data=await res.json();
-      if(Array.isArray(data)){data.forEach(a=>{if(a.company_a)companyRanks[a.company_a]=(companyRanks[a.company_a]||0)+1;if(a.company_b)companyRanks[a.company_b]=(companyRanks[a.company_b]||0)+1;});}
-    }
-  }catch(e){}
+  // Load ranks async and rebuild menus when ready
+  const token=getAuthToken();
+  if(token){
+    fetch(SUPABASE_URL+'/rest/v1/analyses?select=company_a,company_b',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}})
+    .then(r=>r.json()).then(data=>{
+      if(Array.isArray(data)){data.forEach(a=>{if(a.company_a)companyRanks[a.company_a]=(companyRanks[a.company_a]||0)+1;if(a.company_b)companyRanks[a.company_b]=(companyRanks[a.company_b]||0)+1;});buildMenusWithRanks(companyRanks);}
+    }).catch(()=>{});
+  }
 
   const sorted=[...COMPANIES].sort((a,b)=>{const diff=(companyRanks[b]||0)-(companyRanks[a]||0);return diff!==0?diff:a.localeCompare(b,'da');});
   const popular=sorted.filter(n=>companyRanks[n]>0);
@@ -591,6 +591,27 @@ async async function buildMenus(){
   });
   updateCddDisplay('a');
   updateCddDisplay('b');
+}
+
+function buildMenusWithRanks(companyRanks){
+  const sorted=[...COMPANIES].sort((a,b)=>{const diff=(companyRanks[b]||0)-(companyRanks[a]||0);return diff!==0?diff:a.localeCompare(b,'da');});
+  const popular=sorted.filter(n=>companyRanks[n]>0);
+  const rest=sorted.filter(n=>!companyRanks[n]);
+  ['a','b'].forEach(side=>{
+    const menu=document.getElementById('cdd-'+side+'-menu');
+    if(!menu)return;
+    const searchDiv=menu.querySelector('.cdd-search');
+    let optionsHtml='';
+    if(popular.length>0){
+      optionsHtml+='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Hyppigt brugte</div>';
+      optionsHtml+=popular.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span><span style="font-size:10px;color:var(--muted);margin-left:auto;padding-left:8px">'+companyRanks[name]+'x</span></div>').join('');
+      if(rest.length>0){optionsHtml+='<hr class="cdd-divider"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Alle selskaber</div>';optionsHtml+=rest.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');}
+    }else{optionsHtml=sorted.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');}
+    optionsHtml+='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
+    menu.innerHTML='';
+    if(searchDiv)menu.appendChild(searchDiv);
+    menu.insertAdjacentHTML('beforeend',optionsHtml);
+  });
 }
 
 function toggleCdd(side){const trigger=document.getElementById('cdd-'+side+'-trigger');const menu=document.getElementById('cdd-'+side+'-menu');const isOpen=trigger.classList.contains('open');document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));if(!isOpen){trigger.classList.add('open');menu.classList.add('open');}}
