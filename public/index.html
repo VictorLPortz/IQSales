@@ -539,7 +539,7 @@ function getUserId(){
   return'anonymous';
 }
 
-async function buildMenus(){
+async async function buildMenus(){
   let companyRanks={};
   try{
     const token=getAuthToken();
@@ -556,17 +556,37 @@ async function buildMenus(){
 
   ['a','b'].forEach(side=>{
     const menu=document.getElementById('cdd-'+side+'-menu');
-    const searchHtml='<div class="cdd-search"><input type="text" placeholder="Søg selskab..." oninput="filterCdd(''+side+'',this.value)" onclick="event.stopPropagation()"></div>';
+
+    // Build search input safely
+    const searchDiv=document.createElement('div');
+    searchDiv.className='cdd-search';
+    const searchInput=document.createElement('input');
+    searchInput.type='text';
+    searchInput.placeholder='Søg selskab...';
+    searchInput.oninput=function(){filterCdd(side,this.value);};
+    searchInput.onclick=function(e){e.stopPropagation();};
+    searchDiv.appendChild(searchInput);
+
+    // Build options HTML
     let optionsHtml='';
     if(popular.length>0){
       optionsHtml+='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Hyppigt brugte</div>';
-      optionsHtml+=popular.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span>'+(companyRanks[name]?'<span style="font-size:10px;color:var(--muted);margin-left:auto;padding-left:8px">'+companyRanks[name]+'×</span>':'')+'</div>').join('');
-      if(rest.length>0){optionsHtml+='<hr class="cdd-divider"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Alle selskaber</div>';optionsHtml+=rest.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');}
+      optionsHtml+=popular.map(name=>{
+        const count=companyRanks[name]?'<span style="font-size:10px;color:var(--muted);margin-left:auto;padding-left:8px">'+companyRanks[name]+'x</span>':'';
+        return'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span>'+count+'</div>';
+      }).join('');
+      if(rest.length>0){
+        optionsHtml+='<hr class="cdd-divider"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Alle selskaber</div>';
+        optionsHtml+=rest.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
+      }
     }else{
       optionsHtml=sorted.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
     }
-    const otherHtml='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
-    menu.innerHTML=searchHtml+optionsHtml+otherHtml;
+    optionsHtml+='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
+
+    menu.innerHTML='';
+    menu.appendChild(searchDiv);
+    menu.insertAdjacentHTML('beforeend',optionsHtml);
     menu.addEventListener('click',e=>{const opt=e.target.closest('.cdd-option');if(!opt)return;selectCdd(opt.dataset.side,opt.dataset.name);});
   });
   updateCddDisplay('a');
