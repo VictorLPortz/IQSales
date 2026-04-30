@@ -235,6 +235,14 @@ input:focus,select:focus{border-color:var(--accent2)}
       <div class="qs"><div class="qs-val" id="st-active-week">—</div><div class="qs-lbl">Aktive denne uge</div></div>
     </div>
 
+    <!-- API OMKOSTNINGER -->
+    <div class="quick-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+      <div class="qs"><div class="qs-val" id="api-today">—</div><div class="qs-lbl">API-omk. i dag</div><div class="qs-sub" id="api-today-calls"></div></div>
+      <div class="qs"><div class="qs-val" id="api-month">—</div><div class="qs-lbl">API-omk. denne måned</div><div class="qs-sub" id="api-month-calls"></div></div>
+      <div class="qs"><div class="qs-val" id="api-saved">—</div><div class="qs-lbl">Besparelse via cache</div><div class="qs-sub" style="color:#15803D" id="api-saved-pct"></div></div>
+      <div class="qs"><div class="qs-val" id="api-projected">—</div><div class="qs-lbl">Estimeret månedsforbrug</div><div class="qs-sub" id="api-model-note">Sonnet ~0,45kr/kald</div></div>
+    </div>
+
     <div class="grid2">
       <!-- ANALYSER PER DAG DENNE UGE -->
       <div class="card">
@@ -271,11 +279,19 @@ input:focus,select:focus{border-color:var(--accent2)}
       <div class="card-header">
         <div><h2>Sælger aktivitet</h2><p>Klik på en sælger for at se detaljer</p></div>
         <div style="display:flex;gap:8px">
-          <select id="lb-period" onchange="loadLeaderboard()" style="width:auto;font-size:12px;padding:5px 10px">
-            <option value="7">Seneste 7 dage</option>
-            <option value="30">Seneste 30 dage</option>
-            <option value="90">Seneste 90 dage</option>
-          </select>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="lb-period" onchange="onPeriodChange()" style="width:auto;font-size:12px;padding:5px 10px">
+              <option value="7">Seneste 7 dage</option>
+              <option value="30">Seneste 30 dage</option>
+              <option value="90">Seneste 90 dage</option>
+              <option value="custom">Valgfri periode</option>
+            </select>
+            <div id="custom-period" style="display:none;gap:6px;align-items:center;display:none">
+              <input type="date" id="date-from" style="font-size:12px;padding:4px 8px;width:130px" onchange="loadLeaderboard()">
+              <span style="font-size:12px;color:var(--muted)">→</span>
+              <input type="date" id="date-to" style="font-size:12px;padding:4px 8px;width:130px" onchange="loadLeaderboard()">
+            </div>
+          </div>
         </div>
       </div>
       <div class="card-body" style="padding:0">
@@ -288,12 +304,31 @@ input:focus,select:focus{border-color:var(--accent2)}
 
     <!-- FEEDBACK OVERSIGT -->
     <div class="card">
-      <div class="card-header"><div><h2>Seneste feedback fra sælgerne</h2><p>Brug dette til at forbedre AI-prompten løbende</p></div></div>
+      <div class="card-header">
+        <div><h2>Feedback fra sælgerne</h2><p>Brug dette til at forbedre AI-prompten løbende</p></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="exportFeedback()" style="font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer;font-family:'DM Sans',sans-serif">📥 Eksporter Excel</button>
+        </div>
+      </div>
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px">
+        <select id="fb-filter-type" onchange="renderFeedback()" style="width:auto;font-size:12px;padding:5px 10px">
+          <option value="">Alle typer</option>
+          <option value="forkert_info">Forkert info</option>
+          <option value="mangler_info">Mangler info</option>
+          <option value="forkert_fordel">Ikke reel fordel</option>
+          <option value="andet">Andet</option>
+        </select>
+        <input type="text" id="fb-search" placeholder="Søg i feedback..." oninput="renderFeedback()" style="font-size:12px;padding:5px 10px;max-width:200px">
+      </div>
       <div class="card-body" style="padding:0">
         <table>
           <thead><tr><th>Dato</th><th>Selskaber</th><th>Kategori</th><th>Type</th><th>Kommentar</th></tr></thead>
           <tbody id="feedback-table"><tr><td colspan="5"><div class="empty">Indlæser...</div></td></tr></tbody>
         </table>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--muted)" id="fb-showing"></span>
+          <button id="fb-more-btn" onclick="showMoreFeedback()" style="font-size:12px;padding:6px 14px;border:1px solid var(--accent2);border-radius:6px;background:transparent;color:var(--accent2);cursor:pointer;font-family:'DM Sans',sans-serif;display:none">Vis flere</button>
+        </div>
       </div>
     </div>
 
@@ -509,13 +544,78 @@ async function toggleUserDetail(userId){
 }
 
 // ===== STATS TAB =====
+let allFeedback=[];
+let fbLimit=20;
+
+function onPeriodChange(){
+  const val=document.getElementById('lb-period').value;
+  const customDiv=document.getElementById('custom-period');
+  if(val==='custom'){
+    customDiv.style.display='flex';
+    const today=new Date().toISOString().split('T')[0];
+    const monthAgo=new Date(Date.now()-30*24*60*60*1000).toISOString().split('T')[0];
+    document.getElementById('date-from').value=monthAgo;
+    document.getElementById('date-to').value=today;
+  }else{
+    customDiv.style.display='none';
+    loadLeaderboard();
+  }
+}
+
+function renderFeedback(){
+  const typeFilter=document.getElementById('fb-filter-type').value;
+  const search=document.getElementById('fb-search').value.toLowerCase();
+  const filtered=allFeedback.filter(f=>{
+    if(f.issue_type==='generel'||f.issue_type?.startsWith('coach'))return false;
+    if(typeFilter&&f.issue_type!==typeFilter)return false;
+    if(search&&!(f.category||'').toLowerCase().includes(search)&&!(f.comment||'').toLowerCase().includes(search)&&!(f.company_b||'').toLowerCase().includes(search))return false;
+    return true;
+  });
+  const shown=filtered.slice(0,fbLimit);
+  document.getElementById('feedback-table').innerHTML=shown.length===0?'<tr><td colspan="5"><div class="empty">Ingen feedback matcher filteret</div></td></tr>':
+    shown.map(f=>`
+      <tr>
+        <td style="font-size:11px;color:var(--muted)">${new Date(f.created_at).toLocaleDateString('da-DK',{day:'numeric',month:'short'})}</td>
+        <td style="font-size:12px">${f.company_a} vs. ${f.company_b}</td>
+        <td style="font-size:12px">${f.category||'—'}</td>
+        <td><span class="badge ${f.issue_type==='forkert_info'?'badge-red':f.issue_type==='mangler_info'?'badge-gray':'badge-green'}">${(f.issue_type||'—').replace(/_/g,' ')}</span></td>
+        <td style="font-size:12px;color:var(--muted);max-width:240px">${f.comment||'—'}</td>
+      </tr>`).join('');
+  document.getElementById('fb-showing').textContent='Viser '+shown.length+' af '+filtered.length+' poster';
+  const moreBtn=document.getElementById('fb-more-btn');
+  moreBtn.style.display=filtered.length>fbLimit?'block':'none';
+}
+
+function showMoreFeedback(){fbLimit+=20;renderFeedback();}
+
+function exportToExcel(data,filename){
+  const headers=Object.keys(data[0]);
+  const rows=[headers,...data.map(r=>headers.map(h=>r[h]||''))];
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('
+');
+  const BOM='﻿';
+  const blob=new Blob([BOM+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename+'.csv';a.click();
+}
+
+function exportFeedback(){
+  const data=allFeedback.filter(f=>f.issue_type!=='generel'&&!f.issue_type?.startsWith('coach')).map(f=>({
+    Dato:new Date(f.created_at).toLocaleDateString('da-DK'),
+    Selskab_A:f.company_a,Selskab_B:f.company_b,
+    Forsikringstype:f.insurance_type,Kategori:f.category,
+    Type:f.issue_type,Kommentar:f.comment||''
+  }));
+  exportToExcel(data,'IQSales_Feedback_'+new Date().toLocaleDateString('da-DK').replace(/\//g,'-'));
+  toast('✓ Feedback eksporteret','ok');
+}
+
 async function loadStats(){
   const token=getToken();
   const [analysesRes,profilesRes,cacheRes,feedbackRes]=await Promise.all([
-    fetch(URL+'/rest/v1/analyses?select=company_a,company_b,insurance_type,user_id,created_at&order=created_at.desc&limit=1000',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
+    fetch(URL+'/rest/v1/analyses?select=company_a,company_b,insurance_type,user_id,created_at&order=created_at.desc&limit=2000',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
     fetch(URL+'/rest/v1/profiles?select=id,full_name,department,role',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
     fetch(URL+'/rest/v1/analysis_cache?select=company_a,company_b,insurance_type,created_at',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
-    fetch(URL+'/rest/v1/feedback?select=*&order=created_at.desc&limit=30',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}})
+    fetch(URL+'/rest/v1/feedback?select=*&order=created_at.desc&limit=500',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}})
   ]);
 
   const analyses=await analysesRes.json();
@@ -538,6 +638,27 @@ async function loadStats(){
   const weekAgo=new Date(Date.now()-7*24*60*60*1000).toISOString();
   const activeWeek=new Set(arr.filter(a=>a.created_at>=weekAgo).map(a=>a.user_id)).size;
   document.getElementById('st-active-week').textContent=activeWeek;
+
+  // API COST CALCULATIONS (Sonnet ~0.45 kr/kald)
+  const COST_PER_CALL=0.45;
+  const today2=new Date().toISOString().split('T')[0];
+  const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString();
+  const todayCalls=arr.filter(a=>a.created_at>=today2+'T00:00:00').length;
+  const monthCalls=arr.filter(a=>a.created_at>=monthStart).length;
+  const todayCost=(todayCalls*COST_PER_CALL).toFixed(0);
+  const monthCost=(monthCalls*COST_PER_CALL).toFixed(0);
+  const savedCalls=cArr.length;
+  const savedCost=(savedCalls*COST_PER_CALL).toFixed(0);
+  const savedPct=savedCalls+monthCalls>0?Math.round(savedCalls/(savedCalls+monthCalls)*100):0;
+  const daysInMonth=new Date().getDate();
+  const projectedCost=daysInMonth>0?Math.round(monthCalls/daysInMonth*30*COST_PER_CALL):0;
+  document.getElementById('api-today').textContent=todayCost+' kr';
+  document.getElementById('api-today-calls').textContent=todayCalls+' API-kald';
+  document.getElementById('api-month').textContent=monthCost+' kr';
+  document.getElementById('api-month-calls').textContent=monthCalls+' API-kald';
+  document.getElementById('api-saved').textContent=savedCost+' kr';
+  document.getElementById('api-saved-pct').textContent=savedPct+'% cache hit rate';
+  document.getElementById('api-projected').textContent=projectedCost+' kr';
 
   // Week chart
   const weekData=[0,0,0,0,0,0,0];
@@ -582,22 +703,25 @@ async function loadStats(){
   loadLeaderboard(arr,profMap);
 
   // Feedback
-  document.getElementById('feedback-table').innerHTML=fbArr.filter(f=>f.issue_type!=='generel'&&!f.issue_type?.startsWith('coach')).slice(0,20).map(f=>`
-    <tr>
-      <td style="font-size:11px;color:var(--muted)">${new Date(f.created_at).toLocaleDateString('da-DK',{day:'numeric',month:'short'})}</td>
-      <td style="font-size:12px">${f.company_a} vs. ${f.company_b}</td>
-      <td style="font-size:12px">${f.category||'—'}</td>
-      <td><span class="badge ${f.issue_type==='forkert_info'?'badge-red':f.issue_type==='mangler_info'?'badge-gray':'badge-green'}">${f.issue_type?.replace(/_/g,' ')||'—'}</span></td>
-      <td style="font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.comment||'—'}</td>
-    </tr>`).join('') || '<tr><td colspan="5"><div class="empty">Ingen feedback endnu</div></td></tr>';
+  allFeedback=fbArr;
+  fbLimit=20;
+  renderFeedback();
 
   window._statsData={arr,profMap};
 }
 
 function loadLeaderboard(arr,profMap){
   if(!arr){arr=window._statsData?.arr||[];profMap=window._statsData?.profMap||{};}
-  const days=parseInt(document.getElementById('lb-period')?.value||7);
-  const since=new Date(Date.now()-days*24*60*60*1000).toISOString();
+  const period=document.getElementById('lb-period')?.value||'7';
+  let since;
+  if(period==='custom'){
+    const from=document.getElementById('date-from')?.value;
+    since=from?from+'T00:00:00':new Date(Date.now()-7*24*60*60*1000).toISOString();
+    const to=document.getElementById('date-to')?.value;
+    if(to)arr=arr.filter(a=>a.created_at<=to+'T23:59:59');
+  }else{
+    since=new Date(Date.now()-parseInt(period)*24*60*60*1000).toISOString();
+  }
   const filtered=arr.filter(a=>a.created_at>=since);
   const userCount={};
   filtered.forEach(a=>{userCount[a.user_id]=(userCount[a.user_id]||0)+1;});
