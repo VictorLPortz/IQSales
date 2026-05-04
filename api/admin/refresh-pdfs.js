@@ -1,16 +1,24 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
   try {
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '');
     
@@ -24,7 +32,6 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    // Check admin role
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -32,20 +39,18 @@ module.exports = async function handler(req, res) {
       .single();
     
     if (!profile || profile.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden - Admin only' });
+      return res.status(403).json({ error: 'Admin only' });
     }
     
     console.log(`PDF refresh triggered by: ${user.email}`);
     
-    // TODO: Implement actual PDF refresh logic here
-    
     return res.status(200).json({
       success: true,
-      message: 'PDF refresh will be implemented soon'
+      message: 'Endpoint virker! PDF logic kommer næste step.'
     });
     
   } catch (error) {
-    console.error('Refresh failed:', error);
+    console.error('Error:', error);
     return res.status(500).json({
       success: false,
       error: error.message
