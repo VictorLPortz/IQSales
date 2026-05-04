@@ -2,12 +2,9 @@
 <html lang="da">
 <head>
 <meta charset="UTF-8">
-<script>
-// Only load Supabase if not already loaded by parent page
-if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/sc'+'ript>');}
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IQSales — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -592,15 +589,8 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
   
-  // Wait for supabase to load then create client
-  let sb;
-  if (window._sb) {
-    sb = window._sb;
-  } else if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } else {
-    console.error('Supabase not loaded!');
-  }
+  // Create supabase client
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
   let currentTab = 'users';
