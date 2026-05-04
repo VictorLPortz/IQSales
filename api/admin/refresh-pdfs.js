@@ -3,7 +3,7 @@
 // Manual trigger endpoint - kræver admin login
 // ========================================
 
-import { runWeeklyPdfRefresh } from '../../../lib/pdf-auto-fetch';
+import { runWeeklyPdfRefresh } from '../../lib/pdf-auto-fetch';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
