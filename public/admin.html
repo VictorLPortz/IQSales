@@ -709,7 +709,7 @@
     // Seller Activity with NAME + DEPARTMENT
     const { data: loginHistory } = await sb
       .from('login_history')
-      .select('*, profiles(full_name, department)')
+      .select('*')
       .order('logged_in_at', { ascending: false })
       .limit(20);
 
@@ -721,8 +721,8 @@
         <div class="activity-entry">
           <div class="activity-dot"></div>
           <div style="flex: 1;">
-            <div><strong>${h.profiles?.full_name || h.full_name || h.email}</strong> loggede ind</div>
-            <div class="activity-user">${h.profiles?.department || 'Ingen afdeling'}</div>
+            <div><strong>${h.full_name || h.email || 'Anonym'}</strong> loggede ind</div>
+            <div class="activity-user">Ingen afdeling</div>
           </div>
           <span class="activity-time">${formatDate(h.logged_in_at)}</span>
         </div>
@@ -732,7 +732,7 @@
     // Feedback with NAME + DEPARTMENT
     const { data: feedback } = await sb
       .from('feedback')
-      .select('*, profiles(full_name, department)')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -744,8 +744,8 @@
         <div class="activity-entry">
           <div class="activity-dot"></div>
           <div style="flex: 1;">
-            <div><strong>${f.profiles?.full_name || 'Anonym'}</strong></div>
-            <div class="activity-user">${f.profiles?.department || 'Ingen afdeling'}</div>
+            <div><strong>Anonym</strong></div>
+            <div class="activity-user">Ingen afdeling</div>
             <div style="margin-top: 4px; font-size: 13px;">${f.message || f.feedback_text || '—'}</div>
           </div>
           <span class="activity-time">${formatDate(f.created_at)}</span>
