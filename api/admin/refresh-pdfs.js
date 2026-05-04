@@ -10,7 +10,6 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Hjælpefunktion til at downloade PDF
 async function downloadPDF(url) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -20,7 +19,6 @@ async function downloadPDF(url) {
   return Buffer.from(arrayBuffer).toString('base64');
 }
 
-// Hjælpefunktion til at parse PDF med Claude
 async function parsePDFWithClaude(pdfBase64, selskab, produktType) {
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -48,14 +46,13 @@ async function parsePDFWithClaude(pdfBase64, selskab, produktType) {
 
 Returner kun den faktiske information fra dokumentet i struktureret format.`
         }
-      ],
-    }),
+      ]
+    }]
   });
 
   return message.content[0].text;
 }
 
-// Main handler
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -70,7 +67,6 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    // Auth check
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '');
     
@@ -96,7 +92,6 @@ module.exports = async function handler(req, res) {
     
     console.log(`PDF refresh started by: ${user.email}`);
     
-    // Opret parsing log
     const { data: logEntry } = await supabase
       .from('parsing_log')
       .insert({
@@ -109,7 +104,6 @@ module.exports = async function handler(req, res) {
       .select()
       .single();
     
-    // Load PDF config
     const fs = require('fs');
     const path = require('path');
     const configPath = path.join(process.cwd(), 'config', 'pdf-config.json');
@@ -120,7 +114,63 @@ module.exports = async function handler(req, res) {
     let failed = 0;
     let totalCost = 0;
     
-    // Process hver PDF
     for (const item of config.pdfs) {
       try {
-        console.log(`Pr
+        console.log(`Processing: ${item.selskab} - ${item.produkt_type}`);
+        
+        const pdfBase64 = await downloadPDF(item.url);
+        const parsedData = await parsePDFWithClaude(pdfBase64, item.selskab, item.produkt_type);
+        
+        await supabase
+          .from('insurance_terms')
+          .upsert({
+            selskab: item.selskab,
+            produkt_type: item.produkt_type,
+            full_text: parsedData,
+            parsed_at: new Date().toISOString(),
+          }, {
+            onConflict: 'selskab,produkt_type'
+          });
+        
+        successful++;
+        totalCost += 0.20;
+        
+      } catch (error) {
+        console.error(`Failed: ${item.selskab} ${item.produkt_type}:`, error);
+        failed++;
+      }
+      
+      totalProcessed++;
+    }
+    
+    await supabase
+      .from('parsing_log')
+      .update({
+        completed_at: new Date().toISOString(),
+        status: 'completed',
+        total_pdfs: totalProcessed,
+        successful_parses: successful,
+        failed_parses: failed,
+        total_cost_usd: totalCost,
+      })
+      .eq('id', logEntry.id);
+    
+    return res.status(200).json({
+      success: true,
+      message: `PDF refresh completed: ${successful} successful, ${failed} failed`,
+      stats: {
+        total: totalProcessed,
+        successful,
+        failed,
+        cost: `$${totalCost.toFixed(2)}`,
+      }
+    });
+    
+  } catch (error) {
+    console.error('Refresh failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
