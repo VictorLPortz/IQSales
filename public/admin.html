@@ -591,13 +591,15 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
 <script>
   const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
-  const supabase = window._sb || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  // Use existing supabase client if available
+  const sb = window._sb || (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
 
   let currentUser = null;
   let currentTab = 'users';
 
   async function init() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await sb.auth.getSession();
     if (!session) { window.location.href = '/login.html'; return; }
 
     currentUser = session.user;
@@ -688,11 +690,11 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
 
   async function loadStats() {
     // Users total
-    const { data: profiles } = await supabase.from('profiles').select('id, created_at');
+    const { data: profiles } = await sb.from('profiles').select('id, created_at');
     document.getElementById('statsUsersTotal').textContent = profiles?.length || 0;
 
     // Analyses total
-    const { data: analyses } = await supabase.from('analyses').select('id, created_at, user_id');
+    const { data: analyses } = await sb.from('analyses').select('id, created_at, user_id');
     document.getElementById('statsAnalysesTotal').textContent = analyses?.length || 0;
 
     // Active this week
@@ -835,7 +837,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
 
     try {
       // Get session token
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await sb.auth.getSession();
       
       const response = await fetch('/api/admin/refresh-pdfs', {
         method: 'POST',
@@ -881,7 +883,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     btn.innerHTML = '<span class="spinner"></span>Sender...';
 
     const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await sb.auth.signUp({
       email,
       password: tempPassword,
       options: {
@@ -898,7 +900,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     }
 
     if (data.user) {
-      await supabase.from('profiles').upsert({
+      await sb.from('profiles').upsert({
         id: data.user.id,
         email,
         full_name: name,
@@ -920,7 +922,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   async function deleteUser(id, name) {
     if (!confirm(`Slet ${name}? Brugeren mister adgang til IQSales.`)) return;
 
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    const { error } = await sb.from('profiles').delete().eq('id', id);
     if (error) { showToast('Kunne ikke slette bruger', 'error'); return; }
 
     showToast(`${name} er slettet`, 'success');
@@ -928,7 +930,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   }
 
   async function logout() {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     window.location.href = '/login.html';
   }
 
