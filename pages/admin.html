@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQSales — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1A3C2E;
+    --green-mid: #2D6A4F;
+    --green-light: #52B788;
+    --accent: #95D5B2;
+    --cream: #F8F6F1;
+    --text: #1A1A1A;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --surface: #fff;
+    --error: #DC2626;
+    --error-bg: #FEF2F2;
+    --success: #166534;
+    --success-bg: #F0FDF4;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Nav */
+  nav {
+    background: var(--green);
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+
+  .nav-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: #fff;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .nav-brand span { color: var(--accent); font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+
+  .nav-user { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+  .btn-logout {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+  .nav-link {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+  .nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+  /* Tabs */
+  .tabs {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+  }
+
+  .tabs-list {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+  }
+
+  .tab-button {
+    padding: 14px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-button:hover {
+    color: var(--text);
+    background: #FAFAFA;
+  }
+
+  .tab-button.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  /* Layout */
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--green); letter-spacing: -0.5px; }
+  .page-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+
+  .stat-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--green); margin-top: 4px; }
+  .stat-subtext { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-header h2 { font-size: 16px; font-weight: 600; color: var(--text); }
+  .card-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .card-body { padding: 24px; }
+
+  /* Invite form */
+  .invite-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  input[type="text"], input[type="email"], select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--green-light);
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.12);
+  }
+
+  .btn-primary {
+    padding: 10px 20px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--green-mid); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-danger {
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--error);
+    border: 1px solid #FECACA;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-danger:hover { background: var(--error-bg); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--success-bg); color: var(--success); border: 1px solid #BBF7D0; }
+  .toast.error { background: var(--error-bg); color: var(--error); border: 1px solid #FECACA; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: #FAFAFA;
+  }
+  tbody tr { border-bottom: 1px solid #F3F4F6; transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #FAFAFA; }
+  tbody td { padding: 14px 16px; font-size: 14px; vertical-align: middle; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge-admin { background: #FEF3C7; color: #92400E; }
+  .badge-seller { background: #ECFDF5; color: #065F46; }
+  .badge-ready { background: #ECFDF5; color: #065F46; }
+  .badge-error { background: #FEF2F2; color: #DC2626; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Activity entry */
+  .activity-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #F3F4F6;
+    font-size: 14px;
+  }
+  .activity-entry:last-child { border-bottom: none; }
+  .activity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-light); flex-shrink: 0; margin-top: 6px; }
+  .activity-time { color: var(--muted); font-size: 12px; margin-left: auto; flex-shrink: 0; }
+  .activity-user { color: var(--muted); font-size: 12px; }
+
+  /* PDF Status grid */
+  .pdf-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .pdf-item {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .pdf-name { font-weight: 500; }
+  .pdf-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  #authGuard { display: none; }
+</style>
+</head>
+<body>
+
+<div id="authGuard">
+  <nav>
+    <div class="nav-brand">
+      ⚡ IQSales <span>Admin</span>
+    </div>
+    <div class="nav-right">
+      <a href="/" class="nav-link">← Tilbage til app</a>
+      <span class="nav-user" id="navUser"></span>
+      <button class="btn-logout" onclick="logout()">Log ud</button>
+    </div>
+  </nav>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <ul class="tabs-list">
+      <li><button class="tab-button active" onclick="switchTab('users')">Brugerstyring</button></li>
+      <li><button class="tab-button" onclick="switchTab('stats')">Statistik & indsigt</button></li>
+      <li><button class="tab-button" onclick="switchTab('pdfs')">PDF Betingelser</button></li>
+    </ul>
+  </div>
+
+  <!-- TAB 1: Brugerstyring -->
+  <div id="tab-users" class="tab-content active">
+    <div class="container">
+      <div class="page-header">
+        <h1>Brugerstyring</h1>
+        <p>Opret og administrer adgang til IQSales</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Aktive brugere</div>
+          <div class="stat-value" id="statTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sælgere</div>
+          <div class="stat-value" id="statSellers">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Afdelinger</div>
+          <div class="stat-value" id="statDepts">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Logins i dag</div>
+          <div class="stat-value" id="statLogins">—</div>
+        </div>
+      </div>
+
+      <!-- Invite form -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Inviter ny bruger</h2>
+            <p>Brugeren modtager en email og sætter selv sin adgangskode</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="invite-grid">
+            <div class="form-group">
+              <label>Fulde navn</label>
+              <input type="text" id="inviteName" placeholder="Fornavn Efternavn">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="inviteEmail" placeholder="navn@selskab.dk">
+            </div>
+            <div class="form-group">
+              <label>Afdeling</label>
+              <select id="inviteDept">
+                <option value="">Vælg afdeling</option>
+                <option>Direkte Salg Privat Vest</option>
+                <option>Direkte Salg Privat Midt</option>
+                <option>Direkte Salg Privat Øst</option>
+                <option>Direkte Salg Privat Online</option>
+                <option>Direkte Salg Privat Sydbank Vest</option>
+                <option>Direkte Salg Privat Sydbank Øst</option>
+                <option>Salgscenter Alm Brand</option>
+                <option>Salgscenter Codan</option>
+                <option>Mødebooking</option>
+                <option>Ledelsen</option>
+              </select>
+            </div>
+            <button class="btn-primary" id="inviteBtn" onclick="inviteUser()">
+              Opret bruger
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- User list -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Alle brugere</h2>
+            <p id="userCount">Indlæser...</p>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Navn</th>
+                <th>Email</th>
+                <th>Afdeling</th>
+                <th>Rolle</th>
+                <th>Oprettet</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="userTable">
+              <tr><td colspan="6"><div class="empty-state">Indlæser brugere...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Statistik & indsigt -->
+  <div id="tab-stats" class="tab-content">
+    <div class="container">
+      <div class="page-header">
+        <h1>Statistik & indsigt</h1>
+        <p>Oversigt over aktivitet og brug af IQSales</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Brugere i alt</div>
+          <div class="stat-value" id="statsUsersTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Analyser i alt</div>
+          <div class="stat-value" id="statsAnalysesTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aktive denne uge</div>
+          <div class="stat-value" id="statsActiveThisWeek">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Gns. analysetid</div>
+          <div class="stat-value" id="statsAvgTime">—</div>
+          <div class="stat-subtext">sek per analyse</div>
+        </div>
+      </div>
+
+      <!-- Sælger aktivitet -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Sælger aktivitet</h2>
+            <p>Klik på sælgere for at se detaljer</p>
+          </div>
+        </div>
+        <div class="card-body" id="sellerActivity">
+          <div class="empty-state">Indlæser aktivitet...</div>
+        </div>
+      </div>
+
+      <!-- Feedback fra sælgere -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Feedback fra sælgere</h2>
+            <p>Seneste feedback og kommentarer</p>
+          </div>
+        </div>
+        <div class="card-body" id="feedbackList">
+          <div class="empty-state">Indlæser feedback...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: PDF Betingelser -->
+  <div id="tab-pdfs" class="tab-content">
+    <div class="container">
+      <div class="page-header">
+        <h1>PDF Betingelser</h1>
+        <p>Administrer forsikringsbetingelser fra selskaberne</p>
+      </div>
+
+      <!-- Refresh control -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Opdater betingelser</h2>
+            <p>Hent de nyeste forsikringsbetingelser fra selskaberne</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <button class="btn-primary" id="refreshBtn" onclick="refreshPDFs()" style="font-size: 15px; padding: 12px 24px;">
+              🔄 Refresh alle PDFs
+            </button>
+            <div id="refreshStatus" style="font-size: 13px; color: var(--muted);"></div>
+          </div>
+          <div id="refreshProgress" style="margin-top: 20px; display: none;">
+            <div style="background: #F3F4F6; border-radius: 8px; height: 8px; overflow: hidden;">
+              <div id="progressBar" style="background: var(--green); height: 100%; width: 0%; transition: width 0.3s;"></div>
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: var(--muted);" id="progressText"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PDF Status Overview -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Status på PDF'er</h2>
+            <p id="pdfStatusCount">Indlæser...</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="pdf-grid" id="pdfGrid">
+            <div class="empty-state">Indlæser PDF status...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Latest refresh log -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Seneste refreshes</h2>
+            <p>Historik over PDF opdateringer</p>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Startet</th>
+                <th>Status</th>
+                <th>PDFs</th>
+                <th>Succesfull</th>
+                <th>Fejlet</th>
+                <th>Cost</th>
+                <th>Varighed</th>
+              </tr>
+            </thead>
+            <tbody id="refreshLogTable">
+              <tr><td colspan="7"><div class="empty-state">Indlæser historik...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:14px;max-width:500px;width:90%;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--green);margin-bottom:8px;">Rediger bruger</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Opdater brugerens information</p>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Fulde navn</label>
+      <input type="text" id="editName" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;">
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Email</label>
+      <input type="email" id="editEmail" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;" disabled>
+    </div>
+    
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Afdeling</label>
+      <select id="editDept" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;">
+        <option value="">Vælg afdeling</option>
+        <option>Direkte Salg Privat Vest</option>
+        <option>Direkte Salg Privat Midt</option>
+        <option>Direkte Salg Privat Øst</option>
+        <option>Direkte Salg Privat Online</option>
+        <option>Direkte Salg Privat Sydbank Vest</option>
+        <option>Direkte Salg Privat Sydbank Øst</option>
+        <option>Salgscenter Alm Brand</option>
+        <option>Salgscenter Codan</option>
+        <option>Mødebooking</option>
+        <option>Ledelsen</option>
+      </select>
+    </div>
+    
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <button onclick="closeEditModal()" style="padding:10px 20px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Annuller</button>
+      <button onclick="saveUserEdit()" id="saveEditBtn" class="btn-primary">Gem ændringer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
+  
+  // Create supabase client
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let currentTab = 'users';
+
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = '/login.html'; return; }
+
+    currentUser = session.user;
+
+    // Check admin role
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (!profile || profile.role !== 'admin') {
+      window.location.href = '/';
+      return;
+    }
+
+    document.getElementById('authGuard').style.display = 'block';
+    document.getElementById('navUser').textContent = profile.full_name || currentUser.email;
+
+    // Load all tabs data
+    await loadUsers();
+    await loadStats();
+    await loadPDFStatus();
+  }
+
+  function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Update buttons
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+
+    // Load data for tab if needed
+    if (tabName === 'stats') loadStats();
+    if (tabName === 'pdfs') loadPDFStatus();
+  }
+
+  async function loadUsers() {
+    const { data: profiles, error } = await sb
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !profiles) return;
+
+    // Stats
+    document.getElementById('statTotal').textContent = profiles.length;
+    document.getElementById('statSellers').textContent = profiles.filter(p => p.role === 'seller').length;
+    const depts = new Set(profiles.map(p => p.department).filter(Boolean));
+    document.getElementById('statDepts').textContent = depts.size;
+
+    // Logins today
+    const today = new Date().toISOString().split('T')[0];
+    const { data: logins } = await sb
+      .from('login_history')
+      .select('id')
+      .gte('logged_in_at', today);
+    document.getElementById('statLogins').textContent = logins?.length || 0;
+
+    document.getElementById('userCount').textContent = `${profiles.length} bruger${profiles.length !== 1 ? 'e' : ''}`;
+
+    const tbody = document.getElementById('userTable');
+    if (profiles.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Ingen brugere endnu</div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = profiles.map(p => `
+      <tr>
+        <td><strong>${p.full_name || '—'}</strong></td>
+        <td style="color:var(--muted)">${p.email || '—'}</td>
+        <td>${p.department || '—'}</td>
+        <td><span class="badge badge-${p.role}">${p.role === 'admin' ? 'Admin' : 'Sælger'}</span></td>
+        <td style="color:var(--muted);font-size:13px">${formatDate(p.created_at)}</td>
+        <td>
+          ${p.id !== currentUser.id
+            ? `<button class="btn-primary" style="padding:6px 12px;font-size:12px;margin-right:8px;" onclick="editUser('${p.id}', '${p.full_name || ''}', '${p.email}', '${p.department || ''}')">Rediger</button><button class="btn-danger" onclick="deleteUser('${p.id}', '${p.full_name || p.email}')">Slet</button>`
+            : '<span style="font-size:12px;color:var(--muted)">Dig</span>'
+          }
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function loadStats() {
+    // Users total
+    const { data: profiles } = await sb.from('profiles').select('id, created_at');
+    document.getElementById('statsUsersTotal').textContent = profiles?.length || 0;
+
+    // Analyses total
+    const { data: analyses } = await sb.from('analyses').select('id, created_at, user_id');
+    document.getElementById('statsAnalysesTotal').textContent = analyses?.length || 0;
+
+    // Active this week
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentLogins } = await sb
+      .from('login_history')
+      .select('user_id')
+      .gte('logged_in_at', weekAgo);
+    const uniqueUsers = new Set(recentLogins?.map(l => l.user_id));
+    document.getElementById('statsActiveThisWeek').textContent = uniqueUsers.size;
+
+    // Avg time (mock - would need actual timing data)
+    document.getElementById('statsAvgTime').textContent = '—';
+
+    // Seller Activity with NAME + DEPARTMENT
+    const { data: loginHistory } = await sb
+      .from('login_history')
+      .select('*')
+      .order('logged_in_at', { ascending: false })
+      .limit(20);
+
+    const activityContainer = document.getElementById('sellerActivity');
+    if (!loginHistory || loginHistory.length === 0) {
+      activityContainer.innerHTML = '<div class="empty-state">Ingen aktivitet endnu</div>';
+    } else {
+      activityContainer.innerHTML = loginHistory.map(h => `
+        <div class="activity-entry">
+          <div class="activity-dot"></div>
+          <div style="flex: 1;">
+            <div><strong>${h.full_name || h.email || 'Anonym'}</strong> loggede ind</div>
+            <div class="activity-user">Ingen afdeling</div>
+          </div>
+          <span class="activity-time">${formatDate(h.logged_in_at)}</span>
+        </div>
+      `).join('');
+    }
+
+    // Feedback with NAME + DEPARTMENT
+    const { data: feedback } = await sb
+      .from('feedback')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const feedbackContainer = document.getElementById('feedbackList');
+    if (!feedback || feedback.length === 0) {
+      feedbackContainer.innerHTML = '<div class="empty-state">Ingen feedback endnu</div>';
+    } else {
+      feedbackContainer.innerHTML = feedback.map(f => `
+        <div class="activity-entry">
+          <div class="activity-dot"></div>
+          <div style="flex: 1;">
+            <div><strong>Anonym</strong></div>
+            <div class="activity-user">Ingen afdeling</div>
+            <div style="margin-top: 4px; font-size: 13px;">${f.message || f.feedback_text || '—'}</div>
+          </div>
+          <span class="activity-time">${formatDate(f.created_at)}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  async function loadPDFStatus() {
+    // Load insurance terms
+    const { data: terms } = await sb
+      .from('insurance_terms')
+      .select('*')
+      .order('parsed_at', { ascending: false });
+
+    const grid = document.getElementById('pdfGrid');
+    
+    if (!terms || terms.length === 0) {
+      grid.innerHTML = '<div class="empty-state">Ingen PDFs hentet endnu. Klik "Refresh alle PDFs" for at starte.</div>';
+      document.getElementById('pdfStatusCount').textContent = '0 PDFs';
+      document.getElementById('refreshStatus').textContent = 'Systemet er klart til første refresh';
+    } else {
+      document.getElementById('pdfStatusCount').textContent = `${terms.length} PDFs loaded`;
+      
+      // Latest refresh time
+      const latest = terms[0]?.parsed_at;
+      if (latest) {
+        document.getElementById('refreshStatus').textContent = `Sidst opdateret: ${formatDate(latest)}`;
+      }
+
+      grid.innerHTML = terms.map(t => `
+        <div class="pdf-item">
+          <div>
+            <div class="pdf-name">${t.selskab} - ${t.produkt_type}</div>
+            <div class="pdf-meta">${formatDate(t.parsed_at)}</div>
+          </div>
+          <span class="badge badge-ready">✓</span>
+        </div>
+      `).join('');
+    }
+
+    // Load refresh log
+    const { data: logs } = await sb
+      .from('parsing_log')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(10);
+
+    const logTable = document.getElementById('refreshLogTable');
+    if (!logs || logs.length === 0) {
+      logTable.innerHTML = '<tr><td colspan="7"><div class="empty-state">Ingen refresh historik endnu</div></td></tr>';
+    } else {
+      logTable.innerHTML = logs.map(log => {
+        const duration = log.completed_at 
+          ? Math.round((new Date(log.completed_at) - new Date(log.started_at)) / 1000)
+          : '—';
+        
+        return `
+          <tr>
+            <td style="font-size:13px;color:var(--muted)">${formatDate(log.started_at)}</td>
+            <td><span class="badge badge-${log.status === 'completed' ? 'ready' : 'error'}">${log.status}</span></td>
+            <td>${log.total_pdfs || 0}</td>
+            <td>${log.successful_parses || 0}</td>
+            <td>${log.failed_parses || 0}</td>
+            <td style="font-size:13px">$${(log.total_cost_usd || 0).toFixed(2)}</td>
+            <td style="font-size:13px;color:var(--muted)">${duration}s</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  async function refreshPDFs() {
+    const btn = document.getElementById('refreshBtn');
+    const progress = document.getElementById('refreshProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    if (!confirm('Start PDF refresh? Dette tager ~15 minutter og parser alle 34 PDFs.')) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Refresher...';
+    progress.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressText.textContent = 'Starter...';
+
+    try {
+      // Get session token
+      const { data: { session } } = await sb.auth.getSession();
+      
+      const response = await fetch('/api/admin/refresh-pdfs', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Færdig!';
+        showToast('✅ PDF refresh completed!', 'success');
+        await loadPDFStatus();
+      } else {
+        throw new Error(result.error || 'Unknown error');
+      }
+
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      showToast('❌ Refresh failed: ' + error.message, 'error');
+      progressText.textContent = 'Fejl: ' + error.message;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🔄 Refresh alle PDFs';
+      setTimeout(() => {
+        progress.style.display = 'none';
+      }, 3000);
+    }
+  }
+
+  async function inviteUser() {
+    const name = document.getElementById('inviteName').value.trim();
+    const email = document.getElementById('inviteEmail').value.trim();
+    const dept = document.getElementById('inviteDept').value;
+    const btn = document.getElementById('inviteBtn');
+
+    if (!name || !email) { showToast('Udfyld navn og email', 'error'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Sender...';
+
+    const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password: tempPassword,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: 'https://iqsales.dk/login.html'
+      }
+    });
+
+    if (error) {
+      showToast('Fejl: ' + error.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Opret bruger';
+      return;
+    }
+
+    if (data.user) {
+      await sb.from('profiles').upsert({
+        id: data.user.id,
+        email,
+        full_name: name,
+        department: dept || null,
+        role: 'seller'
+      });
+    }
+
+    showToast(`✅ ${name} oprettet`, 'success');
+    document.getElementById('inviteName').value = '';
+    document.getElementById('inviteEmail').value = '';
+    document.getElementById('inviteDept').value = '';
+    btn.disabled = false;
+    btn.innerHTML = 'Opret bruger';
+
+    await loadUsers();
+  }
+
+  let editingUserId = null;
+
+  function editUser(id, name, email, dept) {
+    editingUserId = id;
+    document.getElementById('editName').value = name || '';
+    document.getElementById('editEmail').value = email || '';
+    document.getElementById('editDept').value = dept || '';
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    editingUserId = null;
+    document.getElementById('editModal').style.display = 'none';
+  }
+
+  async function saveUserEdit() {
+    if (!editingUserId) return;
+
+    const name = document.getElementById('editName').value.trim();
+    const dept = document.getElementById('editDept').value;
+    const btn = document.getElementById('saveEditBtn');
+
+    if (!name) {
+      showToast('Navn skal udfyldes', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Gemmer...';
+
+    const { error } = await sb
+      .from('profiles')
+      .update({
+        full_name: name,
+        department: dept || null
+      })
+      .eq('id', editingUserId);
+
+    if (error) {
+      showToast('Kunne ikke opdatere bruger', 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Gem ændringer';
+      return;
+    }
+
+    showToast('✅ Bruger opdateret', 'success');
+    closeEditModal();
+    btn.disabled = false;
+    btn.innerHTML = 'Gem ændringer';
+    await loadUsers();
+  }
+
+  async function deleteUser(id, name) {
+    if (!confirm(`Slet ${name}? Brugeren mister adgang til IQSales.`)) return;
+
+    const { error } = await sb.from('profiles').delete().eq('id', id);
+    if (error) { showToast('Kunne ikke slette bruger', 'error'); return; }
+
+    showToast(`${name} er slettet`, 'success');
+    await loadUsers();
+  }
+
+  async function logout() {
+    await sb.auth.signOut();
+    window.location.href = '/login.html';
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const date = new Date(iso);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Lige nu';
+    if (diffMins < 60) return `${diffMins} min siden`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} timer siden`;
+    
+    return date.toLocaleDateString('da-DK', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>
