@@ -602,7 +602,7 @@
     currentUser = session.user;
 
     // Check admin role
-    const { data: profile } = await supabase
+    const { data: profile } = await sb
       .from('profiles')
       .select('role, full_name')
       .eq('id', currentUser.id)
@@ -639,7 +639,7 @@
   }
 
   async function loadUsers() {
-    const { data: profiles, error } = await supabase
+    const { data: profiles, error } = await sb
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
@@ -654,7 +654,7 @@
 
     // Logins today
     const today = new Date().toISOString().split('T')[0];
-    const { data: logins } = await supabase
+    const { data: logins } = await sb
       .from('login_history')
       .select('id')
       .gte('logged_in_at', today);
@@ -696,7 +696,7 @@
 
     // Active this week
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: recentLogins } = await supabase
+    const { data: recentLogins } = await sb
       .from('login_history')
       .select('user_id')
       .gte('logged_in_at', weekAgo);
@@ -707,7 +707,7 @@
     document.getElementById('statsAvgTime').textContent = '—';
 
     // Seller Activity with NAME + DEPARTMENT
-    const { data: loginHistory } = await supabase
+    const { data: loginHistory } = await sb
       .from('login_history')
       .select('*, profiles(full_name, department)')
       .order('logged_in_at', { ascending: false })
@@ -730,7 +730,7 @@
     }
 
     // Feedback with NAME + DEPARTMENT
-    const { data: feedback } = await supabase
+    const { data: feedback } = await sb
       .from('feedback')
       .select('*, profiles(full_name, department)')
       .order('created_at', { ascending: false })
@@ -756,7 +756,7 @@
 
   async function loadPDFStatus() {
     // Load insurance terms
-    const { data: terms } = await supabase
+    const { data: terms } = await sb
       .from('insurance_terms')
       .select('*')
       .order('parsed_at', { ascending: false });
@@ -788,7 +788,7 @@
     }
 
     // Load refresh log
-    const { data: logs } = await supabase
+    const { data: logs } = await sb
       .from('parsing_log')
       .select('*')
       .order('started_at', { ascending: false })
