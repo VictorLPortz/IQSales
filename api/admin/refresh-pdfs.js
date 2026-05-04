@@ -21,7 +21,7 @@ async function downloadPDF(url) {
 
 async function parsePDFWithClaude(pdfBase64, selskab, produktType) {
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+ model: 'claude-sonnet-4-20241022',
     max_tokens: 4000,
     messages: [{
       role: 'user',
