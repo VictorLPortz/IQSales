@@ -1,196 +1,29 @@
 {
-  "selskaber": [
+  "pdfs": [
     {
-      "navn": "Alm. Brand",
-      "kode": "alm_brand",
-      "produkter": [
-        {
-          "type": "hus",
-          "navn": "Husforsikring",
-          "url": "https://prep-archive.almbrand.dk/49a85e/siteassets/pdf/betingelser/betingelser-for-husforsikring-1.pdf"
-        },
-        {
-          "type": "indbo",
-          "navn": "Indboforsikring",
-          "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-indboforsikring.pdf"
-        },
-        {
-          "type": "bil",
-          "navn": "Bilforsikring",
-          "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/naboo/product-terms/betingelser-for-bilforsikring.pdf"
-        },
-        {
-          "type": "rejse",
-          "navn": "Rejseforsikring",
-          "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-rejseforsikring.pdf"
-        },
-        {
-          "type": "ulykke",
-          "navn": "Ulykkesforsikring",
-          "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-ulykkesforsikring_up-2001.pdf"
-        },
-        {
-          "type": "hund",
-          "navn": "Hundeforsikring",
-          "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-hundeforsikring.pdf"
-        },
-        {
-          "type": "fritidshus",
-          "navn": "Fritidshusforsikring",
-          "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-fritidshusforsikring.pdf"
-        },
-        {
-          "type": "motorcykel",
-          "navn": "Motorcykelforsikring",
-          "url": "https://prep-archive.almbrand.dk/4a4fda/siteassets/pdf/betingelser/pdf_betingelser_motorcykel.pdf"
-        },
-        {
-          "type": "campingvogn",
-          "navn": "Campingvognsforsikring",
-          "url": "https://prep-archive.almbrand.dk/49e69f/siteassets/pdf/betingelser/pdf_betingelser_campingvogn.pdf"
-        },
-        {
-          "type": "lystfartoej",
-          "navn": "Lystfartøjsforsikring",
-          "url": "https://prep-archive.almbrand.dk/49e81b/siteassets/pdf/betingelser/pdf_betingelser_lystfartoej.pdf"
-        },
-        {
-          "type": "borneulykke",
-          "navn": "Børneulykkesforsikring",
-          "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-ulykkesforsikring_up-2001.pdf",
-          "note": "Bruger samme betingelser som voksen ulykke"
-        },
-        {
-          "type": "veteran",
-          "navn": "Veterankøretøjsforsikring",
-          "url": "https://prep-archive.almbrand.dk/4a5000/siteassets/pdf/betingelser/vk-1803_veterankoretojsforsikring_230318_logo.pdf"
-        }
-      ]
+      "selskab": "Alm. Brand",
+      "produkt_type": "Indbo",
+      "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-indboforsikring.pdf"
     },
     {
-      "navn": "Codan",
-      "kode": "codan",
-      "produkter": [
-        {
-          "type": "hus",
-          "navn": "Husforsikring",
-          "url": "https://beregn.codan.dk/codan/codan-media/documents/private/terms-and-conditions/codan-betingelser-for-husforsikring.pdf"
-        },
-        {
-          "type": "indbo",
-          "navn": "Indboforsikring",
-          "url": "https://beregn.codan.dk/codan/codan-media/documents/private/terms-and-conditions/codan-betingelser-for-indboforsikring.pdf"
-        },
-        {
-          "type": "bil",
-          "navn": "Bilforsikring",
-          "url": "https://beregn.codan.dk/codan/codan-media/documents/private/terms-and-conditions/codan-betingelser-for-bilforsikring.pdf"
-        },
-        {
-          "type": "rejse",
-          "navn": "Rejseforsikring",
-          "url": "https://beregn.codan.dk/codan/codan-media/documents/private/terms-and-conditions/codan-betingelser-for-rejseforsikring.pdf"
-        },
-        {
-          "type": "ulykke",
-          "navn": "Ulykkesforsikring",
-          "url": "https://www.codan.dk/SiteCollectionDocuments/Privat/betingelser/Betingelser_Codan_Ulykke.pdf"
-        },
-        {
-          "type": "hund",
-          "navn": "Hundeforsikring",
-          "url": "https://www.codan.dk/SiteCollectionDocuments/Privat/betingelser/Betingelser_Codan_Hund.pdf"
-        },
-        {
-          "type": "fritidshus",
-          "navn": "Fritidshusforsikring",
-          "url": "https://www.codan.dk/SiteCollectionDocuments/Privat/betingelser/Betingelser_Codan_Fritidshus.pdf"
-        },
-        {
-          "type": "motorcykel",
-          "navn": "Motorcykelforsikring",
-          "url": "https://www.codan.dk/codan/codan-media/documents/private/terms-and-conditions/codan-betingelser-for-motorcykelforsikring.pdf"
-        },
-        {
-          "type": "campingvogn",
-          "navn": "Campingvognsforsikring",
-          "url": "https://www.codan.dk/SiteCollectionDocuments/Privat/betingelser/Betingelser_Codan_Campingvogn.pdf"
-        },
-        {
-          "type": "lystfartoej",
-          "navn": "Lystbådsforsikring",
-          "url": "https://codan.dk/SiteCollectionDocuments/Privat/betingelser/Codan%20Privat%20-%20Lystb%C3%A5d%201.pdf"
-        },
-        {
-          "type": "borneulykke",
-          "navn": "Børneulykkesforsikring",
-          "url": "https://www.codan.dk/SiteCollectionDocuments/Privat/betingelser/Betingelser_Codan_Ulykke.pdf",
-          "note": "Bruger samme betingelser som voksen ulykke"
-        }
-      ]
+      "selskab": "Alm. Brand",
+      "produkt_type": "Bil",
+      "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/naboo/product-terms/betingelser-for-bilforsikring.pdf"
     },
     {
-      "navn": "Privatsikring",
-      "kode": "privatsikring",
-      "produkter": [
-        {
-          "type": "hus",
-          "navn": "Husforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Hus.pdf"
-        },
-        {
-          "type": "indbo",
-          "navn": "Indboforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Indbo.pdf"
-        },
-        {
-          "type": "bil",
-          "navn": "Bilforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Bil.pdf"
-        },
-        {
-          "type": "rejse",
-          "navn": "Rejseforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Rejse.pdf"
-        },
-        {
-          "type": "ulykke",
-          "navn": "Ulykkesforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Ulykke.pdf"
-        },
-        {
-          "type": "hund",
-          "navn": "Hundeforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Hund.pdf"
-        },
-        {
-          "type": "fritidshus",
-          "navn": "Fritidshusforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Hus.pdf",
-          "note": "Bruger samme PDF som husforsikring"
-        },
-        {
-          "type": "motorcykel",
-          "navn": "Motorcykelforsikring",
-          "url": "https://www.privatsikring.dk/privatsikring/privatsikring-media/documents/terms-and-condtions/betingelser_psk_motorcykel.pdf"
-        },
-        {
-          "type": "campingvogn",
-          "navn": "Campingvognsforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Campingvogn.pdf"
-        },
-        {
-          "type": "lystfartoej",
-          "navn": "Lystbådsforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Privatsikring%20-%20Lystb%C3%A5d%201.pdf"
-        },
-        {
-          "type": "borneulykke",
-          "navn": "Børneulykkesforsikring",
-          "url": "https://www.privatsikring.dk/SiteCollectionDocuments/betingelser/Betingelser_PSK_Ulykke.pdf",
-          "note": "Bruger samme betingelser som voksen ulykke"
-        }
-      ]
+      "selskab": "Alm. Brand",
+      "produkt_type": "Rejse",
+      "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-rejseforsikring.pdf"
+    },
+    {
+      "selskab": "Alm. Brand",
+      "produkt_type": "Ulykke",
+      "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/terms-and-conditions/conditions/betingelser-for-ulykkesforsikring_up-2001.pdf"
+    },
+    {
+      "selskab": "Alm. Brand",
+      "produkt_type": "Hund",
+      "url": "https://beregn.almbrand.dk/alm.-brand/alm.-brand-media/documents/naboo/product-terms/betingelser-for-hundeforsikring.pdf"
     }
   ]
 }
