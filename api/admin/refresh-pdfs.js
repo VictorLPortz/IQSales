@@ -92,18 +92,6 @@ module.exports = async function handler(req, res) {
     
     console.log(`PDF refresh started by: ${user.email}`);
     
-    const { data: logEntry } = await supabase
-      .from('parsing_log')
-      .insert({
-        started_at: new Date().toISOString(),
-        status: 'running',
-        total_pdfs: 0,
-        successful_parses: 0,
-        failed_parses: 0,
-      })
-      .select()
-      .single();
-    
     const fs = require('fs');
     const path = require('path');
     const configPath = path.join(process.cwd(), 'config', 'pdf-config.json');
@@ -142,18 +130,6 @@ module.exports = async function handler(req, res) {
       
       totalProcessed++;
     }
-    
-    await supabase
-      .from('parsing_log')
-      .update({
-        completed_at: new Date().toISOString(),
-        status: 'completed',
-        total_pdfs: totalProcessed,
-        successful_parses: successful,
-        failed_parses: failed,
-        total_cost_usd: totalCost,
-      })
-      .eq('id', logEntry.id);
     
     return res.status(200).json({
       success: true,
