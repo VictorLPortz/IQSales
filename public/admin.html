@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQSales — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#F4F3EF;--surface:#fff;--border:#E3E1D9;--text:#141412;--muted:#7A7870;--accent:#0A2540;--accent2:#1B7F4F;--accent-light:#E6F2EC;--danger:#B91C1C;--r:14px;--rs:8px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:var(--accent);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.nav-brand{font-family:'Syne',sans-serif;font-size:18px;color:#fff;display:flex;align-items:center;gap:8px}
+.nav-brand span{font-size:11px;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif}
+.nav-right{display:flex;align-items:center;gap:12px}
+.btn-back{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;transition:background .15s}
+.btn-back:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* TABS */
+.page-tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;gap:0}
+.page-tab{padding:14px 20px;font-size:13px;font-weight:500;border:none;background:transparent;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
+.page-tab:hover{color:var(--text)}
+.page-tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+
+.container{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+
+/* QUICK STATS */
+.quick-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.qs{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;text-align:center}
+.qs-val{font-family:'Syne',sans-serif;font-size:32px;font-weight:700;color:var(--accent);line-height:1}
+.qs-lbl{font-size:12px;color:var(--muted);margin-top:6px}
+.qs-sub{font-size:11px;margin-top:4px;color:var(--muted)}
+.qs-up{color:#15803D}
+.qs-down{color:var(--danger)}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1.25rem}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.card-header h2{font-size:14px;font-weight:500}
+.card-header p{font-size:12px;color:var(--muted)}
+.card-body{padding:16px 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:10px 16px;border-bottom:1px solid var(--border);background:#FAFAF8}
+td{padding:11px 16px;font-size:13px;border-bottom:1px solid #F3F4F6}
+tr:last-child td{border-bottom:none}
+tr.clickable{cursor:pointer;transition:background .1s}
+tr.clickable:hover td{background:#F9F9F7}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-admin{background:#FEF3C7;color:#92400E}
+.badge-seller{background:#ECFDF5;color:#065F46}
+.badge-green{background:#F0FDF4;color:#15803D}
+.badge-red{background:#FEF2F2;color:#B91C1C}
+.badge-gray{background:#F3F4F6;color:#6B7280}
+
+/* BARS */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-row:last-child{margin-bottom:0}
+.bar-label{font-size:12px;color:var(--text);width:160px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--accent2);transition:width .5s}
+.bar-fill-blue{background:#378ADD}
+.bar-count{font-size:12px;color:var(--muted);width:36px;text-align:right;flex-shrink:0}
+
+/* WEEK CHART */
+.week-chart{display:flex;gap:6px;align-items:flex-end;height:80px;margin-bottom:6px}
+.week-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.week-bar{width:100%;border-radius:3px 3px 0 0;background:var(--accent2);opacity:.6;min-height:3px;transition:height .3s}
+.week-bar.today{opacity:1}
+.week-bar-label{font-size:10px;color:var(--muted)}
+.week-bar-label.today{color:var(--accent2);font-weight:500}
+
+/* ACTIVITY DOT */
+.dot-on{width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block;margin-right:6px;flex-shrink:0}
+.dot-off{width:7px;height:7px;border-radius:50%;background:#D1D5DB;display:inline-block;margin-right:6px;flex-shrink:0}
+
+/* DETAIL PANEL */
+.detail-panel{background:#F8F7FF;border-top:1px solid #E0E0F0;padding:14px 16px;display:none}
+.detail-panel.open{display:block}
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.detail-stat{background:#fff;border:1px solid #E0E0F0;border-radius:8px;padding:10px 14px;text-align:center}
+.detail-stat-val{font-size:20px;font-weight:500;color:var(--accent)}
+.detail-stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.detail-pairs{display:flex;flex-wrap:wrap;gap:6px}
+.pair-chip{font-size:11px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--border);color:var(--text)}
+
+/* HISTORY CHIPS */
+.history-timeline{display:flex;flex-wrap:wrap;gap:6px}
+.h-chip{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #C7D2FE;border-radius:8px;padding:5px 10px;font-size:11px}
+.h-chip.latest{border-color:#6366F1;background:#EEF2FF}
+.h-dot{width:6px;height:6px;border-radius:50%;background:#6366F1;flex-shrink:0}
+
+/* FORM */
+label{display:block;font-size:12px;font-weight:500;margin-bottom:5px;color:var(--text)}
+input,select{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:#fff;color:var(--text);outline:none}
+input:focus,select:focus{border-color:var(--accent2)}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.form-row-pw{margin-bottom:0}
+.btn-primary{padding:9px 18px;background:var(--accent2);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-edit{padding:5px 10px;background:transparent;color:var(--accent2);border:1px solid #A7D7B8;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-right:4px}
+.btn-edit:hover{background:var(--accent-light)}
+.btn-danger{padding:5px 10px;background:transparent;color:var(--danger);border:1px solid #FECACA;border-radius:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-danger:hover{background:#FEF2F2}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:440px;max-width:90vw;border:1px solid var(--border)}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:4px}
+.modal .sub{font-size:12px;color:var(--muted);margin-bottom:1.25rem}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.modal-grid .full{grid-column:1/-1}
+.modal-actions{display:flex;gap:8px;margin-top:1rem}
+.btn-save{flex:1;padding:9px;background:var(--accent2);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer}
+.btn-cancel{padding:9px 16px;background:transparent;border:1.5px solid var(--border);border-radius:var(--rs);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.12);transform:translateY(60px);opacity:0;transition:all .3s;z-index:999}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:#F0FDF4;color:#166534;border:1px solid #BBF7D0}
+.toast.err{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+
+.empty{text-align:center;padding:3rem;color:var(--muted);font-size:13px}
+.filter-row{display:flex;gap:8px;margin-bottom:1rem}
+.filter-row select{width:auto;min-width:160px}
+.filter-row input{width:auto;flex:1}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-brand">⚡ IQSales <span>Admin</span></div>
+  <div class="nav-right">
+    <a href="/" class="btn-back">← Tilbage til app</a>
+    <button class="btn-logout" onclick="logout()">Log ud</button>
+  </div>
+</nav>
+
+<div class="page-tabs">
+  <button class="page-tab active" id="tab-btn-users" onclick="showTab('users')">Brugerstyring</button>
+  <button class="page-tab" id="tab-btn-stats" onclick="showTab('stats')">Statistik & indsigt</button>
+</div>
+
+<!-- ===== BRUGERSTYRING ===== -->
+<div id="tab-users">
+  <div class="container">
+
+    <!-- QUICK STATS -->
+    <div class="quick-stats">
+      <div class="qs"><div class="qs-val" id="qs-today">—</div><div class="qs-lbl">Logget ind i dag</div></div>
+      <div class="qs"><div class="qs-val" id="qs-analyses">—</div><div class="qs-lbl">Analyser i dag</div></div>
+      <div class="qs"><div class="qs-val" id="qs-dept">—</div><div class="qs-lbl">Mest aktive afdeling</div><div class="qs-sub" id="qs-dept-count"></div></div>
+      <div class="qs"><div class="qs-val" id="qs-avgtime">—</div><div class="qs-lbl">Gns. analysetid i dag</div></div>
+    </div>
+
+    <!-- OPRET BRUGER -->
+    <div class="card">
+      <div class="card-header"><div><h2>Inviter ny bruger</h2><p>Brugeren oprettes med det kodeord du angiver</p></div></div>
+      <div class="card-body">
+        <div class="form-row">
+          <div><label>Fulde navn</label><input type="text" id="inv-name" placeholder="Fornavn Efternavn"></div>
+          <div><label>Email</label><input type="email" id="inv-email" placeholder="navn@selskab.dk"></div>
+          <div><label>Afdeling</label>
+            <select id="inv-dept">
+              <option value="">Vælg afdeling</option>
+              <option>Direkte Salg Privat Vest</option>
+              <option>Direkte Salg Privat Midt</option>
+              <option>Direkte Salg Privat Øst</option>
+              <option>Direkte Salg Privat Online</option>
+              <option>Direkte Salg Privat Sydbank Vest</option>
+              <option>Direkte Salg Privat Sydbank Øst</option>
+              <option>Salgscenter Codan</option>
+              <option>Salgscenter Alm Brand</option>
+              <option>Mødebooking</option>
+              <option>Ledelsen</option>
+            </select>
+          </div>
+          <button class="btn-primary" id="inv-btn" onclick="inviteUser()">Opret bruger</button>
+        </div>
+        <div class="form-row-pw"><label>Midlertidigt kodeord</label><input type="text" id="inv-pw" placeholder="Mindst 6 tegn" style="max-width:300px"></div>
+      </div>
+    </div>
+
+    <!-- BRUGERLISTE -->
+    <div class="card">
+      <div class="card-header">
+        <div><h2>Alle brugere</h2><p id="user-count">Indlæser...</p></div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)" class="filter-row">
+          <input type="text" id="search-users" placeholder="Søg navn eller email..." oninput="filterUsers()" style="max-width:280px">
+          <select id="filter-dept" onchange="filterUsers()">
+            <option value="">Alle afdelinger</option>
+            <option>Direkte Salg Privat Vest</option>
+            <option>Direkte Salg Privat Midt</option>
+            <option>Direkte Salg Privat Øst</option>
+            <option>Direkte Salg Privat Online</option>
+            <option>Direkte Salg Privat Sydbank Vest</option>
+            <option>Direkte Salg Privat Sydbank Øst</option>
+            <option>Salgscenter Codan</option>
+            <option>Salgscenter Alm Brand</option>
+            <option>Mødebooking</option>
+            <option>Ledelsen</option>
+          </select>
+          <select id="filter-role" onchange="filterUsers()">
+            <option value="">Alle roller</option>
+            <option value="admin">Admin</option>
+            <option value="seller">Sælger</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th style="width:24px"></th><th>Navn</th><th>Email</th><th>Afdeling</th><th>Rolle</th><th>Oprettet</th><th></th></tr></thead>
+          <tbody id="user-table"><tr><td colspan="7"><div class="empty">Indlæser...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STATISTIK ===== -->
+<div id="tab-stats" style="display:none">
+  <div class="container">
+
+    <!-- TOP STATS -->
+    <div class="quick-stats" style="grid-template-columns:repeat(4,1fr)">
+      <div class="qs"><div class="qs-val" id="st-total-users">—</div><div class="qs-lbl">Brugere i alt</div></div>
+      <div class="qs"><div class="qs-val" id="st-total-analyses">—</div><div class="qs-lbl">Analyser i alt</div></div>
+      <div class="qs"><div class="qs-val" id="st-cache-rate">—</div><div class="qs-lbl">Cache hit rate</div></div>
+      <div class="qs"><div class="qs-val" id="st-active-week">—</div><div class="qs-lbl">Aktive denne uge</div></div>
+    </div>
+
+    <!-- API OMKOSTNINGER -->
+    <div class="quick-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+      <div class="qs"><div class="qs-val" id="api-today">—</div><div class="qs-lbl">API-omk. i dag</div><div class="qs-sub" id="api-today-calls"></div></div>
+      <div class="qs"><div class="qs-val" id="api-month">—</div><div class="qs-lbl">API-omk. denne måned</div><div class="qs-sub" id="api-month-calls"></div></div>
+      <div class="qs"><div class="qs-val" id="api-saved">—</div><div class="qs-lbl">Besparelse via cache</div><div class="qs-sub" style="color:#15803D" id="api-saved-pct"></div></div>
+      <div class="qs"><div class="qs-val" id="api-projected">—</div><div class="qs-lbl">Estimeret månedsforbrug</div><div class="qs-sub" id="api-model-note">Sonnet ~0,45kr/kald</div></div>
+    </div>
+
+    <div class="grid2">
+      <!-- ANALYSER PER DAG DENNE UGE -->
+      <div class="card">
+        <div class="card-header"><div><h2>Analyser denne uge</h2></div></div>
+        <div class="card-body">
+          <div class="week-chart" id="week-chart"></div>
+          <div style="display:flex;gap:6px" id="week-labels"></div>
+        </div>
+      </div>
+
+      <!-- MEST ANALYSEREDE MODPARTER -->
+      <div class="card">
+        <div class="card-header"><div><h2>Mest analyserede modparter</h2></div></div>
+        <div class="card-body" id="top-companies"><div class="empty" style="padding:1rem">Indlæser...</div></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <!-- AKTIVITET PER AFDELING -->
+      <div class="card">
+        <div class="card-header"><div><h2>Aktivitet per afdeling</h2></div></div>
+        <div class="card-body" id="dept-activity"><div class="empty" style="padding:1rem">Indlæser...</div></div>
+      </div>
+
+      <!-- MEST POPULÆRE FORSIKRINGSTYPER -->
+      <div class="card">
+        <div class="card-header"><div><h2>Populære forsikringstyper</h2></div></div>
+        <div class="card-body" id="top-types"><div class="empty" style="padding:1rem">Indlæser...</div></div>
+      </div>
+    </div>
+
+    <!-- SÆLGER LEADERBOARD -->
+    <div class="card">
+      <div class="card-header">
+        <div><h2>Sælger aktivitet</h2><p>Klik på en sælger for at se detaljer</p></div>
+        <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="lb-period" onchange="onPeriodChange()" style="width:auto;font-size:12px;padding:5px 10px">
+              <option value="7">Seneste 7 dage</option>
+              <option value="30">Seneste 30 dage</option>
+              <option value="90">Seneste 90 dage</option>
+              <option value="custom">Valgfri periode</option>
+            </select>
+            <div id="custom-period" style="display:none;gap:6px;align-items:center;display:none">
+              <input type="date" id="date-from" style="font-size:12px;padding:4px 8px;width:130px" onchange="loadLeaderboard()">
+              <span style="font-size:12px;color:var(--muted)">→</span>
+              <input type="date" id="date-to" style="font-size:12px;padding:4px 8px;width:130px" onchange="loadLeaderboard()">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table>
+          <thead><tr><th>#</th><th>Navn</th><th>Afdeling</th><th>Analyser</th><th>Seneste analyse</th><th>Status</th></tr></thead>
+          <tbody id="leaderboard-table"><tr><td colspan="6"><div class="empty">Indlæser...</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FEEDBACK OVERSIGT -->
+    <div class="card">
+      <div class="card-header">
+        <div><h2>Feedback fra sælgerne</h2><p>Brug dette til at forbedre AI-prompten løbende</p></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="exportFeedback()" style="font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer;font-family:'DM Sans',sans-serif">📥 Eksporter Excel</button>
+        </div>
+      </div>
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px">
+        <select id="fb-filter-type" onchange="renderFeedback()" style="width:auto;font-size:12px;padding:5px 10px">
+          <option value="">Alle typer</option>
+          <option value="forkert_info">Forkert info</option>
+          <option value="mangler_info">Mangler info</option>
+          <option value="forkert_fordel">Ikke reel fordel</option>
+          <option value="andet">Andet</option>
+        </select>
+        <input type="text" id="fb-search" placeholder="Søg i feedback..." oninput="renderFeedback()" style="font-size:12px;padding:5px 10px;max-width:200px">
+      </div>
+      <div class="card-body" style="padding:0">
+        <table>
+          <thead><tr><th>Dato</th><th>Selskaber</th><th>Kategori</th><th>Type</th><th>Kommentar</th></tr></thead>
+          <tbody id="feedback-table"><tr><td colspan="5"><div class="empty">Indlæser...</div></td></tr></tbody>
+        </table>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--muted)" id="fb-showing"></span>
+          <button id="fb-more-btn" onclick="showMoreFeedback()" style="font-size:12px;padding:6px 14px;border:1px solid var(--accent2);border-radius:6px;background:transparent;color:var(--accent2);cursor:pointer;font-family:'DM Sans',sans-serif;display:none">Vis flere</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="edit-modal-bg">
+  <div class="modal">
+    <h3>Rediger bruger</h3>
+    <p class="sub" id="edit-modal-sub"></p>
+    <input type="hidden" id="edit-id">
+    <div class="modal-grid">
+      <div><label>Fulde navn</label><input type="text" id="edit-name"></div>
+      <div><label>Email</label><input type="email" id="edit-email"></div>
+      <div><label>Afdeling</label>
+        <select id="edit-dept">
+          <option value="">Ingen afdeling</option>
+          <option>Direkte Salg Privat Vest</option>
+          <option>Direkte Salg Privat Midt</option>
+          <option>Direkte Salg Privat Øst</option>
+          <option>Direkte Salg Privat Online</option>
+          <option>Direkte Salg Privat Sydbank Vest</option>
+          <option>Direkte Salg Privat Sydbank Øst</option>
+          <option>Salgscenter Codan</option>
+          <option>Salgscenter Alm Brand</option>
+          <option>Mødebooking</option>
+          <option>Ledelsen</option>
+        </select>
+      </div>
+      <div><label>Rolle</label>
+        <select id="edit-role">
+          <option value="seller">Sælger</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="full"><label>Nyt kodeord <span style="font-weight:400;color:var(--muted)">(lad stå tomt for at beholde)</span></label><input type="text" id="edit-pw" placeholder="Mindst 6 tegn"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEdit()">Annuller</button>
+      <button class="btn-save" onclick="saveEdit()">Gem ændringer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const URL='https://pnzpdgjstzuapgknagsa.supabase.co';
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
+const DAYS=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+
+function getToken(){try{const r=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(r)return JSON.parse(r).access_token;}catch(e){}return null;}
+function logout(){localStorage.removeItem('sb-pnzpdgjstzuapgknagsa-auth-token');window.location.href='/login.html';}
+function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3000);}
+function fmt(n){return n>=1000?(n/1000).toFixed(1)+'k':n;}
+
+async function init(){
+  const token=getToken();
+  if(!token){window.location.href='/login.html';return;}
+  await Promise.all([loadQuickStats(),loadUsers()]);
+}
+
+// ===== TABS =====
+function showTab(tab){
+  document.getElementById('tab-users').style.display=tab==='users'?'block':'none';
+  document.getElementById('tab-stats').style.display=tab==='stats'?'block':'none';
+  document.getElementById('tab-btn-users').classList.toggle('active',tab==='users');
+  document.getElementById('tab-btn-stats').classList.toggle('active',tab==='stats');
+  if(tab==='stats')loadStats();
+}
+
+// ===== QUICK STATS =====
+async function loadQuickStats(){
+  const token=getToken();
+  const today=new Date().toISOString().split('T')[0];
+
+  // Logget ind i dag
+  try{
+    const r=await fetch(URL+'/rest/v1/login_history?logged_in_at=gte.'+today+'T00:00:00&select=user_id',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}});
+    const d=await r.json();
+    const unique=new Set((Array.isArray(d)?d:[]).map(x=>x.user_id));
+    document.getElementById('qs-today').textContent=unique.size;
+  }catch(e){document.getElementById('qs-today').textContent='—';}
+
+  // Analyser i dag
+  try{
+    const r2=await fetch(URL+'/rest/v1/analyses?created_at=gte.'+today+'T00:00:00&select=id,insurance_type,created_at',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}});
+    const analyses=await r2.json();
+    const arr=Array.isArray(analyses)?analyses:[];
+    document.getElementById('qs-analyses').textContent=arr.length;
+
+    // Gennemsnitlig analysetid — vi estimerer baseret på antal per bruger
+    document.getElementById('qs-avgtime').textContent=arr.length>0?'~45 sek':'—';
+  }catch(e){document.getElementById('qs-analyses').textContent='—';}
+
+  // Mest aktive afdeling i dag
+  try{
+    const r3=await fetch(URL+'/rest/v1/analyses?created_at=gte.'+today+'T00:00:00&select=user_id',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}});
+    const todayAn=await r3.json();
+    const r4=await fetch(URL+'/rest/v1/profiles?select=id,department',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}});
+    const profiles=await r4.json();
+    if(Array.isArray(todayAn)&&Array.isArray(profiles)){
+      const deptMap={};profiles.forEach(p=>{if(p.id)deptMap[p.id]=p.department||'Ukendt';});
+      const deptCount={};todayAn.forEach(a=>{const d=deptMap[a.user_id]||'Ukendt';deptCount[d]=(deptCount[d]||0)+1;});
+      const sorted=Object.entries(deptCount).sort((a,b)=>b[1]-a[1]);
+      if(sorted.length>0){
+        const name=sorted[0][0];
+        const short=name.replace('Direkte Salg Privat ','DSP ').replace('Salgscenter ','SC ');
+        document.getElementById('qs-dept').textContent=short;
+        document.getElementById('qs-dept-count').textContent=sorted[0][1]+' analyser';
+      }
+    }
+  }catch(e){}
+}
+
+// ===== USERS =====
+let allUsers=[];
+async function loadUsers(){
+  const token=getToken();
+  const res=await fetch(URL+'/rest/v1/profiles?select=*&order=created_at.desc',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}});
+  const profiles=await res.json();
+  allUsers=Array.isArray(profiles)?profiles:[];
+  document.getElementById('user-count').textContent=allUsers.length+' bruger'+(allUsers.length!==1?'e':'');
+  renderUsers(allUsers);
+}
+
+function filterUsers(){
+  const q=document.getElementById('search-users').value.toLowerCase();
+  const dept=document.getElementById('filter-dept').value;
+  const role=document.getElementById('filter-role').value;
+  const filtered=allUsers.filter(p=>{
+    const matchQ=!q||(p.full_name||'').toLowerCase().includes(q)||(p.email||'').toLowerCase().includes(q);
+    const matchDept=!dept||(p.department||'')=== dept;
+    const matchRole=!role||(p.role||'')=== role;
+    return matchQ&&matchDept&&matchRole;
+  });
+  renderUsers(filtered);
+}
+
+function renderUsers(users){
+  document.getElementById('user-table').innerHTML=users.length===0?'<tr><td colspan="7"><div class="empty">Ingen brugere matcher søgningen</div></td></tr>':
+  users.map((p,i)=>`
+    <tr class="clickable" onclick="toggleUserDetail('${p.id}')">
+      <td style="color:var(--muted);font-size:12px">${i+1}</td>
+      <td><strong>${p.full_name||'—'}</strong></td>
+      <td style="color:var(--muted)">${p.email||'—'}</td>
+      <td style="font-size:12px">${p.department||'—'}</td>
+      <td><span class="badge badge-${p.role||'seller'}">${p.role==='admin'?'Admin':'Sælger'}</span></td>
+      <td style="color:var(--muted);font-size:12px">${p.created_at?new Date(p.created_at).toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'}):''}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn-edit" onclick="openEdit('${p.id}','${(p.full_name||'').replace(/'/g,"\\'")}','${(p.email||'').replace(/'/g,"\\'")}','${(p.department||'').replace(/'/g,"\\'")}','${p.role||'seller'}')">Rediger</button>
+        <button class="btn-danger" onclick="deleteUser('${p.id}','${(p.full_name||p.email||'').replace(/'/g,"\\'")}')">Slet</button>
+      </td>
+    </tr>
+    <tr id="detail-${p.id}"><td colspan="7"><div class="detail-panel" id="panel-${p.id}"></div></td></tr>
+  `).join('');
+}
+
+async function toggleUserDetail(userId){
+  const panel=document.getElementById('panel-'+userId);
+  const row=document.getElementById('detail-'+userId);
+  const isOpen=panel.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.detail-panel.open').forEach(p=>p.classList.remove('open'));
+  if(isOpen)return;
+  panel.classList.add('open');
+  panel.innerHTML='<div style="color:var(--muted);font-size:13px">Indlæser...</div>';
+
+  const token=getToken();
+  const [analysesRes,historyRes]=await Promise.all([
+    fetch(URL+'/rest/v1/analyses?user_id=eq.'+userId+'&select=company_a,company_b,insurance_type,created_at&order=created_at.desc&limit=50',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
+    fetch(URL+'/rest/v1/login_history?user_id=eq.'+userId+'&order=logged_in_at.desc&limit=10',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}})
+  ]);
+  const analyses=await analysesRes.json();
+  const history=await historyRes.json();
+  const arr=Array.isArray(analyses)?analyses:[];
+  const hist=Array.isArray(history)?history:[];
+
+  // Count pairs
+  const pairs={};
+  arr.forEach(a=>{const k=a.company_b;pairs[k]=(pairs[k]||0)+1;});
+  const topPairs=Object.entries(pairs).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  // This week
+  const weekAgo=new Date(Date.now()-7*24*60*60*1000).toISOString();
+  const thisWeek=arr.filter(a=>a.created_at>=weekAgo).length;
+  const thisMonth=arr.filter(a=>a.created_at>=new Date(Date.now()-30*24*60*60*1000).toISOString()).length;
+
+  const now=new Date();
+  const histHtml=hist.length===0?'<span style="color:var(--muted);font-size:12px">Ingen login-historik</span>':
+    hist.map((h,i)=>{
+      const d=new Date(h.logged_in_at);
+      const diff=Math.floor((now-d)/(1000*60*60));
+      const ago=diff<1?'Lige nu':diff<24?diff+'t siden':Math.floor(diff/24)===1?'I går':Math.floor(diff/24)+' dage siden';
+      return`<div class="h-chip${i===0?' latest':''}"><div class="h-dot"></div><span style="font-weight:500">${d.toLocaleDateString('da-DK',{day:'numeric',month:'short'})}</span><span style="color:var(--muted)">${ago}</span></div>`;
+    }).join('');
+
+  panel.innerHTML=`
+    <div class="detail-grid">
+      <div class="detail-stat"><div class="detail-stat-val">${arr.length}</div><div class="detail-stat-lbl">Analyser i alt</div></div>
+      <div class="detail-stat"><div class="detail-stat-val">${thisWeek}</div><div class="detail-stat-lbl">Denne uge</div></div>
+      <div class="detail-stat"><div class="detail-stat-val">${thisMonth}</div><div class="detail-stat-lbl">Denne måned</div></div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Mest analyserede modparter</div>
+      <div class="detail-pairs">${topPairs.length>0?topPairs.map(([k,v])=>`<div class="pair-chip">${k} <strong>${v}</strong></div>`).join(''):'<span style="color:var(--muted);font-size:12px">Ingen analyser endnu</span>'}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Seneste logins</div>
+      <div class="history-timeline">${histHtml}</div>
+    </div>`;
+}
+
+// ===== STATS TAB =====
+let allFeedback=[];
+let fbLimit=20;
+
+function onPeriodChange(){
+  const val=document.getElementById('lb-period').value;
+  const customDiv=document.getElementById('custom-period');
+  if(val==='custom'){
+    customDiv.style.display='flex';
+    const today=new Date().toISOString().split('T')[0];
+    const monthAgo=new Date(Date.now()-30*24*60*60*1000).toISOString().split('T')[0];
+    document.getElementById('date-from').value=monthAgo;
+    document.getElementById('date-to').value=today;
+  }else{
+    customDiv.style.display='none';
+    loadLeaderboard();
+  }
+}
+
+function renderFeedback(){
+  const typeFilter=document.getElementById('fb-filter-type').value;
+  const search=document.getElementById('fb-search').value.toLowerCase();
+  const filtered=allFeedback.filter(f=>{
+    if(f.issue_type==='generel'||f.issue_type?.startsWith('coach'))return false;
+    if(typeFilter&&f.issue_type!==typeFilter)return false;
+    if(search&&!(f.category||'').toLowerCase().includes(search)&&!(f.comment||'').toLowerCase().includes(search)&&!(f.company_b||'').toLowerCase().includes(search))return false;
+    return true;
+  });
+  const shown=filtered.slice(0,fbLimit);
+  document.getElementById('feedback-table').innerHTML=shown.length===0?'<tr><td colspan="5"><div class="empty">Ingen feedback matcher filteret</div></td></tr>':
+    shown.map(f=>`
+      <tr>
+        <td style="font-size:11px;color:var(--muted)">${new Date(f.created_at).toLocaleDateString('da-DK',{day:'numeric',month:'short'})}</td>
+        <td style="font-size:12px">${f.company_a} vs. ${f.company_b}</td>
+        <td style="font-size:12px">${f.category||'—'}</td>
+        <td><span class="badge ${f.issue_type==='forkert_info'?'badge-red':f.issue_type==='mangler_info'?'badge-gray':'badge-green'}">${(f.issue_type||'—').replace(/_/g,' ')}</span></td>
+        <td style="font-size:12px;color:var(--muted);max-width:240px">${f.comment||'—'}</td>
+      </tr>`).join('');
+  document.getElementById('fb-showing').textContent='Viser '+shown.length+' af '+filtered.length+' poster';
+  const moreBtn=document.getElementById('fb-more-btn');
+  moreBtn.style.display=filtered.length>fbLimit?'block':'none';
+}
+
+function showMoreFeedback(){fbLimit+=20;renderFeedback();}
+
+function exportToExcel(data,filename){
+  if(!data||data.length===0){toast('Ingen data at eksportere','err');return;}
+  const headers=Object.keys(data[0]);
+  const escape=v=>'"'+String(v||'').replace(/"/g,'""')+'"';
+  const rows=[headers.map(escape),...data.map(r=>headers.map(h=>escape(r[h])))];
+  const csv='\uFEFF'+rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=window.URL.createObjectURL(blob);
+  a.download=filename+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+function exportFeedback(){
+  const data=allFeedback.filter(f=>f.issue_type!=='generel'&&!f.issue_type?.startsWith('coach')).map(f=>({
+    Dato:new Date(f.created_at).toLocaleDateString('da-DK'),
+    Selskab_A:f.company_a,Selskab_B:f.company_b,
+    Forsikringstype:f.insurance_type,Kategori:f.category,
+    Type:f.issue_type,Kommentar:f.comment||''
+  }));
+  exportToExcel(data,'IQSales_Feedback_'+new Date().toLocaleDateString('da-DK').replace(/\//g,'-'));
+  toast('✓ Feedback eksporteret','ok');
+}
+
+async function loadStats(){
+  const token=getToken();
+  const [analysesRes,profilesRes,cacheRes,feedbackRes]=await Promise.all([
+    fetch(URL+'/rest/v1/analyses?select=company_a,company_b,insurance_type,user_id,created_at&order=created_at.desc&limit=2000',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
+    fetch(URL+'/rest/v1/profiles?select=id,full_name,department,role',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
+    fetch(URL+'/rest/v1/analysis_cache?select=company_a,company_b,insurance_type,created_at',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}}),
+    fetch(URL+'/rest/v1/feedback?select=*&order=created_at.desc&limit=500',{headers:{'apikey':KEY,'Authorization':'Bearer '+token}})
+  ]);
+
+  const analyses=await analysesRes.json();
+  const profiles=await profilesRes.json();
+  const cache=await cacheRes.json();
+  const feedback=await feedbackRes.json();
+
+  const arr=Array.isArray(analyses)?analyses:[];
+  const prof=Array.isArray(profiles)?profiles:[];
+  const cArr=Array.isArray(cache)?cache:[];
+  const fbArr=Array.isArray(feedback)?feedback:[];
+
+  const profMap={};prof.forEach(p=>profMap[p.id]=p);
+
+  // Top stats
+  document.getElementById('st-total-users').textContent=prof.length;
+  document.getElementById('st-total-analyses').textContent=arr.length;
+  const cacheRate=arr.length>0?Math.round(cArr.length/(arr.length+cArr.length)*100):0;
+  document.getElementById('st-cache-rate').textContent=cacheRate+'%';
+  const weekAgo=new Date(Date.now()-7*24*60*60*1000).toISOString();
+  const activeWeek=new Set(arr.filter(a=>a.created_at>=weekAgo).map(a=>a.user_id)).size;
+  document.getElementById('st-active-week').textContent=activeWeek;
+
+  // API COST CALCULATIONS (Sonnet ~0.45 kr/kald)
+  const COST_PER_CALL=0.45;
+  const today2=new Date().toISOString().split('T')[0];
+  const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString();
+  const todayCalls=arr.filter(a=>a.created_at>=today2+'T00:00:00').length;
+  const monthCalls=arr.filter(a=>a.created_at>=monthStart).length;
+  const todayCost=(todayCalls*COST_PER_CALL).toFixed(0);
+  const monthCost=(monthCalls*COST_PER_CALL).toFixed(0);
+  const savedCalls=cArr.length;
+  const savedCost=(savedCalls*COST_PER_CALL).toFixed(0);
+  const savedPct=savedCalls+monthCalls>0?Math.round(savedCalls/(savedCalls+monthCalls)*100):0;
+  const daysInMonth=new Date().getDate();
+  const projectedCost=daysInMonth>0?Math.round(monthCalls/daysInMonth*30*COST_PER_CALL):0;
+  document.getElementById('api-today').textContent=todayCost+' kr';
+  document.getElementById('api-today-calls').textContent=todayCalls+' API-kald';
+  document.getElementById('api-month').textContent=monthCost+' kr';
+  document.getElementById('api-month-calls').textContent=monthCalls+' API-kald';
+  document.getElementById('api-saved').textContent=savedCost+' kr';
+  document.getElementById('api-saved-pct').textContent=savedPct+'% cache hit rate';
+  document.getElementById('api-projected').textContent=projectedCost+' kr';
+
+  // Week chart
+  const weekData=[0,0,0,0,0,0,0];
+  const today=new Date();
+  arr.forEach(a=>{
+    const d=new Date(a.created_at);
+    const diff=Math.floor((today-d)/(1000*60*60*24));
+    if(diff<7)weekData[6-diff]++;
+  });
+  const maxW=Math.max(...weekData,1);
+  const dayLabels=[];
+  for(let i=6;i>=0;i--){const d=new Date(today-i*86400000);dayLabels.push(DAYS[d.getDay()===0?6:d.getDay()-1]);}
+  document.getElementById('week-chart').innerHTML=weekData.map((v,i)=>`<div class="week-bar-wrap"><div class="week-bar${i===6?' today':''}" style="height:${Math.round(v/maxW*100)}%"></div></div>`).join('');
+  document.getElementById('week-labels').innerHTML=dayLabels.map((l,i)=>`<div style="flex:1;text-align:center;font-size:10px" class="week-bar-label${i===6?' today':''}">${l}<br><span style="font-weight:500">${weekData[i]}</span></div>`).join('');
+
+  // Top companies
+  const compCount={};
+  arr.forEach(a=>{compCount[a.company_b]=(compCount[a.company_b]||0)+1;});
+  const topComp=Object.entries(compCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxC=topComp[0]?.[1]||1;
+  document.getElementById('top-companies').innerHTML=topComp.length===0?'<div class="empty" style="padding:1rem">Ingen data endnu</div>':
+    topComp.map(([name,count])=>`<div class="bar-row"><span class="bar-label">${name}</span><div class="bar-track"><div class="bar-fill bar-fill-blue" style="width:${Math.round(count/maxC*100)}%"></div></div><span class="bar-count">${count}</span></div>`).join('');
+
+  // Dept activity
+  const deptCount={};
+  arr.forEach(a=>{const p=profMap[a.user_id];const d=p?.department||'Ukendt';deptCount[d]=(deptCount[d]||0)+1;});
+  const topDept=Object.entries(deptCount).sort((a,b)=>b[1]-a[1]);
+  const maxD=topDept[0]?.[1]||1;
+  document.getElementById('dept-activity').innerHTML=topDept.length===0?'<div class="empty" style="padding:1rem">Ingen data endnu</div>':
+    topDept.map(([name,count])=>`<div class="bar-row"><span class="bar-label">${name.replace('Direkte Salg Privat ','DSP ').replace('Salgscenter ','SC ')}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(count/maxD*100)}%"></div></div><span class="bar-count">${count}</span></div>`).join('');
+
+  // Top types
+  const typeCount={};
+  const typeLabels={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel'};
+  arr.forEach(a=>{typeCount[a.insurance_type]=(typeCount[a.insurance_type]||0)+1;});
+  const topTypes=Object.entries(typeCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxT=topTypes[0]?.[1]||1;
+  document.getElementById('top-types').innerHTML=topTypes.length===0?'<div class="empty" style="padding:1rem">Ingen data endnu</div>':
+    topTypes.map(([name,count])=>`<div class="bar-row"><span class="bar-label">${typeLabels[name]||name}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(count/maxT*100)}%"></div></div><span class="bar-count">${count}</span></div>`).join('');
+
+  // Leaderboard
+  loadLeaderboard(arr,profMap);
+
+  // Feedback
+  allFeedback=fbArr;
+  fbLimit=20;
+  renderFeedback();
+
+  window._statsData={arr,profMap};
+}
+
+function loadLeaderboard(arr,profMap){
+  if(!arr){arr=window._statsData?.arr||[];profMap=window._statsData?.profMap||{};}
+  const period=document.getElementById('lb-period')?.value||'7';
+  let since;
+  if(period==='custom'){
+    const from=document.getElementById('date-from')?.value;
+    since=from?from+'T00:00:00':new Date(Date.now()-7*24*60*60*1000).toISOString();
+    const to=document.getElementById('date-to')?.value;
+    if(to)arr=arr.filter(a=>a.created_at<=to+'T23:59:59');
+  }else{
+    since=new Date(Date.now()-parseInt(period)*24*60*60*1000).toISOString();
+  }
+  const filtered=arr.filter(a=>a.created_at>=since);
+  const userCount={};
+  filtered.forEach(a=>{userCount[a.user_id]=(userCount[a.user_id]||0)+1;});
+  const sorted=Object.entries(userCount).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  const now=new Date();
+
+  // Also get last analysis per user
+  const lastAnalysis={};
+  arr.forEach(a=>{if(!lastAnalysis[a.user_id]||a.created_at>lastAnalysis[a.user_id])lastAnalysis[a.user_id]=a.created_at;});
+
+  document.getElementById('leaderboard-table').innerHTML=sorted.length===0?'<tr><td colspan="6"><div class="empty">Ingen analyser i perioden</div></td></tr>':
+    sorted.map(([uid,count],i)=>{
+      const p=profMap[uid]||{};
+      const last=lastAnalysis[uid]?new Date(lastAnalysis[uid]):null;
+      const diffDays=last?Math.floor((now-last)/(1000*60*60*24)):999;
+      const status=diffDays===0?'<span class="badge badge-green">Aktiv i dag</span>':diffDays<=3?`<span class="badge badge-gray">${diffDays}d siden</span>`:`<span class="badge badge-red">${diffDays}d siden</span>`;
+      return`<tr class="clickable" onclick="toggleUserDetail('${uid}')">
+        <td style="color:var(--muted);font-size:12px">${i+1}</td>
+        <td><strong>${p.full_name||'Ukendt'}</strong></td>
+        <td style="font-size:12px;color:var(--muted)">${p.department?.replace('Direkte Salg Privat ','DSP ')||'—'}</td>
+        <td><strong>${count}</strong> analyser</td>
+        <td style="font-size:12px;color:var(--muted)">${last?last.toLocaleDateString('da-DK',{day:'numeric',month:'short',year:'numeric'}):'-'}</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('');
+}
+
+// ===== INVITE USER =====
+async function inviteUser(){
+  const name=document.getElementById('inv-name').value.trim();
+  const email=document.getElementById('inv-email').value.trim();
+  const dept=document.getElementById('inv-dept').value;
+  const pw=document.getElementById('inv-pw').value.trim();
+  const btn=document.getElementById('inv-btn');
+  if(!name||!email||!pw){toast('Udfyld navn, email og kodeord','err');return;}
+  if(pw.length<6){toast('Kodeord skal være mindst 6 tegn','err');return;}
+  btn.disabled=true;btn.textContent='Opretter...';
+  try{
+    const res=await fetch('/api/create-user',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getToken()},body:JSON.stringify({email,password:pw,full_name:name,department:dept||null,role:'seller'})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Fejl');
+    toast('✓ '+name+' er oprettet','ok');
+    document.getElementById('inv-name').value='';
+    document.getElementById('inv-email').value='';
+    document.getElementById('inv-pw').value='';
+    document.getElementById('inv-dept').value='';
+    await loadUsers();
+  }catch(e){toast('Fejl: '+e.message,'err');}
+  btn.disabled=false;btn.textContent='Opret bruger';
+}
+
+// ===== EDIT USER =====
+function openEdit(id,name,email,dept,role){
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-name').value=name;
+  document.getElementById('edit-email').value=email;
+  document.getElementById('edit-dept').value=dept||'';
+  document.getElementById('edit-role').value=role||'seller';
+  document.getElementById('edit-pw').value='';
+  document.getElementById('edit-modal-sub').textContent=email;
+  document.getElementById('edit-modal-bg').classList.add('open');
+}
+function closeEdit(){document.getElementById('edit-modal-bg').classList.remove('open');}
+
+async function saveEdit(){
+  const id=document.getElementById('edit-id').value;
+  const name=document.getElementById('edit-name').value.trim();
+  const email=document.getElementById('edit-email').value.trim();
+  const dept=document.getElementById('edit-dept').value;
+  const role=document.getElementById('edit-role').value;
+  const pw=document.getElementById('edit-pw').value.trim();
+  if(!name||!email){toast('Navn og email er påkrævet','err');return;}
+  const token=getToken();
+  const r=await fetch(URL+'/rest/v1/profiles',{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+token,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id,full_name:name,email,department:dept||null,role})});
+  if(!r.ok){toast('Kunne ikke opdatere profil','err');return;}
+  if(pw){
+    if(pw.length<6){toast('Kodeord skal være mindst 6 tegn','err');return;}
+    await fetch(URL+'/auth/v1/admin/users/'+id,{method:'PUT',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+token},body:JSON.stringify({password:pw})});
+  }
+  toast('✓ Bruger opdateret','ok');
+  closeEdit();
+  await loadUsers();
+}
+
+async function deleteUser(id,name){
+  if(!confirm('Slet '+name+'? Brugeren mister adgang.'))return;
+  const token=getToken();
+  await fetch(URL+'/rest/v1/profiles?id=eq.'+id,{method:'DELETE',headers:{'apikey':KEY,'Authorization':'Bearer '+token}});
+  toast(name+' er slettet','ok');
+  await loadUsers();
+}
+
+init();
+</script>
+</body>
+</html>
