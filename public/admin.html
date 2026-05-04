@@ -407,10 +407,15 @@
               <select id="inviteDept">
                 <option value="">Vælg afdeling</option>
                 <option>Direkte Salg Privat Vest</option>
+                <option>Direkte Salg Privat Midt</option>
+                <option>Direkte Salg Privat Øst</option>
                 <option>Direkte Salg Privat Online</option>
-                <option>Erhverv</option>
-                <option>Medarbejding</option>
-                <option>Ledelse</option>
+                <option>Direkte Salg Privat Sydbank Vest</option>
+                <option>Direkte Salg Privat Sydbank Øst</option>
+                <option>Salgscenter Alm Brand</option>
+                <option>Salgscenter Codan</option>
+                <option>Mødebooking</option>
+                <option>Ledelsen</option>
               </select>
             </div>
             <button class="btn-primary" id="inviteBtn" onclick="inviteUser()">
@@ -583,6 +588,46 @@
   </div>
 </div>
 
+<!-- Edit User Modal -->
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:14px;max-width:500px;width:90%;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--green);margin-bottom:8px;">Rediger bruger</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Opdater brugerens information</p>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Fulde navn</label>
+      <input type="text" id="editName" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;">
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Email</label>
+      <input type="email" id="editEmail" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;" disabled>
+    </div>
+    
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Afdeling</label>
+      <select id="editDept" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;">
+        <option value="">Vælg afdeling</option>
+        <option>Direkte Salg Privat Vest</option>
+        <option>Direkte Salg Privat Midt</option>
+        <option>Direkte Salg Privat Øst</option>
+        <option>Direkte Salg Privat Online</option>
+        <option>Direkte Salg Privat Sydbank Vest</option>
+        <option>Direkte Salg Privat Sydbank Øst</option>
+        <option>Salgscenter Alm Brand</option>
+        <option>Salgscenter Codan</option>
+        <option>Mødebooking</option>
+        <option>Ledelsen</option>
+      </select>
+    </div>
+    
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <button onclick="closeEditModal()" style="padding:10px 20px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Annuller</button>
+      <button onclick="saveUserEdit()" id="saveEditBtn" class="btn-primary">Gem ændringer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -677,7 +722,7 @@
         <td style="color:var(--muted);font-size:13px">${formatDate(p.created_at)}</td>
         <td>
           ${p.id !== currentUser.id
-            ? `<button class="btn-danger" onclick="deleteUser('${p.id}', '${p.full_name || p.email}')">Slet</button>`
+            ? `<button class="btn-primary" style="padding:6px 12px;font-size:12px;margin-right:8px;" onclick="editUser('${p.id}', '${p.full_name || ''}', '${p.email}', '${p.department || ''}')">Rediger</button><button class="btn-danger" onclick="deleteUser('${p.id}', '${p.full_name || p.email}')">Slet</button>`
             : '<span style="font-size:12px;color:var(--muted)">Dig</span>'
           }
         </td>
@@ -913,6 +958,58 @@
     btn.disabled = false;
     btn.innerHTML = 'Opret bruger';
 
+    await loadUsers();
+  }
+
+  let editingUserId = null;
+
+  function editUser(id, name, email, dept) {
+    editingUserId = id;
+    document.getElementById('editName').value = name || '';
+    document.getElementById('editEmail').value = email || '';
+    document.getElementById('editDept').value = dept || '';
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    editingUserId = null;
+    document.getElementById('editModal').style.display = 'none';
+  }
+
+  async function saveUserEdit() {
+    if (!editingUserId) return;
+
+    const name = document.getElementById('editName').value.trim();
+    const dept = document.getElementById('editDept').value;
+    const btn = document.getElementById('saveEditBtn');
+
+    if (!name) {
+      showToast('Navn skal udfyldes', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Gemmer...';
+
+    const { error } = await sb
+      .from('profiles')
+      .update({
+        full_name: name,
+        department: dept || null
+      })
+      .eq('id', editingUserId);
+
+    if (error) {
+      showToast('Kunne ikke opdatere bruger', 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Gem ændringer';
+      return;
+    }
+
+    showToast('✅ Bruger opdateret', 'success');
+    closeEditModal();
+    btn.disabled = false;
+    btn.innerHTML = 'Gem ændringer';
     await loadUsers();
   }
 
