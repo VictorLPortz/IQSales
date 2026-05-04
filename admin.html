@@ -81,6 +81,50 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   }
   .nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
+  /* Tabs */
+  .tabs {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+  }
+
+  .tabs-list {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+  }
+
+  .tab-button {
+    padding: 14px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-button:hover {
+    color: var(--text);
+    background: #FAFAFA;
+  }
+
+  .tab-button.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
   /* Layout */
   .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
 
@@ -89,7 +133,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   .page-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
 
   /* Stats */
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
 
   .stat-card {
     background: var(--surface);
@@ -100,6 +144,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
 
   .stat-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-value { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--green); margin-top: 4px; }
+  .stat-subtext { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
   /* Cards */
   .card {
@@ -233,7 +278,8 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   }
   .badge-admin { background: #FEF3C7; color: #92400E; }
   .badge-seller { background: #ECFDF5; color: #065F46; }
-  .badge-invited { background: #EFF6FF; color: #1D4ED8; }
+  .badge-ready { background: #ECFDF5; color: #065F46; }
+  .badge-error { background: #FEF2F2; color: #DC2626; }
 
   .empty-state {
     text-align: center;
@@ -254,18 +300,39 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Login history */
-  .history-entry {
+  /* Activity entry */
+  .activity-entry {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     padding: 12px 0;
     border-bottom: 1px solid #F3F4F6;
     font-size: 14px;
   }
-  .history-entry:last-child { border-bottom: none; }
-  .history-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-light); flex-shrink: 0; }
-  .history-time { color: var(--muted); font-size: 12px; margin-left: auto; }
+  .activity-entry:last-child { border-bottom: none; }
+  .activity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-light); flex-shrink: 0; margin-top: 6px; }
+  .activity-time { color: var(--muted); font-size: 12px; margin-left: auto; flex-shrink: 0; }
+  .activity-user { color: var(--muted); font-size: 12px; }
+
+  /* PDF Status grid */
+  .pdf-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .pdf-item {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .pdf-name { font-weight: 500; }
+  .pdf-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
   #authGuard { display: none; }
 </style>
@@ -284,102 +351,236 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     </div>
   </nav>
 
-  <div class="container">
-    <div class="page-header">
-      <h1>Brugerstyring</h1>
-      <p>Opret og administrer adgang til IQSales</p>
-    </div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <ul class="tabs-list">
+      <li><button class="tab-button active" onclick="switchTab('users')">Brugerstyring</button></li>
+      <li><button class="tab-button" onclick="switchTab('stats')">Statistik & indsigt</button></li>
+      <li><button class="tab-button" onclick="switchTab('pdfs')">PDF Betingelser</button></li>
+    </ul>
+  </div>
 
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-label">Aktive brugere</div>
-        <div class="stat-value" id="statTotal">—</div>
+  <!-- TAB 1: Brugerstyring -->
+  <div id="tab-users" class="tab-content active">
+    <div class="container">
+      <div class="page-header">
+        <h1>Brugerstyring</h1>
+        <p>Opret og administrer adgang til IQSales</p>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Sælgere</div>
-        <div class="stat-value" id="statSellers">—</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Afdelinger</div>
-        <div class="stat-value" id="statDepts">—</div>
-      </div>
-    </div>
 
-    <!-- Invite form -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h2>Inviter ny bruger</h2>
-          <p>Brugeren modtager en email og sætter selv sin adgangskode</p>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Aktive brugere</div>
+          <div class="stat-value" id="statTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sælgere</div>
+          <div class="stat-value" id="statSellers">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Afdelinger</div>
+          <div class="stat-value" id="statDepts">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Logins i dag</div>
+          <div class="stat-value" id="statLogins">—</div>
         </div>
       </div>
-      <div class="card-body">
-        <div class="invite-grid">
-          <div class="form-group">
-            <label>Fulde navn</label>
-            <input type="text" id="inviteName" placeholder="Fornavn Efternavn">
+
+      <!-- Invite form -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Inviter ny bruger</h2>
+            <p>Brugeren modtager en email og sætter selv sin adgangskode</p>
           </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="inviteEmail" placeholder="navn@selskab.dk">
+        </div>
+        <div class="card-body">
+          <div class="invite-grid">
+            <div class="form-group">
+              <label>Fulde navn</label>
+              <input type="text" id="inviteName" placeholder="Fornavn Efternavn">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="inviteEmail" placeholder="navn@selskab.dk">
+            </div>
+            <div class="form-group">
+              <label>Afdeling</label>
+              <select id="inviteDept">
+                <option value="">Vælg afdeling</option>
+                <option>Direkte Salg Privat Vest</option>
+                <option>Direkte Salg Privat Online</option>
+                <option>Erhverv</option>
+                <option>Medarbejding</option>
+                <option>Ledelse</option>
+              </select>
+            </div>
+            <button class="btn-primary" id="inviteBtn" onclick="inviteUser()">
+              Opret bruger
+            </button>
           </div>
-          <div class="form-group">
-            <label>Afdeling</label>
-            <select id="inviteDept">
-              <option value="">Vælg afdeling</option>
-              <option>Salg</option>
-              <option>Rådgivning</option>
-              <option>Erhverv</option>
-              <option>Privat</option>
-              <option>Ledelse</option>
-              <option>IT</option>
-              <option>Andet</option>
-            </select>
+        </div>
+      </div>
+
+      <!-- User list -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Alle brugere</h2>
+            <p id="userCount">Indlæser...</p>
           </div>
-          <button class="btn-primary" id="inviteBtn" onclick="inviteUser()">
-            Send invitation
-          </button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Navn</th>
+                <th>Email</th>
+                <th>Afdeling</th>
+                <th>Rolle</th>
+                <th>Oprettet</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="userTable">
+              <tr><td colspan="6"><div class="empty-state">Indlæser brugere...</div></td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- User list -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h2>Alle brugere</h2>
-          <p id="userCount">Indlæser...</p>
+  <!-- TAB 2: Statistik & indsigt -->
+  <div id="tab-stats" class="tab-content">
+    <div class="container">
+      <div class="page-header">
+        <h1>Statistik & indsigt</h1>
+        <p>Oversigt over aktivitet og brug af IQSales</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Brugere i alt</div>
+          <div class="stat-value" id="statsUsersTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Analyser i alt</div>
+          <div class="stat-value" id="statsAnalysesTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aktive denne uge</div>
+          <div class="stat-value" id="statsActiveThisWeek">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Gns. analysetid</div>
+          <div class="stat-value" id="statsAvgTime">—</div>
+          <div class="stat-subtext">sek per analyse</div>
         </div>
       </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Navn</th>
-              <th>Email</th>
-              <th>Afdeling</th>
-              <th>Rolle</th>
-              <th>Oprettet</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="userTable">
-            <tr><td colspan="6"><div class="empty-state">Indlæser brugere...</div></td></tr>
-          </tbody>
-        </table>
+
+      <!-- Sælger aktivitet -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Sælger aktivitet</h2>
+            <p>Klik på sælgere for at se detaljer</p>
+          </div>
+        </div>
+        <div class="card-body" id="sellerActivity">
+          <div class="empty-state">Indlæser aktivitet...</div>
+        </div>
+      </div>
+
+      <!-- Feedback fra sælgere -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Feedback fra sælgere</h2>
+            <p>Seneste feedback og kommentarer</p>
+          </div>
+        </div>
+        <div class="card-body" id="feedbackList">
+          <div class="empty-state">Indlæser feedback...</div>
+        </div>
       </div>
     </div>
+  </div>
 
-    <!-- Login history -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h2>Seneste logins</h2>
-          <p>De 20 seneste login-hændelser</p>
+  <!-- TAB 3: PDF Betingelser -->
+  <div id="tab-pdfs" class="tab-content">
+    <div class="container">
+      <div class="page-header">
+        <h1>PDF Betingelser</h1>
+        <p>Administrer forsikringsbetingelser fra selskaberne</p>
+      </div>
+
+      <!-- Refresh control -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Opdater betingelser</h2>
+            <p>Hent de nyeste forsikringsbetingelser fra selskaberne</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <button class="btn-primary" id="refreshBtn" onclick="refreshPDFs()" style="font-size: 15px; padding: 12px 24px;">
+              🔄 Refresh alle PDFs
+            </button>
+            <div id="refreshStatus" style="font-size: 13px; color: var(--muted);"></div>
+          </div>
+          <div id="refreshProgress" style="margin-top: 20px; display: none;">
+            <div style="background: #F3F4F6; border-radius: 8px; height: 8px; overflow: hidden;">
+              <div id="progressBar" style="background: var(--green); height: 100%; width: 0%; transition: width 0.3s;"></div>
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: var(--muted);" id="progressText"></div>
+          </div>
         </div>
       </div>
-      <div class="card-body" id="loginHistory">
-        <div class="empty-state">Indlæser historik...</div>
+
+      <!-- PDF Status Overview -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Status på PDF'er</h2>
+            <p id="pdfStatusCount">Indlæser...</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="pdf-grid" id="pdfGrid">
+            <div class="empty-state">Indlæser PDF status...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Latest refresh log -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Seneste refreshes</h2>
+            <p>Historik over PDF opdateringer</p>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Startet</th>
+                <th>Status</th>
+                <th>PDFs</th>
+                <th>Succesfull</th>
+                <th>Fejlet</th>
+                <th>Cost</th>
+                <th>Varighed</th>
+              </tr>
+            </thead>
+            <tbody id="refreshLogTable">
+              <tr><td colspan="7"><div class="empty-state">Indlæser historik...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -393,6 +594,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
   const supabase = window._sb || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
+  let currentTab = 'users';
 
   async function init() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -415,8 +617,26 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     document.getElementById('authGuard').style.display = 'block';
     document.getElementById('navUser').textContent = profile.full_name || currentUser.email;
 
+    // Load all tabs data
     await loadUsers();
-    await loadLoginHistory();
+    await loadStats();
+    await loadPDFStatus();
+  }
+
+  function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Update buttons
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+
+    // Load data for tab if needed
+    if (tabName === 'stats') loadStats();
+    if (tabName === 'pdfs') loadPDFStatus();
   }
 
   async function loadUsers() {
@@ -432,6 +652,15 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     document.getElementById('statSellers').textContent = profiles.filter(p => p.role === 'seller').length;
     const depts = new Set(profiles.map(p => p.department).filter(Boolean));
     document.getElementById('statDepts').textContent = depts.size;
+
+    // Logins today
+    const today = new Date().toISOString().split('T')[0];
+    const { data: logins } = await supabase
+      .from('login_history')
+      .select('id')
+      .gte('logged_in_at', today);
+    document.getElementById('statLogins').textContent = logins?.length || 0;
+
     document.getElementById('userCount').textContent = `${profiles.length} bruger${profiles.length !== 1 ? 'e' : ''}`;
 
     const tbody = document.getElementById('userTable');
@@ -457,27 +686,187 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     `).join('');
   }
 
-  async function loadLoginHistory() {
-    const { data, error } = await supabase
+  async function loadStats() {
+    // Users total
+    const { data: profiles } = await supabase.from('profiles').select('id, created_at');
+    document.getElementById('statsUsersTotal').textContent = profiles?.length || 0;
+
+    // Analyses total
+    const { data: analyses } = await supabase.from('analyses').select('id, created_at, user_id');
+    document.getElementById('statsAnalysesTotal').textContent = analyses?.length || 0;
+
+    // Active this week
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentLogins } = await supabase
       .from('login_history')
-      .select('*')
+      .select('user_id')
+      .gte('logged_in_at', weekAgo);
+    const uniqueUsers = new Set(recentLogins?.map(l => l.user_id));
+    document.getElementById('statsActiveThisWeek').textContent = uniqueUsers.size;
+
+    // Avg time (mock - would need actual timing data)
+    document.getElementById('statsAvgTime').textContent = '—';
+
+    // Seller Activity with NAME + DEPARTMENT
+    const { data: loginHistory } = await supabase
+      .from('login_history')
+      .select('*, profiles(full_name, department)')
       .order('logged_in_at', { ascending: false })
       .limit(20);
 
-    const container = document.getElementById('loginHistory');
-
-    if (error || !data || data.length === 0) {
-      container.innerHTML = '<div class="empty-state">Ingen login-historik endnu — den opbygges automatisk når brugere logger ind.</div>';
-      return;
+    const activityContainer = document.getElementById('sellerActivity');
+    if (!loginHistory || loginHistory.length === 0) {
+      activityContainer.innerHTML = '<div class="empty-state">Ingen aktivitet endnu</div>';
+    } else {
+      activityContainer.innerHTML = loginHistory.map(h => `
+        <div class="activity-entry">
+          <div class="activity-dot"></div>
+          <div style="flex: 1;">
+            <div><strong>${h.profiles?.full_name || h.full_name || h.email}</strong> loggede ind</div>
+            <div class="activity-user">${h.profiles?.department || 'Ingen afdeling'}</div>
+          </div>
+          <span class="activity-time">${formatDate(h.logged_in_at)}</span>
+        </div>
+      `).join('');
     }
 
-    container.innerHTML = data.map(h => `
-      <div class="history-entry">
-        <div class="history-dot"></div>
-        <span><strong>${h.full_name || h.email}</strong> loggede ind</span>
-        <span class="history-time">${formatDate(h.logged_in_at)}</span>
-      </div>
-    `).join('');
+    // Feedback with NAME + DEPARTMENT
+    const { data: feedback } = await supabase
+      .from('feedback')
+      .select('*, profiles(full_name, department)')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const feedbackContainer = document.getElementById('feedbackList');
+    if (!feedback || feedback.length === 0) {
+      feedbackContainer.innerHTML = '<div class="empty-state">Ingen feedback endnu</div>';
+    } else {
+      feedbackContainer.innerHTML = feedback.map(f => `
+        <div class="activity-entry">
+          <div class="activity-dot"></div>
+          <div style="flex: 1;">
+            <div><strong>${f.profiles?.full_name || 'Anonym'}</strong></div>
+            <div class="activity-user">${f.profiles?.department || 'Ingen afdeling'}</div>
+            <div style="margin-top: 4px; font-size: 13px;">${f.message || f.feedback_text || '—'}</div>
+          </div>
+          <span class="activity-time">${formatDate(f.created_at)}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  async function loadPDFStatus() {
+    // Load insurance terms
+    const { data: terms } = await supabase
+      .from('insurance_terms')
+      .select('*')
+      .order('parsed_at', { ascending: false });
+
+    const grid = document.getElementById('pdfGrid');
+    
+    if (!terms || terms.length === 0) {
+      grid.innerHTML = '<div class="empty-state">Ingen PDFs hentet endnu. Klik "Refresh alle PDFs" for at starte.</div>';
+      document.getElementById('pdfStatusCount').textContent = '0 PDFs';
+      document.getElementById('refreshStatus').textContent = 'Systemet er klart til første refresh';
+    } else {
+      document.getElementById('pdfStatusCount').textContent = `${terms.length} PDFs loaded`;
+      
+      // Latest refresh time
+      const latest = terms[0]?.parsed_at;
+      if (latest) {
+        document.getElementById('refreshStatus').textContent = `Sidst opdateret: ${formatDate(latest)}`;
+      }
+
+      grid.innerHTML = terms.map(t => `
+        <div class="pdf-item">
+          <div>
+            <div class="pdf-name">${t.selskab} - ${t.produkt_type}</div>
+            <div class="pdf-meta">${formatDate(t.parsed_at)}</div>
+          </div>
+          <span class="badge badge-ready">✓</span>
+        </div>
+      `).join('');
+    }
+
+    // Load refresh log
+    const { data: logs } = await supabase
+      .from('parsing_log')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(10);
+
+    const logTable = document.getElementById('refreshLogTable');
+    if (!logs || logs.length === 0) {
+      logTable.innerHTML = '<tr><td colspan="7"><div class="empty-state">Ingen refresh historik endnu</div></td></tr>';
+    } else {
+      logTable.innerHTML = logs.map(log => {
+        const duration = log.completed_at 
+          ? Math.round((new Date(log.completed_at) - new Date(log.started_at)) / 1000)
+          : '—';
+        
+        return `
+          <tr>
+            <td style="font-size:13px;color:var(--muted)">${formatDate(log.started_at)}</td>
+            <td><span class="badge badge-${log.status === 'completed' ? 'ready' : 'error'}">${log.status}</span></td>
+            <td>${log.total_pdfs || 0}</td>
+            <td>${log.successful_parses || 0}</td>
+            <td>${log.failed_parses || 0}</td>
+            <td style="font-size:13px">$${(log.total_cost_usd || 0).toFixed(2)}</td>
+            <td style="font-size:13px;color:var(--muted)">${duration}s</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  async function refreshPDFs() {
+    const btn = document.getElementById('refreshBtn');
+    const progress = document.getElementById('refreshProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    if (!confirm('Start PDF refresh? Dette tager ~15 minutter og parser alle 34 PDFs.')) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Refresher...';
+    progress.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressText.textContent = 'Starter...';
+
+    try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/admin/refresh-pdfs', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        progressBar.style.width = '100%';
+        progressText.textContent = 'Færdig!';
+        showToast('✅ PDF refresh completed!', 'success');
+        await loadPDFStatus();
+      } else {
+        throw new Error(result.error || 'Unknown error');
+      }
+
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      showToast('❌ Refresh failed: ' + error.message, 'error');
+      progressText.textContent = 'Fejl: ' + error.message;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🔄 Refresh alle PDFs';
+      setTimeout(() => {
+        progress.style.display = 'none';
+      }, 3000);
+    }
   }
 
   async function inviteUser() {
@@ -491,8 +880,6 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Sender...';
 
-    // Use Supabase admin invite via edge function or direct auth admin
-    // Since we only have anon key, we use signUp with a random password and send invite
     const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -506,7 +893,7 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
     if (error) {
       showToast('Fejl: ' + error.message, 'error');
       btn.disabled = false;
-      btn.innerHTML = 'Send invitation';
+      btn.innerHTML = 'Opret bruger';
       return;
     }
 
@@ -520,12 +907,12 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
       });
     }
 
-    showToast(`✅ Invitation sendt til ${email}`, 'success');
+    showToast(`✅ ${name} oprettet`, 'success');
     document.getElementById('inviteName').value = '';
     document.getElementById('inviteEmail').value = '';
     document.getElementById('inviteDept').value = '';
     btn.disabled = false;
-    btn.innerHTML = 'Send invitation';
+    btn.innerHTML = 'Opret bruger';
 
     await loadUsers();
   }
@@ -547,7 +934,16 @@ if(!window.supabase){document.write('<sc'+'ript src="https://cdn.jsdelivr.net/np
 
   function formatDate(iso) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('da-DK', {
+    const date = new Date(iso);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Lige nu';
+    if (diffMins < 60) return `${diffMins} min siden`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} timer siden`;
+    
+    return date.toLocaleDateString('da-DK', {
       day: 'numeric', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
