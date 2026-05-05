@@ -657,7 +657,7 @@ async function checkCacheStatus() {
 
   try {
     const response = await fetch(
- const url = `${SUPABASE_URL}/rest/v1/insurance_terms?select=*&selskab=in.(${encodeURIComponent(nameA)},${encodeURIComponent(nameB)})`;
+ const url = `${SUPABASE_URL}/rest/v1/insurance_terms?select=*&selskab=in.(${encodeURIComponent(nameA)},${encodeURIComponent(nameB)})&produkt_type=eq.${encodeURIComponent(type)}`;
       {
         headers: {
           'apikey': SUPABASE_KEY,
