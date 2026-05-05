@@ -713,17 +713,21 @@ async function useExistingCache(side, type) {
     return;
   }
   
-  // Convert text to base64 properly (handle unicode/danish chars)
-  const base64 = btoa(unescape(encodeURIComponent(cache.fullText)));
-  
-  const store = side === 'a' ? docsA : docsB;
-  store[type] = {
-    name: `${name} - ${type} (fra database)`,
-    data: base64,
-    fromCache: true
-  };
-  
-  console.log('Loaded cache for', side, type, '- size:', base64.length);
+  try {
+    // Convert text to base64 properly (handle unicode/danish chars)
+    const base64 = btoa(unescape(encodeURIComponent(cache.fullText)));
+    
+    const store = side === 'a' ? docsA : docsB;
+    store[type] = {
+      name: `${name} - ${type} (fra database)`,
+      data: base64,
+      fromCache: true
+    };
+    
+    console.log('✓ Loaded cache into docs' + side.toUpperCase() + ' for', type, '- size:', base64.length);
+  } catch (err) {
+    console.error('Failed to convert cache to base64:', err);
+  }
 }
 
 function handleUploadClick(side, type) {
