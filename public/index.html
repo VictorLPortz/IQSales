@@ -991,12 +991,13 @@ function toggleCacheGroup(gi){
 async function loadFromCache(nameA,nameB,type){
   const cached=await loadSupabaseCache(nameA,nameB,type);
   if(!cached||!cached.data){alert('Analysen er ikke tilgængelig. Lav en ny analyse.');return;}
-  allResults[type]=cached.data;
-  if(COMPANIES.includes(nameA))selectCdd('a',nameA);
-  if(COMPANIES.includes(nameB))selectCdd('b',nameB);
-  selectedTypes=[type];
-  document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');if(b.dataset.type===type)b.classList.add('selected');});
-  renderUploadZones();
+ allResults[type]=cached.data;
+if(COMPANIES.includes(nameA))selectCdd('a',nameA);
+if(COMPANIES.includes(nameB))selectCdd('b',nameB);
+selectedTypes=[type];
+docsA[type]={name:nameA+' - '+type+' (fra database)',data:'cached',fromCache:true};
+docsB[type]={name:nameB+' - '+type+' (fra database)',data:'cached',fromCache:true};
+renderUploadZones();
   const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')">${TYPE_LABELS[type]} ✓</button>`;
   document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div></div>`;
   renderMultiResult(nameA,nameB);renderTypeInTab(type);switchMultiTab(type);
