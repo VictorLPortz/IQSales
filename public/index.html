@@ -868,12 +868,13 @@ function handleFileMulti(input){
     'Authorization': `Bearer ${SUPABASE_KEY}`,
     'Prefer': 'resolution=merge-duplicates'
   },
-  body: JSON.stringify({
-    selskab: companyName,
-    produkt_type: type,
-    full_text: fullText,
-    parsed_at: new Date().toISOString()
-  })
+ body: JSON.stringify({
+  selskab: companyName,
+  produkt_type: type,
+  full_text: fullText,
+  parsed_at: new Date().toISOString(),
+  pdf_url: 'manual-upload'
+})
 });
 
 if (!response.ok) {
