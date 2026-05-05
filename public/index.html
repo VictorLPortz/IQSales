@@ -694,7 +694,8 @@ async function checkCacheStatus() {
           useExistingCache(side, type);
         }
       });
-    });
+    }); 
+    
     renderUploadZones();
   } catch (err) {
     console.error('Cache check error:', err);
@@ -723,9 +724,6 @@ async function useExistingCache(side, type) {
   };
   
   console.log('Loaded cache for', side, type, '- size:', base64.length);
-}
-  
-  renderUploadZones();
 }
 
 function handleUploadClick(side, type) {
