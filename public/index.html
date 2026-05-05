@@ -1007,7 +1007,7 @@ async function loadFromCache(nameA,nameB,type){
 async function analyze(){
   const nameA=getName('a'),nameB=getName('b');
   if(nameA===nameB){alert('Vælg to forskellige selskaber.');return;}
-  const typesToAnalyze=selectedTypes.filter(t=>(docsA[t]&&docsA[t].length>0)&&(docsB[t]&&docsB[t].length>0));
+  const typesToAnalyze=selectedTypes.filter(t=>docsA[t]&&docsB[t]);
   if(typesToAnalyze.length===0){alert('Upload betingelser for mindst én forsikringstype fra begge selskaber.');return;}
   const btn=document.getElementById('analyze-btn');
   btn.disabled=true;
