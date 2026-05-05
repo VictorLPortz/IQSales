@@ -708,12 +708,11 @@ async function useExistingCache(side, type) {
   const cache = cacheStatusData[key];
   
   if (!cache || !cache.fullText) {
-    alert('Cache data ikke tilgængelig');
+    console.log('No cache for', key);
     return;
   }
   
-  // Store the cached text as if it was uploaded
-  // Convert text to base64 properly (handle unicode)
+  // Convert text to base64 properly (handle unicode/danish chars)
   const base64 = btoa(unescape(encodeURIComponent(cache.fullText)));
   
   const store = side === 'a' ? docsA : docsB;
@@ -722,6 +721,9 @@ async function useExistingCache(side, type) {
     data: base64,
     fromCache: true
   };
+  
+  console.log('Loaded cache for', side, type, '- size:', base64.length);
+}
   
   renderUploadZones();
 }
