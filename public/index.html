@@ -705,10 +705,13 @@ async function useExistingCache(side, type) {
   }
   
   // Store the cached text as if it was uploaded
+  // Convert text to base64 properly (handle unicode)
+  const base64 = btoa(unescape(encodeURIComponent(cache.fullText)));
+  
   const store = side === 'a' ? docsA : docsB;
   store[type] = {
     name: `${name} - ${type} (fra database)`,
-    data: btoa(cache.fullText),
+    data: base64,
     fromCache: true
   };
   
