@@ -688,16 +688,15 @@ async function checkCacheStatus() {
       };
     });
     
-    // Auto-load fresh cache into docsA/docsB
-    ['a', 'b'].forEach(side => {
-      const name = getName(side);
-      selectedTypes.forEach(type => {
-        const key = `${name}:${type}`;
-        const cache = cacheStatusData[key];
-        if (cache && cache.status === 'fresh') {
-          useExistingCache(side, type);
-        }
-      });
+   // Auto-load fresh cache into docsA/docsB
+Object.keys(cacheStatusData).forEach(key => {
+  const [company, type] = key.split(':');
+  const cache = cacheStatusData[key];
+  if (cache && cache.status === 'fresh') {
+    const side = company === getName('a') ? 'a' : company === getName('b') ? 'b' : null;
+    if (side) useExistingCache(side, type);
+  }
+});
     });
     
   } catch(err) {
