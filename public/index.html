@@ -686,7 +686,15 @@ async function checkCacheStatus() {
         parsedAt: row.parsed_at
       };
     });
-    
+    // Auto-load fresh cache data into docsA/docsB
+    ['a','b'].forEach(side => {
+      selectedTypes.forEach(type => {
+        const status = getCacheStatus(side, type);
+        if (status === 'fresh') {
+          useExistingCache(side, type);
+        }
+      });
+    });
     renderUploadZones();
   } catch (err) {
     console.error('Cache check error:', err);
