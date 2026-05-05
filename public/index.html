@@ -839,7 +839,51 @@ function handleDrop(event,side,type){
   });
 }
 
-function handleFileMulti(input){const side=input.dataset.side;const type=input.dataset.type;const file=input.files[0];if(!file)return;const mb=(file.size/1024/1024).toFixed(1);if(file.size>15*1024*1024){alert(`Filen er ${mb} MB — for stor. Max ca. 15 MB.`);input.value='';return;}const reader=new FileReader();reader.onload=e=>{const store=side==='a'?docsA:docsB;store[type]={name:file.name,data:e.target.result.split(',')[1]};renderUploadZones();};reader.readAsDataURL(file);}
+function handleFileMulti(input){
+  const side=input.dataset.side;
+  const type=input.dataset.type;
+  const file=input.files[0];
+  if(!file)return;
+  const mb=(file.size/1024/1024).toFixed(1);
+  if(file.size>15*1024*1024){
+    alert(`Filen er ${mb} MB — for stor. Max ca. 15 MB.`);
+    input.value='';return;
+  }
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const base64 = e.target.result.split(',')[1];
+    const store=side==='a'?docsA:docsB;
+    store[type]={name:file.name,data:base64};
+    
+    // Save to Supabase insurance_terms table
+    try {
+      const companyName = getName(side);
+      const fullText = await extractPdfText(base64);
+      
+      await fetch(`${SUPABASE_URL}/rest/v1/insurance_terms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          selskab: companyName,
+          produkt_type: type,
+          full_text: fullText,
+          parsed_at: new Date().toISOString()
+        })
+      });
+      console.log('Saved to Supabase:', companyName, type);
+    } catch(err) {
+      console.error('Failed to save to Supabase:', err);
+    }
+    
+    renderUploadZones();
+  };
+  reader.readAsDataURL(file);
+}
 
 function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+Math.random().toString(36).substring(2,10);localStorage.setItem('iqsales_uid',id);}return id;}
 async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getUserId()})});}catch(e){}}
