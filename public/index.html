@@ -59,6 +59,23 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .upload-zone{border:1.5px dashed var(--border);border-radius:var(--r);padding:1.25rem;text-align:center;cursor:pointer;transition:all .15s}
 .upload-zone:hover{border-color:var(--accent2);background:var(--accent-light)}
 .upload-zone.ready{border-style:solid;border-color:var(--green);background:var(--green-light)}
+  /* CACHE STATUS STYLES */
+.upload-zone.cache-fresh{border-style:solid;border-color:#10B981;background:#D1FAE5;cursor:default;pointer-events:none}
+.upload-zone.cache-fresh:hover{border-color:#10B981;background:#D1FAE5}
+.upload-zone.cache-stale{border-style:solid;border-color:#F59E0B;background:#FEF3C7;cursor:pointer}
+.upload-zone.cache-stale:hover{border-color:#D97706;background:#FDE68A}
+.upload-zone.cache-missing{border-style:dashed;border-color:#EF4444;background:#FEF2F2;cursor:pointer}
+.upload-zone.cache-missing:hover{border-color:#DC2626;background:#FEE2E2}
+.cache-status-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 8px;border-radius:12px;margin-top:6px}
+.cache-fresh .cache-status-badge{background:#059669;color:#fff}
+.cache-stale .cache-status-badge{background:#D97706;color:#fff}
+.cache-missing .cache-status-badge{background:#DC2626;color:#fff}
+.cache-actions{display:flex;gap:6px;margin-top:8px;justify-content:center}
+.cache-btn{padding:6px 12px;font-size:11px;font-weight:500;border:1.5px solid;border-radius:var(--rs);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.cache-btn-use{background:#fff;border-color:#10B981;color:#059669}
+.cache-btn-use:hover{background:#D1FAE5}
+.cache-btn-upload{background:#D97706;border-color:#D97706;color:#fff}
+.cache-btn-upload:hover{background:#B45309;border-color:#B45309}
 .uz-icon{width:28px;height:28px;margin:0 auto 8px;color:var(--muted)}
 .uz-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
 .uz-hint{font-size:12px;color:var(--muted)}
@@ -475,6 +492,7 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const BRAND_COLORS={'Alm. Brand':{bg:'#00AEEF',text:'#fff',initials:'AB'},'Tryg':{bg:'#E2001A',text:'#fff',initials:'TR'},'Topdanmark':{bg:'#12205F',text:'#fff',initials:'TD'},'Codan':{bg:'#2B3FDB',text:'#fff',initials:'CO'},'IF Forsikring':{bg:'#1A56DB',text:'#fff',initials:'IF'},'Gjensidige':{bg:'#1B2473',text:'#fff',initials:'GJ'},'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},'Privatsikring':{bg:'#F5A623',text:'#fff',initials:'PS'},'Lærerstandens Brandforsikring':{bg:'#5B8DB8',text:'#fff',initials:'LB'},'GF Forsikring':{bg:'#2E8B2E',text:'#fff',initials:'GF'},'Vesta Forsikring':{bg:'#6EE7B7',text:'#1B4D3E',initials:'VE'},'Thisted Forsikring':{bg:'#1E5FA6',text:'#fff',initials:'TF'},'Runa Forsikring':{bg:'#D41A3A',text:'#fff',initials:'RU'},'Bauta Forsikring':{bg:'#4DB89A',text:'#fff',initials:'BA'},'Alka':{bg:'#5C5757',text:'#fff',initials:'AL'},'Vejle Brand':{bg:'#1E4D2B',text:'#fff',initials:'VB'},'Vestjylland Forsikring':{bg:'#2D4B7A',text:'#fff',initials:'VJ'},'Købstedernes Forsikring':{bg:'#C8102E',text:'#fff',initials:'KF'},'Jyske Forsikring':{bg:'#1A4D2E',text:'#fff',initials:'JF'},'Aros Forsikring':{bg:'#4A2D82',text:'#fff',initials:'AR'},'Nærsikring':{bg:'#4A90C4',text:'#fff',initials:'NS'},'Bornholms Brandforsikring':{bg:'#5C5757',text:'#fff',initials:'BB'},'Spira Forsikring':{bg:'#2D6A2D',text:'#fff',initials:'SP'},'Concordia Forsikring':{bg:'#1A56A0',text:'#fff',initials:'CF'},'IDA Forsikring':{bg:'#5B7499',text:'#fff',initials:'ID'},'TJM Forsikring':{bg:'#E85D0A',text:'#fff',initials:'TJ'},'Storstrom Forsikring':{bg:'#1A5C1A',text:'#fff',initials:'ST'},'OK Forsikring':{bg:'#C8102E',text:'#fff',initials:'OK'},'FDM Forsikring':{bg:'#1A5C8A',text:'#fff',initials:'FD'},'Himmerland Forsikring':{bg:'#C8102E',text:'#fff',initials:'HI'},'Forsia Forsikring':{bg:'#1A3A6B',text:'#fff',initials:'SJ'},'Frida Forsikring':{bg:'#E85D9A',text:'#fff',initials:'FR'},'Dansk Bilforsikring':{bg:'#1A5C8A',text:'#fff',initials:'DB'}};
 
 let selectedTypes=['Husforsikring'],docsA={},docsB={},allResults={};
+let cacheStatusData = {}; // Cache status for each company+type combination
 
 function getBrandEl(name,size=32,id=''){const brand=BRAND_COLORS[name];const initials=brand?brand.initials:name.substring(0,2).toUpperCase();const bg=brand?brand.bg:'#E3E1D9';const color=brand?brand.text:'#7A7870';const r=size>24?8:4;const idAttr=id?` id="${id}"`:'';return`<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;}
 function makeFallback(name,size,id){return getBrandEl(name,size,id);}
@@ -615,7 +633,7 @@ function buildMenusWithRanks(companyRanks){
 }
 
 function toggleCdd(side){const trigger=document.getElementById('cdd-'+side+'-trigger');const menu=document.getElementById('cdd-'+side+'-menu');const isOpen=trigger.classList.contains('open');document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));if(!isOpen){trigger.classList.add('open');menu.classList.add('open');}}
-function selectCdd(side,value){cddState[side]=value;document.getElementById('cdd-'+side+'-trigger').classList.remove('open');document.getElementById('cdd-'+side+'-menu').classList.remove('open');document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';updateCddDisplay(side);updateBetingelsesLinks();}
+function selectCdd(side,value){cddState[side]=value;document.getElementById('cdd-'+side+'-trigger').classList.remove('open');document.getElementById('cdd-'+side+'-menu').classList.remove('open');document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';updateCddDisplay(side);updateBetingelsesLinks();checkCacheStatus();}
 function updateCddDisplay(side){const value=cddState[side];const logoSlot=document.getElementById('cdd-'+side+'-logo');const labelEl=document.getElementById('cdd-'+side+'-label');if(value==='andet'){logoSlot.outerHTML=`<div id="cdd-${side}-logo" style="width:24px;height:24px;border-radius:4px;background:#E3E1D9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#7A7870;font-family:'Syne',sans-serif;flex-shrink:0">?</div>`;labelEl.textContent='Andet selskab...';}else{logoSlot.outerHTML=getBrandEl(value,24,'cdd-'+side+'-logo');labelEl.textContent=value;}document.querySelectorAll(`#cdd-${side}-menu .cdd-option`).forEach(opt=>{opt.classList.toggle('active',opt.querySelector('.cdd-option-label')?.textContent===value);});}
 function onCustomInput(side){const val=document.getElementById('custom-'+side).value.trim();document.getElementById('cdd-'+side+'-label').textContent=val||'Andet selskab...';}
 function getName(side){if(cddState[side]==='andet')return document.getElementById('custom-'+side).value.trim()||'Selskab '+side.toUpperCase();return cddState[side];}
@@ -625,15 +643,159 @@ function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(t
 
 const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
 
+  // ==================== CACHE STATUS FUNCTIONS ====================
+
+async function checkCacheStatus() {
+  // Check Supabase for existing terms for both companies
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  if (!nameA || !nameB || nameA === 'andet' || nameB === 'andet') {
+    cacheStatusData = {};
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/insurance_terms?selskab=in.(${encodeURIComponent(nameA)},${encodeURIComponent(nameB)})`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      cacheStatusData = {};
+      return;
+    }
+    
+    const data = await response.json();
+    
+    // Build cache status map
+    cacheStatusData = {};
+    data.forEach(row => {
+      const key = `${row.selskab}:${row.produkt_type}`;
+      const ageInDays = Math.floor((Date.now() - new Date(row.parsed_at).getTime()) / (1000 * 60 * 60 * 24));
+      
+      cacheStatusData[key] = {
+        status: ageInDays <= 7 ? 'fresh' : ageInDays <= 14 ? 'stale' : 'old',
+        ageInDays,
+        fullText: row.full_text,
+        parsedAt: row.parsed_at
+      };
+    });
+    
+    renderUploadZones();
+  } catch (err) {
+    console.error('Cache check error:', err);
+    cacheStatusData = {};
+  }
+}
+
+async function useExistingCache(side, type) {
+  const name = getName(side);
+  const key = `${name}:${type}`;
+  const cache = cacheStatusData[key];
+  
+  if (!cache || !cache.fullText) {
+    alert('Cache data ikke tilgængelig');
+    return;
+  }
+  
+  // Store the cached text as if it was uploaded
+  const store = side === 'a' ? docsA : docsB;
+  store[type] = {
+    name: `${name} - ${type} (fra database)`,
+    data: btoa(cache.fullText),
+    fromCache: true
+  };
+  
+  renderUploadZones();
+}
+
+function handleUploadClick(side, type) {
+  document.getElementById(`file-${side}-${type}`).click();
+}
+
+function getCacheStatus(side, type) {
+  const name = getName(side);
+  if (!name || name === 'andet') return 'missing';
+  
+  const key = `${name}:${type}`;
+  const cache = cacheStatusData[key];
+  
+  if (!cache) return 'missing';
+  return cache.status === 'fresh' ? 'fresh' : cache.status === 'stale' ? 'stale' : 'missing';
+}
+
+function getCacheAge(side, type) {
+  const name = getName(side);
+  const key = `${name}:${type}`;
+  const cache = cacheStatusData[key];
+  return cache ? cache.ageInDays : null;
+}
 function renderUploadZones(){
   ['a','b'].forEach(side=>{
     const container=document.getElementById('upload-zones-'+side);
     if(!container)return;
     container.innerHTML=selectedTypes.map(type=>{
       const label=TYPE_LABELS[type]||type;
-      const files=side==='a'?(docsA[type]||[]):(docsB[type]||[]);
-      const fileList=files.length>0?'<div class="upload-file-list">'+files.map((f,fi)=>'<div class="upload-file-item"><span>'+f.name+'</span><button class="upload-file-remove" onclick="removeFile(event,\''+side+'\',\''+type+'\','+fi+')">×</button></div>').join('')+'</div><button class="upload-add-more" onclick="document.getElementById(\'file-'+side+'-'+type+'\').click()">+ Tilføj flere PDF\'er</button>':'';
-      return'<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">'+label+'</div><div class="upload-zone'+(files.length>0?' ready':'')+'" id="zone-'+side+'-'+type+'" onclick="document.getElementById(\'file-'+side+'-'+type+'\').click()" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="handleDrop(event,\''+side+'\',\''+type+'\')" style="padding:.75rem 1rem"><div class="uz-title" style="font-size:12px">'+(files.length>0?'✓ '+files.length+' fil'+(files.length>1?'er':'')+' klar':'Klik eller træk PDF hertil')+'</div>'+(files.length===0?'<div class="uz-hint">Kan uploade flere PDF\'er</div>':'')+'</div>'+fileList+'<input type="file" id="file-'+side+'-'+type+'" accept=".pdf" multiple style="display:none" data-side="'+side+'" data-type="'+type+'" onchange="handleFileMulti(this)"></div>';
+      const hasFile=side==='a'?docsA[type]:docsB[type];
+      const cacheStatus = getCacheStatus(side, type);
+      const cacheAge = getCacheAge(side, type);
+      
+      // If file already uploaded, show ready state
+      if (hasFile) {
+        return`<div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+          <div class="upload-zone ready" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem">
+            <div class="uz-title" style="font-size:12px">✓ ${hasFile.name}</div>
+          </div>
+          <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+        </div>`;
+      }
+      
+      // Cache status rendering
+      if (cacheStatus === 'fresh') {
+        return`<div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+          <div class="upload-zone cache-fresh" style="padding:.75rem 1rem">
+            <div class="uz-title" style="font-size:12px">✓ Uploadet for ${cacheAge} ${cacheAge === 1 ? 'dag' : 'dage'} siden</div>
+            <div class="uz-hint" style="color:#059669">Betingelserne er klar i systemet</div>
+            <div class="cache-status-badge">✓ Klar til brug</div>
+          </div>
+          <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+        </div>`;
+      }
+      
+      if (cacheStatus === 'stale') {
+        return`<div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+          <div class="upload-zone cache-stale" style="padding:.75rem 1rem">
+            <div class="uz-title" style="font-size:12px">⚠ Uploadet for ${cacheAge} dage siden</div>
+            <div class="uz-hint" style="color:#92400E">Betingelserne kan være forældede</div>
+            <div class="cache-status-badge">⚠ ${cacheAge} dage gammel</div>
+            <div class="cache-actions">
+              <button class="cache-btn cache-btn-use" onclick="event.stopPropagation();useExistingCache('${side}','${type}')">Brug eksisterende</button>
+              <button class="cache-btn cache-btn-upload" onclick="event.stopPropagation();handleUploadClick('${side}','${type}')">Upload nye</button>
+            </div>
+          </div>
+          <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+        </div>`;
+      }
+      
+      // Missing - need upload
+      return`<div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+        <div class="upload-zone cache-missing" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem">
+          <div class="uz-title" style="font-size:12px">⬆ Klik for at uploade PDF</div>
+          <div class="uz-hint">Ingen betingelser i systemet</div>
+          <div class="cache-status-badge">! Kræver upload</div>
+        </div>
+        <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+      </div>`;
     }).join('');
   });
 }
@@ -1100,6 +1262,7 @@ async function rowDrop(event, targetIdx, nameA, nameB, type){
 }
 
 buildMenus();
+checkCacheStatus();
 updateBetingelsesLinks();
 renderUploadZones();
 setTimeout(()=>{updateCddDisplay('a');updateCddDisplay('b');},50);
