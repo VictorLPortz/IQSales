@@ -353,7 +353,6 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 </header>
 <main>
 
-  <!-- KOLLEGA CACHE PANEL -->
   <div class="cache-panel" id="cache-panel" style="display:none">
     <div class="cache-panel-header" onclick="toggleCachePanel()">
       <div class="cache-panel-title">
@@ -528,10 +527,6 @@ function resetAnalysis(){
   selectedTypes=['Husforsikring'];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');if(b.dataset.type==='Husforsikring')b.classList.add('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ============================================================
-// USER PREFERENCES (Favoritter + Sortering)
-// ============================================================
-
 async function loadPreferences(nameA, nameB, type){
   const token=getAuthToken();
   if(!token)return{favorites:[],sort_order:[]};
@@ -564,10 +559,6 @@ function getUserId(){
   }catch(e){}
   return'anonymous';
 }
-
-// ============================================================
-// CACHE STATUS FUNCTIONS
-// ============================================================
 
 async function checkCacheStatus() {
   cacheStatusData = {};
@@ -659,11 +650,6 @@ function handleUploadClick(side, type) {
       const companyName = getName(side);
       const cacheKey = `${type}-${companyName.toLowerCase().replace(/\s+/g, '')}`;
       delete cacheStatusData[cacheKey];
-      
-    // ============================================================
-// ERSTAT DIN renderUploadZones() FUNKTION MED DENNE
-// ============================================================
-
 
 function useExistingCache(type, companyName, side) {
   const cacheKey = `${type}-${companyName.toLowerCase().replace(/\s+/g, '')}`;
@@ -995,8 +981,6 @@ async function loadFromCache(nameA,nameB,type){
   document.getElementById('reset-btn').style.display='block';
   window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
 }
-
-// [REST OF YOUR analyze(), analyzeType(), renderMultiResult(), buildResultHtml(), and ALL OTHER FUNCTIONS remain EXACTLY THE SAME - I'll skip including them here to save space since this is getting very long and you already have them in your file]
 
 buildMenus();
 updateBetingelsesLinks();
