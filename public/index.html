@@ -858,7 +858,34 @@ function toggleType(btn){
     selectedTypes.push(type);
     btn.classList.add('selected');
   }
-  checkCacheStatus();
+// ERSTAT din checkCacheStatus() funktion med denne DEBUG VERSION:
+
+async function checkCacheStatus() {
+  console.log('🔍 Starting cache check...');
+  console.log('Selected types:', selectedTypes);
+  
+  cacheStatusData = {};
+  
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  console.log('Companies:', nameA, nameB);
+  
+  for (const type of selectedTypes) {
+    for (const company of [nameA, nameB]) {
+      const cacheKey = `${type}-${company.toLowerCase().replace(/\s+/g, '')}`;
+      console.log(`Checking cache for: ${cacheKey}`);
+      
+      const cache = await loadCacheForCompany(company, type);
+      console.log(`Cache result for ${cacheKey}:`, cache);
+      
+      cacheStatusData[cacheKey] = cache;
+    }
+  }
+  
+  console.log('Final cacheStatusData:', cacheStatusData);
+  renderUploadZones();
+}
 }
 
 const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
