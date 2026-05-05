@@ -702,6 +702,7 @@ Object.keys(cacheStatusData).forEach(key => {
     console.error('Failed to check cache:', err);
     cacheStatusData = {};
   }
+  renderUploadZones();
 }
 
 async function useExistingCache(side, type) {
