@@ -645,6 +645,8 @@ const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indbof
 
   // ==================== CACHE STATUS FUNCTIONS ====================
 
+let cacheStatusData = {};
+
 async function checkCacheStatus() {
   // Check Supabase for existing terms for both companies
   const nameA = getName('a');
@@ -654,12 +656,10 @@ async function checkCacheStatus() {
     cacheStatusData = {};
     return;
   }
-
+  
   try {
     const response = await fetch(
- const url = `${SUPABASE_URL}/rest/v1/insurance_terms?select=*` +
-  `&selskab=in.(${encodeURIComponent(nameA)},${encodeURIComponent(nameB)})` +
-  `&produkt_type=eq.${encodeURIComponent(type)}`;
+      `${SUPABASE_URL}/rest/v1/insurance_terms?select=*&selskab=in.(${encodeURIComponent(nameA)},${encodeURIComponent(nameB)})`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -679,28 +679,30 @@ async function checkCacheStatus() {
     cacheStatusData = {};
     data.forEach(row => {
       const key = `${row.selskab}:${row.produkt_type}`;
-      const ageInDays = Math.floor((Date.now() - new Date(row.parsed_at).getTime()) / (1000 * 60 * 60 * 24));
+      const ageDays = Math.floor((Date.now() - new Date(row.parsed_at).getTime()) / (1000 * 60 * 60 * 24));
       
       cacheStatusData[key] = {
-        status: ageInDays <= 7 ? 'fresh' : ageInDays <= 14 ? 'stale' : 'old',
-        ageInDays,
+        status: ageDays <= 7 ? 'fresh' : ageDays <= 14 ? 'stale' : 'old',
+        ageDays,
         fullText: row.full_text,
         parsedAt: row.parsed_at
       };
     });
-    // Auto-load fresh cache data into docsA/docsB
-    ['a','b'].forEach(side => {
+    
+    // Auto-load fresh cache into docsA/docsB
+    ['a', 'b'].forEach(side => {
+      const name = getName(side);
       selectedTypes.forEach(type => {
-        const status = getCacheStatus(side, type);
-        if (status === 'fresh') {
+        const key = `${name}:${type}`;
+        const cache = cacheStatusData[key];
+        if (cache && cache.status === 'fresh') {
           useExistingCache(side, type);
         }
       });
-    }); 
+    });
     
-    renderUploadZones();
-  } catch (err) {
-    console.error('Cache check error:', err);
+  } catch(err) {
+    console.error('Failed to check cache:', err);
     cacheStatusData = {};
   }
 }
@@ -711,21 +713,17 @@ async function useExistingCache(side, type) {
   const cache = cacheStatusData[key];
   
   if (!cache || !cache.fullText) {
-    console.log('No cache for', key);
     return;
   }
   
   try {
-    // Convert text to base64 properly (handle unicode/danish chars)
     const base64 = btoa(unescape(encodeURIComponent(cache.fullText)));
-    
     const store = side === 'a' ? docsA : docsB;
     store[type] = {
       name: `${name} - ${type} (fra database)`,
       data: base64,
       fromCache: true
     };
-    
     console.log('✓ Loaded cache into docs' + side.toUpperCase() + ' for', type, '- size:', base64.length);
   } catch (err) {
     console.error('Failed to convert cache to base64:', err);
