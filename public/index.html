@@ -1004,7 +1004,7 @@ renderUploadZones();
   window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
 }
 
-  async function analyzeType(type, nameA, nameB) {
+async function analyzeType(type, nameA, nameB) {
   console.log('🔍 === ANALYZE START ===');
   console.log('Type:', type);
   console.log('Company A:', nameA);
@@ -1018,14 +1018,50 @@ renderUploadZones();
 
   let textA='',textB='';
   
+  // CHECK IF WE SHOULD USE CACHE
+  const usesCacheA = docsA[type]?.fromCache;
+  const usesCacheB = docsB[type]?.fromCache;
+  
+  console.log('🔍 Uses cache A:', usesCacheA);
+  console.log('🔍 Uses cache B:', usesCacheB);
+  
   try {
-    console.log('📄 Starting PDF extraction...');
-    textA = await extractPdfText(docsA[type].data);
-    textB = await extractPdfText(docsB[type].data);
-    console.log('✅ PDF extracted - textA length:', textA.length);
-    console.log('✅ PDF extracted - textB length:', textB.length);
+    // GET TEXT FROM CACHE IF AVAILABLE
+    if (usesCacheA) {
+      const keyA = `${nameA}:${type}`;
+      console.log('📦 Looking for cache key A:', keyA);
+      const cacheA = cacheStatusData[keyA];
+      if (cacheA && cacheA.fullText) {
+        textA = cacheA.fullText;
+        console.log('✅ Using cached fullText for A - length:', textA.length);
+      } else {
+        console.log('⚠️ Cache metadata found but no fullText for A');
+        textA = await extractPdfText(docsA[type].data);
+      }
+    } else {
+      console.log('📄 Extracting PDF for A...');
+      textA = await extractPdfText(docsA[type].data);
+      console.log('✅ PDF extracted for A - length:', textA.length);
+    }
+    
+    if (usesCacheB) {
+      const keyB = `${nameB}:${type}`;
+      console.log('📦 Looking for cache key B:', keyB);
+      const cacheB = cacheStatusData[keyB];
+      if (cacheB && cacheB.fullText) {
+        textB = cacheB.fullText;
+        console.log('✅ Using cached fullText for B - length:', textB.length);
+      } else {
+        console.log('⚠️ Cache metadata found but no fullText for B');
+        textB = await extractPdfText(docsB[type].data);
+      }
+    } else {
+      console.log('📄 Extracting PDF for B...');
+      textB = await extractPdfText(docsB[type].data);
+      console.log('✅ PDF extracted for B - length:', textB.length);
+    }
   } catch(e) {
-    console.error('❌ PDF extraction failed:', e);
+    console.error('❌ Text extraction failed:', e);
     if(statusEl){
       statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;
       statusEl.style.color='var(--danger)';
