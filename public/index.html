@@ -1121,7 +1121,7 @@ Regler:
 
   try{
     console.log('🚀 Calling API with prompt length:', prompt.length);
-const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt, nameA, nameB, type})});
+const res=await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
     console.log('📦 API response status:', res.status);
     const data=await res.json();
     console.log('📦 API response:', data);
