@@ -9,21 +9,25 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export async function POST(req) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const { prompt } = await req.json();
+    const { prompt } = req.body;
     
     if (!prompt) {
-      return Response.json({ 
+      return res.status(400).json({ 
         error: 'Missing prompt' 
-      }, { status: 400 });
+      });
     }
     
     console.log('🚀 Comparing insurance companies with prompt length:', prompt.length);
     
     // Send til Claude
     const message = await anthropic.messages.create({
-model: 'claude-3-opus-20240229',
+      model: 'claude-3-opus-20240229',
       max_tokens: 4000,
       messages: [{
         role: 'user',
@@ -33,15 +37,15 @@ model: 'claude-3-opus-20240229',
     
     console.log('✅ Claude response received');
     
-    return Response.json({
+    return res.status(200).json({
       content: message.content,
       usage: message.usage
     });
     
   } catch (error) {
     console.error('❌ Comparison failed:', error);
-    return Response.json({ 
+    return res.status(500).json({ 
       error: error.message 
-    }, { status: 500 });
+    });
   }
 }
