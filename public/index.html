@@ -423,7 +423,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       </div>
     </div>
     <div style="display:flex;gap:10px">
-      <button class="analyze-btn" id="analyze-btn" onclick="analyze()" style="flex:1">Analysér og generér salgspitch <span class="btn-arrow">→</span></button>
+      <button class="analyze-btn" id="analyze-btn" onclick="startMultiAnalysis()" style="flex:1">Analysér og generér salgspitch <span class="btn-arrow">→</span></button>
       <button id="reset-btn" onclick="resetAnalysis()" style="display:none;padding:14px 20px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↩ Ny analyse</button>
     </div>
   </div>
