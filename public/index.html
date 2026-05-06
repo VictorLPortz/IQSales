@@ -1126,7 +1126,7 @@ console.log('🟤 API response status:', res.status);
 console.log('🟤 API response headers:', res.headers);
 const responseText = await res.text();
 console.log('🟤 Raw response text (first 500 chars):', responseText.substring(0, 500));
-const data = JSON.parse(responseText);
+const parsed = JSON.parse(responseText);
 console.log('🟤 API response:', data);
     
     if(data.error)throw new Error(data.error);
