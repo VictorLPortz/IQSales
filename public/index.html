@@ -1073,21 +1073,6 @@ async function analyzeType(type, nameA, nameB) {
   if(textA.length>MAX_CHARS)textA=textA.substring(0,MAX_CHARS)+'\n[afkortet]';
   if(textB.length>MAX_CHARS)textB=textB.substring(0,MAX_CHARS)+'\n[afkortet]';
 
-  const cacheKey=await getCacheKey(textA,textB,nameA,nameB,type);
-  const cached=loadCache(cacheKey);
-  if(cached){
-    console.log('✅ Using cached result');
-    allResults[type]=cached;
-    if(statusEl){
-      statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
-      statusEl.style.background='var(--accent-light)';
-      statusEl.style.color='var(--accent2)';
-      statusEl.style.borderColor='var(--accent2)';
-    }
-    enableTypeTab(type);
-    return;
-  }
-
   const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
 
 === BETINGELSER FRA ${nameA} ===
@@ -1157,7 +1142,6 @@ Regler:
       }
     }
     allResults[type]=parsed;
-    saveCache(cacheKey,parsed);
     logAnalysis(nameA,nameB,type);
     if(statusEl){
       statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
