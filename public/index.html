@@ -1122,25 +1122,24 @@ Regler:
   try{
     console.log('🚀 Calling API with prompt length:', prompt.length);
 const res=await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
-    console.log('📦 API response status:', res.status);
-    const data=await res.json();
-    console.log('📦 API response:', data);
+console.log('🟤 API response status:', res.status);
+console.log('🟤 API response headers:', res.headers);
+const responseText = await res.text();
+console.log('🟤 Raw response text (first 500 chars):', responseText.substring(0, 500));
+const data = JSON.parse(responseText);
+console.log('🟤 API response:', data);
     
     if(data.error)throw new Error(data.error);
-   const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');
+  const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');
 console.log('📄 Raw text from API:', txt.substring(0, 200));
-    const m=txt.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('Parse fejl');
-    let parsed;
-    try{
-      parsed=JSON.parse(m[0]);
-    }catch(e){
-      let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
-      try{
-        parsed=JSON.parse(fixed);
-      }catch(e2){
-        throw new Error('JSON fejl');
-      }
+const cleaned = txt.replace(/```json|```/g,'').trim();
+console.log('🧹 Cleaned text:', cleaned.substring(0, 200));
+const m = cleaned.match(/\{[\s\S]*\}/);
+console.log('🔍 Matched JSON:', m ? 'YES' : 'NO');
+if(!m) {
+  console.error('❌ No JSON found in response!');
+  throw new Error('Parse fejl - ingen JSON');
+}
     }
     allResults[type]=parsed;
     logAnalysis(nameA,nameB,type);
