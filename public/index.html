@@ -1127,10 +1127,10 @@ console.log('🟤 API response headers:', res.headers);
 const responseText = await res.text();
 console.log('🟤 Raw response text (first 500 chars):', responseText.substring(0, 500));
 const parsed = JSON.parse(responseText);
-console.log('🟤 API response:', data);
+console.log('🟤 API response:', parsed);
     
-    if(data.error)throw new Error(data.error);
-  const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');
+if(parsed.error)throw new Error(parsed.error);
+const txt=parsed.content.map(i=>i.type==='text'?i.text:'').join('\n');
 console.log('📄 Raw text from API:', txt.substring(0, 200));
 const cleaned = txt.replace(/```json|```/g,'').trim();
 console.log('🧹 Cleaned text:', cleaned.substring(0, 200));
