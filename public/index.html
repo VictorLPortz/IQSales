@@ -1025,12 +1025,27 @@ async function analyze(){
 async function analyzeType(type,nameA,nameB){
   const statusEl=document.getElementById('status-'+type);
   if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ⟳`;
-  let textA='',textB='';
   try{
+  let textA='',textB='';
+  
+  // If file is from cache, use fullText directly
+  if (docsA[type].fromCache) {
+    const key = `${getName('a')}:${type}`;
+    textA = cacheStatusData[key]?.fullText || '';
+  } else {
     const filesA=Array.isArray(docsA[type])?docsA[type]:[docsA[type]];
+    const texts=await Promise.all(filesA.map(f=>extractPdfText(f.data)));
+    textA=texts.join('\n\n--- NÆSTE DOKUMENT ---\n\n');
+  }
+  
+  if (docsB[type].fromCache) {
+    const key = `${getName('b')}:${type}`;
+    textB = cacheStatusData[key]?.fullText || '';
+  } else {
     const filesB=Array.isArray(docsB[type])?docsB[type]:[docsB[type]];
-    const textsA=await Promise.all(filesA.map(f=>extractPdfText(f.data)));
-    const textsB=await Promise.all(filesB.map(f=>extractPdfText(f.data)));
+    const texts=await Promise.all(filesB.map(f=>extractPdfText(f.data)));
+    textB=texts.join('\n\n--- NÆSTE DOKUMENT ---\n\n');
+  }
     textA=textsA.join('\n\n--- NÆSTE DOKUMENT ---\n\n');
     textB=textsB.join('\n\n--- NÆSTE DOKUMENT ---\n\n');
   }catch(e){if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;if(statusEl)statusEl.style.color='var(--danger)';return;}
