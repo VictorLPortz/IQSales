@@ -1015,7 +1015,7 @@ renderUploadZones();
   
   const statusEl=document.getElementById('status-'+type);
   if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ⟳`;
- 
+
   let textA='',textB='';
   
   try {
@@ -1032,12 +1032,11 @@ renderUploadZones();
     }
     return;
   }
- 
+
   const MAX_CHARS=60000;
   if(textA.length>MAX_CHARS)textA=textA.substring(0,MAX_CHARS)+'\n[afkortet]';
   if(textB.length>MAX_CHARS)textB=textB.substring(0,MAX_CHARS)+'\n[afkortet]';
- 
-  // Check cache
+
   const cacheKey=await getCacheKey(textA,textB,nameA,nameB,type);
   const cached=loadCache(cacheKey);
   if(cached){
@@ -1052,15 +1051,15 @@ renderUploadZones();
     enableTypeTab(type);
     return;
   }
- 
+
   const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
- 
+
 === BETINGELSER FRA ${nameA} ===
 ${textA}
- 
+
 === BETINGELSER FRA ${nameB} ===
 ${textB}
- 
+
 Returner KUN et JSON-objekt uden markdown:
 {
   "companyA": "${nameA}",
@@ -1089,7 +1088,7 @@ Returner KUN et JSON-objekt uden markdown:
   },
   "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
 }
- 
+
 Regler:
 - inib = ikke nævnt i betingelserne, no = eksplicit undtaget — brug KUN no hvis dækningen eksplicit er fravalgt eller afvist. Hvis dækningen kræver tilvalg, har geografiske begrænsninger eller er delvist dækket skal du bruge partial i stedet for no
 - top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
@@ -1098,7 +1097,7 @@ Regler:
 - Sæt ALDRIG winner=b hvis ${nameB}s dækning indeholder uspecificerede beløb som "fremgår af police", "ifølge police" eller "beløb angivet i police" — det er ikke muligt at vurdere om det er bedre. Sæt i stedet winner=equal
 - Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne
 - Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
- 
+
   try{
     console.log('🚀 Calling API with prompt length:', prompt.length);
     const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
