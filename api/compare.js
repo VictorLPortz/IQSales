@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     
     // Send til Claude
     const message = await anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+ model: 'claude-3-haiku-20240307',
       max_tokens: 4000,
       messages: [{
         role: 'user',
