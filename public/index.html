@@ -1138,42 +1138,6 @@ Regler:
     }
   }
 }
-
-SPECIFIKKE DÆKNINGSREGLER — læs disse grundigt:
-
-BEHANDLINGSPERIODE (Ulykkesforsikring):
-- Kig ALTID efter behandlingsperioden. Alm. Brand dækker 24 måneder. Mange andre selskaber dækker kun 12 måneder. Nævn altid den eksakte periode i detaljen og fremhæv forskellen hvis den eksisterer. Hvis det ene selskab dækker længere end det andet, er det en topfordel.
-
-ELEKTRONIKFORSIKRING (Indboforsikring):
-- Kig efter afskrivningsregler på elektronik. Nogle selskaber (fx Tryg) afskriver elektronik efter 2 år. Alm. Brand afskriver først efter 4 år ved valg af "Udvidet elektronik"-dækning. Nævn afskrivningsperioden eksplicit. Hvis det ene selskab afskriver senere end det andet, er det en fordel.
-
-BLÆSEVEJR UNDER 17,2 M/S (Husforsikring):
-- De fleste selskaber dækker kun stormskader fra vindstyrke 8 (17,2 m/s). Alm. Brand dækker også skader ved blæsevejr UNDER 17,2 m/s — dette er en markant topfordel mod næsten alle selskaber. Gjensidige menes at have en lignende dækning. Kig specifikt efter om betingelserne nævner en nedre grænse for vindstyrke. Hvis selskab A dækker under 17,2 m/s og selskab B ikke gør, er det altid winner=a.
-
-DAGLIGDAGSBEVÆGELSER (Ulykkesforsikring):
-- Kig ALTID specifikt efter om selskabet dækker skader som følge af normale dagligdags bevægelser som at bukke sig, rejse sig, gå, sætte sig eller række ud efter noget. Mange selskaber undtager disse. Hvis et selskab dækker dagligdagsbevægelser og det andet ikke gør, er det en ABSOLUT topfordel. Marker eksplicit "no" (ikke "inib") hvis betingelserne undtager dagligdagsbevægelser.
-
-SELVRISIKO VED LEJEBIL (Rejseforsikring):
-- Kig specifikt efter om selskabet dækker selvrisiko ved leje af motorkøretøj/lejebil. Dette er ikke altid nævnt direkte — søg efter "lejebil", "selvrisiko", "motorkøretøj". Marker ALDRIG som inib hvis du ikke har kigget grundigt efter dette. Dækningsbeløb varierer — nævn altid beløbet hvis det fremgår.
-
-MOTORCYKEL PÅ ULYKKE (Ulykkesforsikring):
-- Kig efter om motorcykelkørsel er dækket som standard eller kræver tilvalg. Topdanmark dækker standard. Alm. Brand kræver tilvalg. Nævn dette tydeligt — marker "partial" med note om tilvalg, ikke "yes".
-
-TILVALG GENERELT:
-- Hvis en dækning kræver tilvalg, marker den som "partial" med en note i detaljen om at det kræver tilvalg. Marker ALDRIG tilvalg som "no" eller "inib". Sælgeren forbereder sig på at kunden har tilvalgt alt, så beskriv hvad dækningen indebærer selv hvis det er tilvalg.
-
-TYGGESKADE (Tandskade/Ulykkesforsikring):
-- Kig specifikt efter tyggeskadedækning. Der er tre niveauer: (1) Dækker 50% af omkostninger, (2) Dækker fuldt men kræver udefrakommende genstand i maden, (3) Dækker fuldt uanset årsag. Niveau 3 er bedst og skal markeres som topfordel. Nævn altid hvilket niveau selskabet tilbyder.
-
-PLUDSELIG SKADE (Indboforsikring):
-- Pludselig skade dækker løsøre/indbo ved pludselig udefrakommende og øjeblikkelig virkende årsag — årsag og virkning skal ske samtidig. Dækningen omfatter ting der "ville falde ud hvis man tog huset og vendte det på hovedet" — dvs. løsøre, men IKKE hårde hvidevarer, køkken eller fast inventar. Vær præcis om hvad der er dækket.
-
-CYBERFORSIKRING (Indboforsikring):
-- Cyberforsikring og identitetstyveri er vigtig for kunderne. Hvis det ene selskab har markant bedre cyberdækning end det andet, skal det markeres som topfordel. Kig efter dækningsbeløb, hvad der er inkluderet (identitetstyveri, hacking, phishing) og om det kræver tilvalg.
-
-ALKA SÆRSKILTE BETINGELSER:
-- Alka har separate betingelser for ansvarsdækning, retshjælp og id-tyveri. Hvis disse dækninger ikke fremgår af den uploadede fil, skriv i detaljen: "Se separat dokument — Alka har særskilte betingelser for denne dækning." Marker som "partial" ikke "inib".`;
-  try{const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});const data=await res.json();if(data.error)throw new Error(data.error);const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');const m=txt.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);if(!m)throw new Error('Parse fejl');let parsed;try{parsed=JSON.parse(m[0]);}catch(e){let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');try{parsed=JSON.parse(fixed);}catch(e2){throw new Error('JSON fejl');}}allResults[type]=parsed;saveSupabaseCache(nameA,nameB,type,parsed);logAnalysis(nameA,nameB,type);if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;statusEl.style.background='var(--accent-light)';statusEl.style.color='var(--accent2)';statusEl.style.borderColor='var(--accent2)';}enableTypeTab(type);}catch(err){if(statusEl){statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;statusEl.style.color='var(--danger)';}}
 }
 
 function enableTypeTab(type){const tabBtn=document.getElementById('mtab-'+type);if(tabBtn){tabBtn.disabled=false;tabBtn.style.opacity='1';tabBtn.style.cursor='pointer';tabBtn.innerHTML=TYPE_LABELS[type]+' ✓';}renderTypeInTab(type);}
