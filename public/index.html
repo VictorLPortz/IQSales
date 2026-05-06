@@ -1127,7 +1127,8 @@ const res=await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'app
     console.log('📦 API response:', data);
     
     if(data.error)throw new Error(data.error);
-    const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');
+   const txt=data.content.map(i=>i.type==='text'?i.text:'').join('\n');
+console.log('📄 Raw text from API:', txt.substring(0, 200));
     const m=txt.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
     if(!m)throw new Error('Parse fejl');
     let parsed;
