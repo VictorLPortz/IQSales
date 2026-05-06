@@ -1140,7 +1140,22 @@ if(!m) {
   console.error('❌ No JSON found in response!');
   throw new Error('Parse fejl - ingen JSON');
 }
-    allResults[type]=parsed;
+let jsonData;
+try{
+  jsonData=JSON.parse(m[0]);
+  console.log('✅ JSON parsed successfully:', jsonData);
+}catch(e){
+  console.error('❌ JSON parse error:', e);
+  let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
+  try{
+    jsonData=JSON.parse(fixed);
+    console.log('✅ Fixed JSON parsed!');
+  }catch(e2){
+    console.error('❌ Even fixed JSON failed:', e2);
+    throw new Error('JSON fejl');
+  }
+}
+allResults[type]=jsonData;
     logAnalysis(nameA,nameB,type);
     if(statusEl){
       statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
