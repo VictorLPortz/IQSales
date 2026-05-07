@@ -734,11 +734,11 @@
     // Users total
     const { data: profiles } = await sb.from('profiles').select('id, created_at');
     document.getElementById('statsUsersTotal').textContent = profiles?.length || 0;
-
+ 
     // Analyses total
     const { data: analyses } = await sb.from('analyses').select('id, created_at, user_id');
     document.getElementById('statsAnalysesTotal').textContent = analyses?.length || 0;
-
+ 
     // Active this week
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: recentLogins } = await sb
@@ -747,17 +747,17 @@
       .gte('logged_in_at', weekAgo);
     const uniqueUsers = new Set(recentLogins?.map(l => l.user_id));
     document.getElementById('statsActiveThisWeek').textContent = uniqueUsers.size;
-
+ 
     // Avg time (mock - would need actual timing data)
     document.getElementById('statsAvgTime').textContent = '—';
-
+ 
     // Seller Activity with NAME + DEPARTMENT
     const { data: loginHistory } = await sb
       .from('login_history')
       .select('*')
       .order('logged_in_at', { ascending: false })
       .limit(20);
-
+ 
     const activityContainer = document.getElementById('sellerActivity');
     if (!loginHistory || loginHistory.length === 0) {
       activityContainer.innerHTML = '<div class="empty-state">Ingen aktivitet endnu</div>';
@@ -767,14 +767,14 @@
           <div class="activity-dot"></div>
           <div style="flex: 1;">
             <div><strong>${h.full_name || h.email || 'Anonym'}</strong> loggede ind</div>
-            <div class="activity-user">Ingen afdeling</div>
+            <div class="activity-user">${h.department || 'Ingen afdeling'}</div>
           </div>
           <span class="activity-time">${formatDate(h.logged_in_at)}</span>
         </div>
       `).join('');
     }
-
-    // Feedback with NAME + DEPARTMENT
+ 
+    // Feedback from sellers - FIXED VERSION
     const { data: feedback } = await sb
       .from('feedback')
       .select('*')
@@ -802,9 +802,9 @@
         // Build title
         let title = '';
         if (f.category === 'Generel' || f.category === 'IQSales Coach') {
-          title = `<strong>${f.category}</strong>`;
+          title = '<strong>' + f.category + '</strong>';
         } else {
-          title = `<strong>${f.category || 'Kategori ukendt'}</strong> — ${f.company_a || '?'} vs ${f.company_b || '?'}`;
+          title = '<strong>' + (f.category || 'Kategori ukendt') + '</strong> — ' + (f.company_a || '?') + ' vs ' + (f.company_b || '?');
         }
         
         // Dot color based on type
@@ -820,13 +820,14 @@
               <div class="activity-user" style="margin-top: 2px;">
                 ${f.insurance_type || 'Type ukendt'} · ${issueLabel}
               </div>
-              ${f.comment ? `<div style="margin-top: 6px; font-size: 13px; color: var(--text); background: #F9FAFB; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--green-light);">"${f.comment}"</div>` : ''}
+              ${f.comment ? '<div style="margin-top: 6px; font-size: 13px; color: var(--text); background: #F9FAFB; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--green-light);">"' + f.comment + '"</div>' : ''}
             </div>
             <span class="activity-time">${formatDate(f.created_at)}</span>
           </div>
         `;
       }).join('');
     }
+  }
 
   async function loadPDFStatus() {
     // Load insurance terms
