@@ -1109,6 +1109,39 @@ function getFreshnessInfo(age_days){
   if(age_days<=14)return{dot:'fresh-yellow',text:'fresh-yellow-text',label:age_days+' dage — overvej at opdatere'};
   return{dot:'fresh-red',text:'fresh-red-text',label:'Udløbet'};
 }
+  async function hashText(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+}
+
+async function getCacheKey(textA, textB, nameA, nameB, type) {
+  const combined = textA + textB + nameA + nameB + type;
+  return 'cache_' + await hashText(combined);
+}
+
+function saveCache(key, data) {
+  try {
+    const item = { data, timestamp: Date.now() };
+    localStorage.setItem(key, JSON.stringify(item));
+  } catch(e) {}
+}
+
+function loadCache(key) {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+    const parsed = JSON.parse(item);
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    if (Date.now() - parsed.timestamp > thirtyDays) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return parsed.data;
+  } catch(e) { return null; }
+}
 
 async function renderCachePanel(){
   const groups=await loadAllCacheGroups();
