@@ -1839,21 +1839,151 @@ function renderMultiResult(nameA, nameB) {
     console.error('❌ tab-overview element not found!');
   }
 }
-  function renderIndividualTab(typeKey, data) {
+ function renderIndividualTab(typeKey, data) {
   const shortName = typeKey.replace('forsikring', '').toLowerCase();
+  
+  // Count winners
+  const aWins = data.coverage.filter(c => c.winner === 'a' || c.winner === 'A').length;
+  const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
+  const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
+  
+  // Sort: A wins first, then B wins, then ties
+  const sorted = [
+    ...data.coverage.filter(c => c.winner === 'a' || c.winner === 'A'),
+    ...data.coverage.filter(c => c.winner === 'b' || c.winner === 'B'),
+    ...data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie')
+  ];
+  
+  // Generate coverage cards HTML
+  const coverageCardsHtml = sorted.map((c, idx) => {
+    const isWinner = c.winner === 'a' || c.winner === 'A';
+    const isLoser = c.winner === 'b' || c.winner === 'B';
+    const isTie = c.winner === 'equal' || c.winner === 'tie';
+    
+    let headerBg, headerBorder, badgeBg, badgeColor, badgeText, showBadge;
+    
+    if (isWinner) {
+      headerBg = '#E8F5F0';
+      headerBorder = '#1D9E75';
+      badgeBg = '#1D9E75';
+      badgeColor = '#FFFFFF';
+      badgeText = 'Din fordel';
+      showBadge = true;
+    } else if (isLoser) {
+      headerBg = '#FFF4E6';
+      headerBorder = '#BA7517';
+      badgeBg = '#BA7517';
+      badgeColor = '#FFFFFF';
+      badgeText = data.companyB + ' fordel';
+      showBadge = true;
+    } else {
+      headerBg = '#FFFFFF';
+      headerBorder = '#D1D5DB';
+      showBadge = false;
+    }
+    
+    const textAId = 'text-' + idx + '-a';
+    const textBId = 'text-' + idx + '-b';
+    const btnAId = 'btn-' + idx + '-a';
+    const btnBId = 'btn-' + idx + '-b';
+    
+    return '<div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
+      '<div style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">' +
+        '<h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">' + c.category + '</h3>' +
+        (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
+      '</div>' +
+      '<div style="padding: 0 12px 16px 12px;">' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">' +
+          
+          '<div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">' +
+            '<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">' +
+              logoHtml(data.companyA, 20) +
+              data.companyA +
+            '</div>' +
+            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.a_status) + '; color: ' + getStatusColor(c.a_status) + '; border: 1px solid ' + getStatusBorder(c.a_status) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
+              getStatusIcon(c.a_status) + ' ' + getStatusLabel(c.a_status) +
+            '</div>' +
+            '<div style="position: relative;">' +
+              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.a_detail || 'Ingen detaljer') + '</p>' +
+              ((c.a_detail && c.a_detail.length > 150) ? '<button onclick="toggleText(\'' + textAId + '\', \'' + btnAId + '\')" id="' + btnAId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+            '</div>' +
+            ((c.sales_tip && isWinner) ? 
+              '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
+                '<div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #1D9E75; cursor: help; padding: 4px 8px; background: #E8F5F0; border-radius: 6px; border: 1px solid #1D9E75;">💡 Salgstip</div>' +
+                '<div class="tooltip-content">' + c.sales_tip + '</div>' +
+              '</div>' : '') +
+            '<button onclick="openFb(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.companyA.replace(/'/g, "\\'") + '\',\'' + data.companyB.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'a\')" class="card-feedback-btn">⚑ Giv feedback</button>' +
+          '</div>' +
+          
+          '<div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">' +
+            '<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">' +
+              logoHtml(data.companyB, 20) +
+              data.companyB +
+            '</div>' +
+            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.b_status) + '; color: ' + getStatusColor(c.b_status) + '; border: 1px solid ' + getStatusBorder(c.b_status) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
+              getStatusIcon(c.b_status) + ' ' + getStatusLabel(c.b_status) +
+            '</div>' +
+            '<div style="position: relative;">' +
+              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.b_detail || 'Ingen detaljer') + '</p>' +
+              ((c.b_detail && c.b_detail.length > 150) ? '<button onclick="toggleText(\'' + textBId + '\', \'' + btnBId + '\')" id="' + btnBId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+            '</div>' +
+            ((c.objection_tip && isLoser) ? 
+              '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
+                '<div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #BA7517; cursor: help; padding: 4px 8px; background: #FFF4E6; border-radius: 6px; border: 1px solid #BA7517;">⚠️ Indsigelse</div>' +
+                '<div class="tooltip-content">' + c.objection_tip + '</div>' +
+              '</div>' : '') +
+            '<button onclick="openFb(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.companyA.replace(/'/g, "\\'") + '\',\'' + data.companyB.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'b\')" class="card-feedback-btn">⚑ Giv feedback</button>' +
+          '</div>' +
+          
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
   
   return `
     <div class="individual-tab-container">
-      <!-- Sub-tabs navigation -->
       <div class="sub-tabs">
         <button class="sub-tab active" onclick="switchSubTab('coverage-${shortName}', this)">📊 Dækningsoversigt</button>
         <button class="sub-tab" onclick="switchSubTab('pitch-${shortName}', this)">💡 Salgspitch</button>
         <button class="sub-tab" onclick="switchSubTab('send-${shortName}', this)">📧 Send til kunde</button>
       </div>
       
-      <!-- Tab contents -->
       <div id="coverage-${shortName}" class="sub-tab-content active">
-        ${generateCoverageHTML(data)}
+        <div class="comparison-summary">
+          <div>
+            <span style="color: #1D9E75;">${aWins}</span>
+            <span>${data.companyA} fordele</span>
+          </div>
+          <div>
+            <span style="color: #BA7517;">${bWins}</span>
+            <span>${data.companyB} fordele</span>
+          </div>
+          <div>
+            <span style="color: #378ADD;">${equal}</span>
+            <span>Ens niveau</span>
+          </div>
+        </div>
+        
+        ${coverageCardsHtml}
+        
+        <div class="badge-legend">
+          <div class="badge-legend-item">
+            <div class="badge-legend-icon" style="background: #EAF3DE; color: #3B6D11; border: 1px solid #C6E5B3;">✓</div>
+            <span>Dækket</span>
+          </div>
+          <div class="badge-legend-item">
+            <div class="badge-legend-icon" style="background: #FCEBEB; color: #791F1F; border: 1px solid #F5C6CB;">✗</div>
+            <span>Undtaget</span>
+          </div>
+          <div class="badge-legend-item">
+            <div class="badge-legend-icon" style="background: #FAEEDA; color: #633806; border: 1px solid #F4D9A6;">◐</div>
+            <span>Delvist</span>
+          </div>
+          <div class="badge-legend-item">
+            <div class="badge-legend-icon" style="background: #F1EFE8; color: #5F5E5A; border: 1px solid #E3E1D9;">?</div>
+            <span>Ikke nævnt</span>
+          </div>
+        </div>
       </div>
       
       <div id="pitch-${shortName}" class="sub-tab-content">
