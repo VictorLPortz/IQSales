@@ -642,12 +642,12 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   color: #5F5E5A;
   margin: 0;
 }
-  /* TOOLTIP STYLING - NYT */
+ /* TOOLTIP STYLING - NYT */
 .tooltip-wrapper {
   position: relative;
   display: inline-block;
 }
-
+ 
 .tooltip-content {
   display: none;
   position: absolute;
@@ -665,7 +665,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   white-space: normal;
 }
-
+ 
 .tooltip-content::after {
   content: '';
   position: absolute;
@@ -677,11 +677,11 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   border-right: 6px solid transparent;
   border-top: 6px solid #0A2540;
 }
-
+ 
 .tooltip-wrapper:hover .tooltip-content {
   display: block;
 }
-
+ 
 /* FEEDBACK BUTTON PÅ KORT - NYT */
 .card-feedback-btn {
   display: inline-flex;
@@ -698,13 +698,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   font-family: 'DM Sans', sans-serif;
   transition: all 0.2s;
 }
-
+ 
 .card-feedback-btn:hover {
   border-color: #BA7517;
   color: #BA7517;
   background: #FAFAF9;
 }
-
+ 
 /* BADGE LEGEND - NYT */
 .badge-legend {
   background: #F4F3EF;
@@ -716,7 +716,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
-
+ 
 .badge-legend-item {
   display: flex;
   align-items: center;
@@ -724,7 +724,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   font-size: 12px;
   color: #5F5E5A;
 }
-
+ 
 .badge-legend-icon {
   width: 24px;
   height: 24px;
@@ -736,7 +736,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   font-weight: 700;
   flex-shrink: 0;
 }
-
+ 
 @media (max-width: 768px) {
   .badge-legend {
     grid-template-columns: repeat(2, 1fr);
@@ -1883,14 +1883,12 @@ function generateCoverageHTML(data) {
   const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
   const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
   
-  // Sort: A wins first, then B wins, then ties
   const sorted = [
     ...data.coverage.filter(c => c.winner === 'a' || c.winner === 'A'),
     ...data.coverage.filter(c => c.winner === 'b' || c.winner === 'B'),
     ...data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie')
   ];
   
-  // Summary
   const summaryHtml = `
     <div class="comparison-summary">
       <div>
@@ -1908,31 +1906,34 @@ function generateCoverageHTML(data) {
     </div>
   `;
   
-  // Cards
   const cardsHtml = sorted.map((c, idx) => {
     const isWinner = c.winner === 'a' || c.winner === 'A';
     const isLoser = c.winner === 'b' || c.winner === 'B';
     const isTie = c.winner === 'equal' || c.winner === 'tie';
     
-    // FIXED: Helt hvide kort for "ens niveau"
-    let borderColor = '#E3E1D9';
-    let headerBg = '#FFFFFF';
-    let badgeBg = '#E6F1FB';
-    let badgeColor = '#0C447C';
-    let badgeText = 'Samme niveau';
+    let headerBg, headerBorder, badgeBg, badgeColor, badgeText, showBadge;
     
     if (isWinner) {
-      borderColor = '#1D9E75';
-      headerBg = '#E1F5EE';
-      badgeBg = '#E1F5EE';
-      badgeColor = '#0F6E56';
+      headerBg = '#E8F5F0';
+      headerBorder = '#1D9E75';
+      badgeBg = '#1D9E75';
+      badgeColor = '#FFFFFF';
       badgeText = 'Din fordel';
+      showBadge = true;
     } else if (isLoser) {
-      borderColor = '#BA7517';
-      headerBg = '#FAEEDA';
-      badgeBg = '#FAEEDA';
-      badgeColor = '#633806';
+      headerBg = '#FFF4E6';
+      headerBorder = '#BA7517';
+      badgeBg = '#BA7517';
+      badgeColor = '#FFFFFF';
       badgeText = `${data.companyB} fordel`;
+      showBadge = true;
+    } else {
+      headerBg = '#FFFFFF';
+      headerBorder = '#D1D5DB';
+      badgeBg = '';
+      badgeColor = '';
+      badgeText = '';
+      showBadge = false;
     }
     
     const textAId = `text-${idx}-a`;
@@ -1941,17 +1942,17 @@ function generateCoverageHTML(data) {
     const btnBId = `btn-${idx}-b`;
     
     return `
-      <div style="background: white; border: ${isTie ? '1px solid #E3E1D9' : '2px solid ' + borderColor}; ${!isTie ? 'border-left-width: 4px;' : ''} border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
-        <div style="padding: 1rem 1.25rem; background: ${headerBg}; border-bottom: 1px solid #E3E1D9; display: flex; align-items: center; justify-content: space-between;">
-          <h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">${c.category}</h3>
-          ${!isTie ? `<span style="font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor};">${badgeText}</span>` : ''}
+      <div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        
+        <div style="background: ${headerBg}; border: 2px solid ${headerBorder}; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
+          <h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">${c.category}</h3>
+          ${showBadge ? `<span style="font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor}; letter-spacing: 0.03em; text-transform: uppercase;">${badgeText}</span>` : ''}
         </div>
         
-        <div style="padding: 1.25rem;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div style="padding: 0 12px 16px 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             
-            <!-- Company A Card -->
-            <div style="background: #FFFFFF; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem; position: relative;">
+            <div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">
               <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
                 ${logoHtml(data.companyA, 20)}
                 ${data.companyA}
@@ -1966,7 +1967,7 @@ function generateCoverageHTML(data) {
               
               ${(c.sales_tip && isWinner) ? `
                 <div class="tooltip-wrapper" style="margin-top: 0.75rem;">
-                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #378ADD; cursor: help; padding: 4px 8px; background: #EFF8FF; border-radius: 6px; border: 1px solid #BAE6FD;">
+                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #1D9E75; cursor: help; padding: 4px 8px; background: #E8F5F0; border-radius: 6px; border: 1px solid #1D9E75;">
                     💡 Salgstip
                   </div>
                   <div class="tooltip-content" style="display: none;">
@@ -1978,8 +1979,7 @@ function generateCoverageHTML(data) {
               <button onclick="openFb('${c.category.replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','a')" class="card-feedback-btn">⚑ Giv feedback</button>
             </div>
             
-            <!-- Company B Card -->
-            <div style="background: #FFFFFF; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem; position: relative;">
+            <div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">
               <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
                 ${logoHtml(data.companyB, 20)}
                 ${data.companyB}
@@ -1994,7 +1994,7 @@ function generateCoverageHTML(data) {
               
               ${(c.objection_tip && isLoser) ? `
                 <div class="tooltip-wrapper" style="margin-top: 0.75rem;">
-                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #BA7517; cursor: help; padding: 4px 8px; background: #FAEEDA; border-radius: 6px; border: 1px solid #F4D9A6;">
+                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #BA7517; cursor: help; padding: 4px 8px; background: #FFF4E6; border-radius: 6px; border: 1px solid #BA7517;">
                     ⚠️ Indsigelse
                   </div>
                   <div class="tooltip-content" style="display: none;">
@@ -2012,7 +2012,6 @@ function generateCoverageHTML(data) {
     `;
   }).join('');
   
-  // Badge legend
   const legendHtml = `
     <div class="badge-legend">
       <div class="badge-legend-item">
@@ -2108,7 +2107,15 @@ function getStatusColor(status) {
   if (status === 'inib') return '#5F5E5A';
   return '#5F5E5A';
 }
-
+ 
+  function getStatusBorder(status) {
+  if (status === 'yes') return '#C6E5B3';
+  if (status === 'no') return '#F5C6CB';
+  if (status === 'partial') return '#F4D9A6';
+  if (status === 'inib') return '#E3E1D9';
+  return '#DEE2E6';
+}
+  
 function toggleText(textId, btnId) {
   const text = document.getElementById(textId);
   const btn = document.getElementById(btnId);
