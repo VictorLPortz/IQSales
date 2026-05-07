@@ -1795,15 +1795,12 @@ function renderMultiResult(nameA, nameB) {
           <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Dine stærkeste kort — ${nameA}</span>
         </div>
         <div style="padding:10px 14px">
-          ${strongA.map(s => `
-            <div style="padding:8px 0;border-bottom:1px solid #A7D7B8">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-                 <span style="font-size:11px;color:var(--accent2);font-weight:500">${s.label || s.text || 'Fordel'}</span>
-      <span style="font-size:13px;font-weight:500;color:var(--text)">${s.label || s.text || 'Fordel'}</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.5">${(s.text || s.a_detail || 'Ingen detaljer').substring(0, 100)}${(s.text || s.a_detail || '').length > 100 ? '...' : ''}</div>
-              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:var(--accent2);font-style:italic">→ "${s.tip}"</div>` : ''}
-            </div>`).join('')}
+${strongA.map(s => `
+  <div style="padding:8px 0;border-bottom:1px solid #A7D7B8">
+    <div style="font-size:13px;font-weight:600;color:#1D9E75;margin-bottom:4px">${s.category}</div>
+    <div style="font-size:13px;color:var(--text);line-height:1.5">${s.text.substring(0, 120)}${s.text.length > 120 ? '...' : ''}</div>
+  </div>
+`).join('')}
           ${strongA.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Kør en analyse for at se dine stærkeste kort</div>` : ''}
         </div>
       </div>
@@ -1813,15 +1810,12 @@ function renderMultiResult(nameA, nameB) {
           <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Vær forberedt på — ${nameB}</span>
         </div>
         <div style="padding:10px 14px">
-          ${strongB.map(s => `
-            <div style="padding:8px 0;border-bottom:1px solid #FECACA">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-                <span style="font-size:11px;color:var(--accent2);font-weight:500">${s.label || s.text || 'Ulempe'}</span>
-      <span style="font-size:13px;font-weight:500;color:var(--text)">${s.label || s.text || 'Ulempe'}</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.5">${(s.text || s.b_detail || 'Ingen detaljer').substring(0, 100)}${(s.text || s.b_detail || '').length > 100 ? '...' : ''}</div>
-              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:#9B1C1C;font-style:italic">↩ "${s.tip}"</div>` : ''}
-            </div>`).join('')}
+         ${strongB.map(s => `
+  <div style="padding:8px 0;border-bottom:1px solid #FECACA">
+    <div style="font-size:13px;font-weight:600;color:#BA7517;margin-bottom:4px">${s.category}</div>
+    <div style="font-size:13px;color:var(--text);line-height:1.5">${s.text.substring(0, 120)}${s.text.length > 120 ? '...' : ''}</div>
+  </div>
+`).join('')}
           ${strongB.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Ingen væsentlige ulemper fundet</div>` : ''}
         </div>
       </div>
