@@ -1225,7 +1225,8 @@ async function analyze() {
   btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
 async function analyzeType(type, nameA, nameB) {
-console.log('🚀 ANALYZE START (from analyzeType) ===');
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  console.log('🔧 ANALYZE START (from analyzeType) ===');
   console.log('Type:', type);
   console.log('Company A:', nameA);
   console.log('Company B:', nameB);
@@ -1292,6 +1293,21 @@ const statusEl=document.getElementById('status-'+shortName);
   const MAX_CHARS=60000;
   if(textA.length>MAX_CHARS)textA=textA.substring(0,MAX_CHARS)+'\n[afkortet]';
   if(textB.length>MAX_CHARS)textB=textB.substring(0,MAX_CHARS)+'\n[afkortet]';
+
+  // Check cache
+  const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
+  const cached = loadCache(cacheKey);
+  if(cached){
+    allResults[shortName] = cached;
+    if(statusEl){
+      statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
+      statusEl.style.background='var(--accent-light)';
+      statusEl.style.color='var(--accent2)';
+      statusEl.style.borderColor='var(--accent2)';
+    }
+    enableTypeTab(shortName);
+    return;
+  }
 
   const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
 
@@ -1379,6 +1395,7 @@ try{
       // Map long type name to short tab name
       const tabName = type.replace('forsikring', '').toLowerCase(); // "husforsikring" → "hus"
       allResults[tabName] = jsonData;
+  saveCache(cacheKey, jsonData);
       console.log('✅ Stored in allResults.' + tabName + ':', allResults[tabName]);
       
       logAnalysis(nameA,nameB,type);
