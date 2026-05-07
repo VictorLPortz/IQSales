@@ -1686,6 +1686,13 @@ function switchMultiTab(type){
   if(allResults[shortName])renderTypeInTab(shortName);
 }
 
+  function switchToOverview(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-overview').style.display='block';
+  document.getElementById('mtab-overview').classList.add('active');
+}
+
 function renderTypeInTab(type){
   const container=document.getElementById('tab-'+type);
   if(!container||!allResults[type])return;
