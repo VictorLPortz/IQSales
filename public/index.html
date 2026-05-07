@@ -1795,7 +1795,7 @@ function renderMultiResult(nameA, nameB) {
           <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Dine stærkeste kort — ${nameA}</span>
         </div>
         <div style="padding:10px 14px">
-          ${strongA.slice(0, 5).map(s => `
+          ${strongA.map(s => `
             <div style="padding:8px 0;border-bottom:1px solid #A7D7B8">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
                  <span style="font-size:11px;color:var(--accent2);font-weight:500">${s.label || s.text || 'Fordel'}</span>
@@ -1813,7 +1813,7 @@ function renderMultiResult(nameA, nameB) {
           <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Vær forberedt på — ${nameB}</span>
         </div>
         <div style="padding:10px 14px">
-          ${strongB.slice(0, 5).map(s => `
+          ${strongB.map(s => `
             <div style="padding:8px 0;border-bottom:1px solid #FECACA">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
                 <span style="font-size:11px;color:var(--accent2);font-weight:500">${s.label || s.text || 'Ulempe'}</span>
