@@ -642,6 +642,106 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   color: #5F5E5A;
   margin: 0;
 }
+  /* TOOLTIP STYLING - NYT */
+.tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-content {
+  display: none;
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 8px;
+  background: #0A2540;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 280px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  white-space: normal;
+}
+
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #0A2540;
+}
+
+.tooltip-wrapper:hover .tooltip-content {
+  display: block;
+}
+
+/* FEEDBACK BUTTON PÅ KORT - NYT */
+.card-feedback-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.75rem;
+  font-size: 11px;
+  color: #7A7870;
+  background: transparent;
+  border: 1px solid #E3E1D9;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.card-feedback-btn:hover {
+  border-color: #BA7517;
+  color: #BA7517;
+  background: #FAFAF9;
+}
+
+/* BADGE LEGEND - NYT */
+.badge-legend {
+  background: #F4F3EF;
+  border: 1px solid #E3E1D9;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.badge-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #5F5E5A;
+}
+
+.badge-legend-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .badge-legend {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>
 </head>
 <body>
@@ -1775,44 +1875,48 @@ function renderMultiResult(nameA, nameB) {
   `;
 }
 
+// FIXED generateCoverageHTML function
 function generateCoverageHTML(data) {
-  const aWins = data.coverage.filter(c => c.winner === 'a').length;
-  const bWins = data.coverage.filter(c => c.winner === 'b').length;
-  const ties = data.coverage.filter(c => c.winner === 'equal').length;
+  if (!data || !data.coverage) return '<p>Ingen data tilgængelig</p>';
+  
+  const aWins = data.coverage.filter(c => c.winner === 'a' || c.winner === 'A').length;
+  const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
+  const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
   
   // Sort: A wins first, then B wins, then ties
   const sorted = [
-    ...data.coverage.filter(c => c.winner === 'a'),
-    ...data.coverage.filter(c => c.winner === 'b'),
-    ...data.coverage.filter(c => c.winner === 'equal')
+    ...data.coverage.filter(c => c.winner === 'a' || c.winner === 'A'),
+    ...data.coverage.filter(c => c.winner === 'b' || c.winner === 'B'),
+    ...data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie')
   ];
   
   // Summary
   const summaryHtml = `
-    <div style="display: flex; gap: 2rem; margin-bottom: 2rem; padding: 1rem 0; border-bottom: 2px solid #E3E1D9;">
-      <div style="display: flex; align-items: baseline; gap: 8px;">
-        <span style="font-size: 28px; font-weight: 600; color: #1D9E75;">${aWins}</span>
-        <span style="font-size: 14px; color: #7A7870;">${data.companyA} fordele</span>
+    <div class="comparison-summary">
+      <div>
+        <span style="color: #1D9E75;">${aWins}</span>
+        <span>${data.companyA} fordele</span>
       </div>
-      <div style="display: flex; align-items: baseline; gap: 8px;">
-        <span style="font-size: 28px; font-weight: 600; color: #BA7517;">${bWins}</span>
-        <span style="font-size: 14px; color: #7A7870;">${data.companyB} fordele</span>
+      <div>
+        <span style="color: #BA7517;">${bWins}</span>
+        <span>${data.companyB} fordele</span>
       </div>
-      <div style="display: flex; align-items: baseline; gap: 8px;">
-        <span style="font-size: 28px; font-weight: 600; color: #378ADD;">${ties}</span>
-        <span style="font-size: 14px; color: #7A7870;">Ens niveau</span>
+      <div>
+        <span style="color: #378ADD;">${equal}</span>
+        <span>Ens niveau</span>
       </div>
     </div>
   `;
   
   // Cards
   const cardsHtml = sorted.map((c, idx) => {
-    const isWinner = c.winner === 'a';
-    const isLoser = c.winner === 'b';
-    const isTie = c.winner === 'equal';
+    const isWinner = c.winner === 'a' || c.winner === 'A';
+    const isLoser = c.winner === 'b' || c.winner === 'B';
+    const isTie = c.winner === 'equal' || c.winner === 'tie';
     
+    // FIXED: Helt hvide kort for "ens niveau"
     let borderColor = '#E3E1D9';
-    let headerBg = '#FAFAF9';
+    let headerBg = '#FFFFFF';
     let badgeBg = '#E6F1FB';
     let badgeColor = '#0C447C';
     let badgeText = 'Samme niveau';
@@ -1837,8 +1941,8 @@ function generateCoverageHTML(data) {
     const btnBId = `btn-${idx}-b`;
     
     return `
-      <div style="background: white; border: ${isTie ? '1px' : '2px'} solid ${borderColor}; ${!isTie ? 'border-left-width: 4px;' : ''} border-radius: 8px; overflow: hidden;">
-        <div style="padding: 1rem 1.25rem; background: ${isTie ? '#FFFFFF' : headerBg}; border-bottom: 1px solid #E3E1D9; display: flex; align-items: center; justify-content: space-between;">
+      <div style="background: white; border: ${isTie ? '1px solid #E3E1D9' : '2px solid ' + borderColor}; ${!isTie ? 'border-left-width: 4px;' : ''} border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
+        <div style="padding: 1rem 1.25rem; background: ${headerBg}; border-bottom: 1px solid #E3E1D9; display: flex; align-items: center; justify-content: space-between;">
           <h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">${c.category}</h3>
           ${!isTie ? `<span style="font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor};">${badgeText}</span>` : ''}
         </div>
@@ -1847,43 +1951,59 @@ function generateCoverageHTML(data) {
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             
             <!-- Company A Card -->
-            <div style="background: #FAFAF9; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem;">
+            <div style="background: #FFFFFF; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem; position: relative;">
               <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
                 ${logoHtml(data.companyA, 20)}
                 ${data.companyA}
               </div>
-              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.a_status)}; color: ${getStatusColor(c.a_status)}; width: fit-content; margin-bottom: 0.5rem;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.a_status)}; color: ${getStatusColor(c.a_status)}; border: 1px solid ${getStatusBorder(c.a_status)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
                 ${getStatusIcon(c.a_status)} ${getStatusLabel(c.a_status)}
               </div>
               <div style="position: relative;">
                 <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.a_detail || 'Ingen detaljer'}</p>
                 ${(c.a_detail && c.a_detail.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
-                ${(c.sales_tip && isWinner) ? `
-                  <div style="display: none; position: absolute; left: 0; bottom: 100%; margin-bottom: 8px; background: #0A2540; color: white; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.4; max-width: 280px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" class="tooltip-${idx}-a">
-                    💡 ${c.sales_tip}
-                  </div>
-                ` : ''}
               </div>
+              
+              ${(c.sales_tip && isWinner) ? `
+                <div class="tooltip-wrapper" style="margin-top: 0.75rem;">
+                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #378ADD; cursor: help; padding: 4px 8px; background: #EFF8FF; border-radius: 6px; border: 1px solid #BAE6FD;">
+                    💡 Salgstip
+                  </div>
+                  <div class="tooltip-content" style="display: none;">
+                    ${c.sales_tip}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <button onclick="openFb('${c.category.replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','a')" class="card-feedback-btn">⚑ Giv feedback</button>
             </div>
             
             <!-- Company B Card -->
-            <div style="background: #FAFAF9; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem;">
+            <div style="background: #FFFFFF; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem; position: relative;">
               <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
                 ${logoHtml(data.companyB, 20)}
                 ${data.companyB}
               </div>
-              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.b_status)}; color: ${getStatusColor(c.b_status)}; width: fit-content; margin-bottom: 0.5rem;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.b_status)}; color: ${getStatusColor(c.b_status)}; border: 1px solid ${getStatusBorder(c.b_status)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
                 ${getStatusIcon(c.b_status)} ${getStatusLabel(c.b_status)}
               </div>
               <div style="position: relative;">
                 <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.b_detail || 'Ingen detaljer'}</p>
                 ${(c.b_detail && c.b_detail.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
-                ${(c.objection_tip && isLoser) ? `
-                  <div style="display: none; position: absolute; left: 0; bottom: 100%; margin-bottom: 8px; background: #0A2540; color: white; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.4; max-width: 280px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" class="tooltip-${idx}-b">
-                    ⚠️ ${c.objection_tip}
-                  </div>
-                ` : ''}
               </div>
+              
+              ${(c.objection_tip && isLoser) ? `
+                <div class="tooltip-wrapper" style="margin-top: 0.75rem;">
+                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #BA7517; cursor: help; padding: 4px 8px; background: #FAEEDA; border-radius: 6px; border: 1px solid #F4D9A6;">
+                    ⚠️ Indsigelse
+                  </div>
+                  <div class="tooltip-content" style="display: none;">
+                    ${c.objection_tip}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <button onclick="openFb('${c.category.replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','b')" class="card-feedback-btn">⚑ Giv feedback</button>
             </div>
             
           </div>
@@ -1892,7 +2012,69 @@ function generateCoverageHTML(data) {
     `;
   }).join('');
   
-  return summaryHtml + '<div style="display: grid; gap: 1rem;">' + cardsHtml + '</div>';
+  // Badge legend
+  const legendHtml = `
+    <div class="badge-legend">
+      <div class="badge-legend-item">
+        <div class="badge-legend-icon" style="background: #EAF3DE; color: #3B6D11; border: 1px solid #C6E5B3;">✓</div>
+        <span>Dækket</span>
+      </div>
+      <div class="badge-legend-item">
+        <div class="badge-legend-icon" style="background: #FCEBEB; color: #791F1F; border: 1px solid #F5C6CB;">✗</div>
+        <span>Undtaget</span>
+      </div>
+      <div class="badge-legend-item">
+        <div class="badge-legend-icon" style="background: #FAEEDA; color: #633806; border: 1px solid #F4D9A6;">◐</div>
+        <span>Delvist</span>
+      </div>
+      <div class="badge-legend-item">
+        <div class="badge-legend-icon" style="background: #F1EFE8; color: #5F5E5A; border: 1px solid #E3E1D9;">?</div>
+        <span>Ikke nævnt</span>
+      </div>
+    </div>
+  `;
+  
+  return summaryHtml + '<div style="display: grid; gap: 0;">' + cardsHtml + '</div>' + legendHtml;
+}
+
+function getStatusIcon(status) {
+  if (status === 'yes') return '✓';
+  if (status === 'no') return '✗';
+  if (status === 'partial') return '◐';
+  if (status === 'inib') return '?';
+  return '−';
+}
+
+function getStatusLabel(status) {
+  if (status === 'yes') return 'Dækket';
+  if (status === 'no') return 'Undtaget';
+  if (status === 'partial') return 'Delvist';
+  if (status === 'inib') return 'Ikke nævnt';
+  return 'Ukendt';
+}
+
+function getStatusBg(status) {
+  if (status === 'yes') return '#EAF3DE';
+  if (status === 'no') return '#FCEBEB';
+  if (status === 'partial') return '#FAEEDA';
+  if (status === 'inib') return '#F1EFE8';
+  return '#F8F9FA';
+}
+
+function getStatusColor(status) {
+  if (status === 'yes') return '#3B6D11';
+  if (status === 'no') return '#791F1F';
+  if (status === 'partial') return '#633806';
+  if (status === 'inib') return '#5F5E5A';
+  return '#6C757D';
+}
+
+function getStatusBorder(status) {
+  if (status === 'yes') return '#C6E5B3';
+  if (status === 'no') return '#F5C6CB';
+  if (status === 'partial') return '#F4D9A6';
+  if (status === 'inib') return '#E3E1D9';
+  return '#DEE2E6';
 }
 
 function getStatusIcon(status) {
