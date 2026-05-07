@@ -1941,6 +1941,7 @@ function renderTypeInTab(type){
   if(!container||!allResults[shortName])return;
   
   const html = renderIndividualTab(type, allResults[shortName]);
+container.innerHTML = html;
   
   const subTabs = container.querySelectorAll('.sub-tab');
   subTabs.forEach(tab => {
