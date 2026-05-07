@@ -1014,6 +1014,7 @@ async function analyze() {
     return;
   }
 
+  // Check that at least one type has both files uploaded
   const typesToAnalyze = selectedTypes.filter(t => docsA[t] && docsB[t]);
   
   if(typesToAnalyze.length === 0) {
@@ -1021,29 +1022,44 @@ async function analyze() {
     return;
   }
 
-  console.log('📋 Types to analyze:', typesToAnalyze);
+  console.log('📊 Types to analyze:', typesToAnalyze);
 
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
-  btn.innerHTML = 'Analyserer... <span class="btn-arrow">⟳</span>';
-  
   allResults = {};
 
-  console.log('🔥 SETTING RESULT HTML');
+  // Get result div
   const resultDiv = document.getElementById('result');
-  console.log('Result div exists?', resultDiv);
-  
-  resultDiv.innerHTML = '<div class="result-section"><h2 style="color:green;padding:20px;">Analyse kører nu!</h2><div id="tab-overview">Vent venligst...</div></div>';
-  
+  if(!resultDiv) {
+    console.error('❌ Result div not found!');
+    return;
+  }
+
+  // Init result area with tabs upfront
+  const tabsInitHtml = `
+    <button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button>
+    ${typesToAnalyze.map(t => `<button class="tab" id="mtab-${t}" onclick="switchMultiTab('${t}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_LABELS[t]} ⏳</button>`).join('')}`;
+
+  resultDiv.innerHTML = `
+    <div class="result-section">
+      <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+        ${typesToAnalyze.map(t => `<span id="status-${t}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`).join('')}
+      </div>
+      <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
+      <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
+      ${typesToAnalyze.map(t => `<div id="tab-${t}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`).join('')}
+    </div>`;
+
   console.log('✅ Result HTML set, length:', resultDiv.innerHTML.length);
 
-  // Run analyses
+  btn.innerHTML = 'Analyserer... <span class="btn-arrow">⟳</span>';
+
+  // Run all analyses in parallel - update UI as each completes
   await Promise.all(typesToAnalyze.map(type => analyzeType(type, nameA, nameB)));
 
   console.log('✅ All analyses complete');
   console.log('allResults:', allResults);
 
-  // Show results
   renderMultiResult(nameA, nameB);
   
   document.getElementById('reset-btn').style.display = 'block';
