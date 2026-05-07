@@ -1954,66 +1954,104 @@ function generateCoverageHTML(data) {
   const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
   const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
   
-  let html = `
-    <div class="coverage-comparison">
-      <div class="company-badges">
-        <span class="badge-green">${data.companyA} bedre på ${aWins} punkter</span>
-        <span class="badge-neutral">${data.companyB} bedre på ${bWins} punkter</span>
-        <span class="badge-neutral">Ens på ${equal} punkter</span>
-      </div>
-      
-      <div class="coverage-grid">
-  `;
+  // Sort: A wins first, then B wins, then ties
+  const sorted = [
+    ...data.coverage.filter(c => c.winner === 'a' || c.winner === 'A'),
+    ...data.coverage.filter(c => c.winner === 'b' || c.winner === 'B'),
+    ...data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie')
+  ];
   
-  data.coverage.forEach(item => {
-    const winner = item.winner === 'a' || item.winner === 'A' ? 'A' :
-                   item.winner === 'b' || item.winner === 'B' ? 'B' : 'equal';
-    const winnerClass = winner === 'A' ? 'winner-a' : 
-                       winner === 'B' ? 'winner-b' : 'tie';
-    
-    const iconMap = {
-      'A': '✓',
-      'B': '✓', 
-      'equal': '='
-    };
-    
-    const aDetail = item.a_detail || item.a_details || '';
-    const bDetail = item.b_detail || item.b_details || '';
-    
-    html += `
-      <div class="coverage-card ${winnerClass}">
-        <div class="coverage-header">
-          <span class="coverage-icon">${iconMap[winner]}</span>
-          <h3>${item.category}</h3>
-        </div>
-        
-        <div class="coverage-details">
-          <div class="company-detail ${winner === 'A' ? 'highlight' : ''}">
-            <h4>${data.companyA}</h4>
-            <p>${aDetail}</p>
-          </div>
-          
-          <div class="company-detail ${winner === 'B' ? 'highlight' : ''}">
-            <h4>${data.companyB}</h4>
-            <p>${bDetail}</p>
-          </div>
-        </div>
-        
-        ${item.sales_tip || item.advantage ? `
-          <div class="advantage-note">
-            ${item.sales_tip || item.advantage}
-          </div>
-        ` : ''}
+  // Summary
+  const summaryHtml = `
+    <div class="comparison-summary">
+      <div>
+        <span style="color: #1D9E75;">${aWins}</span>
+        <span>${data.companyA} fordele</span>
       </div>
-    `;
-  });
-  
-  html += `
+      <div>
+        <span style="color: #BA7517;">${bWins}</span>
+        <span>${data.companyB} fordele</span>
+      </div>
+      <div>
+        <span style="color: #378ADD;">${equal}</span>
+        <span>Ens niveau</span>
       </div>
     </div>
   `;
   
-  return html;
+  // Cards
+  const cardsHtml = sorted.map((c, idx) => {
+    const isWinner = c.winner === 'a' || c.winner === 'A';
+    const isLoser = c.winner === 'b' || c.winner === 'B';
+    const isTie = c.winner === 'equal' || c.winner === 'tie';
+    
+    let cardClass = 'coverage-card';
+    if (isWinner) cardClass += ' winner-card';
+    else if (isLoser) cardClass += ' loser-card';
+    else cardClass += ' tie-card';
+    
+    let badgeText = 'Samme niveau';
+    let badgeBg = '#E6F1FB';
+    let badgeColor = '#0C447C';
+    
+    if (isWinner) {
+      badgeText = 'Din fordel';
+      badgeBg = '#E1F5EE';
+      badgeColor = '#0F6E56';
+    } else if (isLoser) {
+      badgeText = `${data.companyB} fordel`;
+      badgeBg = '#FAEEDA';
+      badgeColor = '#633806';
+    }
+    
+    const textAId = `text-${idx}-a`;
+    const textBId = `text-${idx}-b`;
+    const btnAId = `btn-${idx}-a`;
+    const btnBId = `btn-${idx}-b`;
+    
+    return `
+      <div class="${cardClass}">
+        <div class="card-header" style="background: ${isTie ? '#FFFFFF' : (isWinner ? '#E1F5EE' : '#FAEEDA')};">
+          <h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">${c.category}</h3>
+          ${!isTie ? `<span style="font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor};">${badgeText}</span>` : ''}
+        </div>
+        
+        <div class="card-body">
+          <div class="company-comparison">
+            
+            <!-- Company A -->
+            <div class="company-column">
+              <div class="company-label">
+                ${logoHtml(data.companyA, 20)}
+                ${data.companyA}
+              </div>
+              <div class="coverage-status status-${c.a_status}">
+                ${getStatusIcon(c.a_status)} ${getStatusLabel(c.a_status)}
+              </div>
+              <p id="${textAId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.a_detail || 'Ingen detaljer'}</p>
+              ${(c.a_detail && c.a_detail.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+            </div>
+            
+            <!-- Company B -->
+            <div class="company-column">
+              <div class="company-label">
+                ${logoHtml(data.companyB, 20)}
+                ${data.companyB}
+              </div>
+              <div class="coverage-status status-${c.b_status}">
+                ${getStatusIcon(c.b_status)} ${getStatusLabel(c.b_status)}
+              </div>
+              <p id="${textBId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.b_detail || 'Ingen detaljer'}</p>
+              ${(c.b_detail && c.b_detail.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  return summaryHtml + '<div class="coverage-grid">' + cardsHtml + '</div>';
 }
 
 function switchMultiTab(type){
