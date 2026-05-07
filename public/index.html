@@ -1004,32 +1004,51 @@ renderUploadZones();
   window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
 }
 async function analyze() {
-  const nameA=getName('a'),nameB=getName('b');
-  if(nameA===nameB){alert('Vælg to forskellige selskaber.');return;}
-
-  const typesToAnalyze=selectedTypes.filter(t=>docsA[t]&&docsB[t]);
-  if(typesToAnalyze.length===0){
-    alert('Upload betingelser for mindst én forsikringstype fra begge selskaber.');return;
+  console.log('🚀 ANALYZE FUNCTION CALLED');
+  
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  if(nameA === nameB) {
+    alert('Vælg to forskellige selskaber.');
+    return;
   }
 
-  const btn=document.getElementById('analyze-btn');
-  btn.disabled=true;
-  allResults={};
+  const typesToAnalyze = selectedTypes.filter(t => docsA[t] && docsB[t]);
+  
+  if(typesToAnalyze.length === 0) {
+    alert('Upload betingelser for mindst én forsikringstype fra begge selskaber.');
+    return;
+  }
 
-  const tabsInitHtml = `
-    <button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button>
-    ${typesToAnalyze.map(t=>`<button class="tab" id="mtab-${t.toLowerCase()}" onclick="switchMultiTab('${t.toLowerCase()}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_LABELS[t]} ⏳</button>`).join('')}`;
+  console.log('📋 Types to analyze:', typesToAnalyze);
 
-document.getElementById('result').innerHTML = '<div class="result-section"><h2>Analyse startet!</h2><div id="tab-overview">Data kommer her...</div></div>';
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.innerHTML = 'Analyserer... <span class="btn-arrow">⟳</span>';
+  
+  allResults = {};
 
-  btn.innerHTML='Analyserer... <span class="btn-arrow">⟳</span>';
+  console.log('🔥 SETTING RESULT HTML');
+  const resultDiv = document.getElementById('result');
+  console.log('Result div exists?', resultDiv);
+  
+  resultDiv.innerHTML = '<div class="result-section"><h2 style="color:green;padding:20px;">Analyse kører nu!</h2><div id="tab-overview">Vent venligst...</div></div>';
+  
+  console.log('✅ Result HTML set, length:', resultDiv.innerHTML.length);
 
-  await Promise.all(typesToAnalyze.map(type=>analyzeType(type, nameA, nameB)));
+  // Run analyses
+  await Promise.all(typesToAnalyze.map(type => analyzeType(type, nameA, nameB)));
 
+  console.log('✅ All analyses complete');
+  console.log('allResults:', allResults);
+
+  // Show results
   renderMultiResult(nameA, nameB);
-  document.getElementById('reset-btn').style.display='block';
-  btn.disabled=false;
-  btn.innerHTML='Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+  
+  document.getElementById('reset-btn').style.display = 'block';
+  btn.disabled = false;
+  btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
 async function analyzeType(type, nameA, nameB) {
   console.log('🔍 === ANALYZE START ===');
