@@ -1140,30 +1140,36 @@ if(!m) {
   console.error('❌ No JSON found in response!');
   throw new Error('Parse fejl - ingen JSON');
 }
-let jsonData;
-try{
-  jsonData=JSON.parse(m[0]);
-  console.log('✅ JSON parsed successfully:', jsonData);
-}catch(e){
-  console.error('❌ JSON parse error:', e);
-  let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
-  try{
-    jsonData=JSON.parse(fixed);
-    console.log('✅ Fixed JSON parsed!');
-  }catch(e2){
-    console.error('❌ Even fixed JSON failed:', e2);
-    throw new Error('JSON fejl');
-  }
-}
-allResults[type]=jsonData;
-    logAnalysis(nameA,nameB,type);
-    if(statusEl){
-      statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
-      statusEl.style.background='var(--accent-light)';
-      statusEl.style.color='var(--accent2)';
-      statusEl.style.borderColor='var(--accent2)';
-    }
-    enableTypeTab(type);
+1143  let jsonData;
+1144  try{
+1145    jsonData=JSON.parse(m[0]);
+1146    console.log('✅ JSON parsed successfully:', jsonData);
+1147  }catch(e){
+1148    console.error('❌ JSON parse error:', e);
+1149    let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
+1150    try{
+1151      jsonData=JSON.parse(fixed);
+1152      console.log('✅ Fixed JSON parsed!');
+1153    }catch(e2){
+1154      console.error('❌ Even fixed JSON failed!', e2);
+1155      throw new Error('JSON fejl');
+1156    }
+1157  }
+1158  allResults[type]=jsonData;
+1159  console.log('✅ Stored in allResults.' + type + ':', allResults[type]);
+1160  
+1161  // Render resultaterne på siden
+1162  renderMultiResult(type, jsonData);
+1163  console.log('🎨 Called renderMultiResult for', type);
+1164  
+1165  logAnalysis(nameA,nameB,type);
+1166  if(statusEl){
+1167    statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
+1168    statusEl.style.background='var(--accent-light)';
+1169    statusEl.style.color='var(--accent2)';
+1170    statusEl.style.borderColor='var(--accent2)';
+1171  }
+1172  enableTypeTab(type);
   }catch(err){
     console.error('❌ Analysis failed:', err);
     if(statusEl){
