@@ -1937,10 +1937,10 @@ function switchMultiTab(type){
 
 function renderTypeInTab(type){
   const container=document.getElementById('tab-'+type);
-  if(!container||!allResults[type])return;
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  if(!container||!allResults[shortName])return;
   
-  const html = renderIndividualTab(type, allResults[type]);
-  container.innerHTML = html;
+  const html = renderIndividualTab(type, allResults[shortName]);
   
   const subTabs = container.querySelectorAll('.sub-tab');
   subTabs.forEach(tab => {
