@@ -1161,10 +1161,6 @@ try{
       allResults[tabName] = jsonData;
       console.log('✅ Stored in allResults.' + tabName + ':', allResults[tabName]);
       
-      // Render resultaterne på siden
-      renderMultiResult(tabName, jsonData);
-      console.log('🎨 Called renderMultiResult for', tabName);
-      
       logAnalysis(nameA,nameB,type);
       if(statusEl){
         statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
