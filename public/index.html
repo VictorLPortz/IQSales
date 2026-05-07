@@ -1196,16 +1196,16 @@ async function analyze() {
   // Init result area with tabs upfront
   const tabsInitHtml = `
     <button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button>
-    ${typesToAnalyze.map(t => `<button class="tab" id="mtab-${t}" onclick="switchMultiTab('${t}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_LABELS[t]} ⏳</button>`).join('')}`;
+    ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return`<button class="tab" id="mtab-${shortName}" onclick="switchMultiTab('${shortName}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_LABELS[t]} ⏳</button>`;}).join('')}`;
 
   resultDiv.innerHTML = `
     <div class="result-section">
       <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
-        ${typesToAnalyze.map(t => `<span id="status-${t}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`).join('')}
+        ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return`<span id="status-${shortName}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`;}).join('')}
       </div>
       <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
       <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
-      ${typesToAnalyze.map(t => `<div id="tab-${t}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`).join('')}
+      ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return`<div id="tab-${shortName}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`;}).join('')}
     </div>`;
 
   console.log('✅ Result HTML set, length:', resultDiv.innerHTML.length);
@@ -1233,7 +1233,9 @@ console.log('🚀 ANALYZE START (from analyzeType) ===');
   console.log('docsB[type]:', docsB[type]);
   console.log('');
   
-  const statusEl=document.getElementById('status-'+type);
+  const shortName = type.replace('forsikring', '').toLowerCase();
+const shortName = type.replace('forsikring', '').toLowerCase();
+const statusEl=document.getElementById('status-'+shortName);
   if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ⟳`;
 
   let textA='',textB='';
@@ -1627,15 +1629,8 @@ function generateCoverageHTML(data) {
   return html;
 }
 
-function switchMultiTab(type){document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+type).style.display='block';document.getElementById('mtab-'+type).classList.add('active');if(allResults[type])renderTypeInTab(type);}
-function switchToOverview(){document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-overview').style.display='block';document.getElementById('mtab-overview').classList.add('active');}
-function renderTypeInTab(type){
-  const container=document.getElementById('tab-'+type);
-  if(!container||!allResults[type])return;
-  
-  const html = renderIndividualTab(type, allResults[type]);
-  container.innerHTML = html;
-  
+function switchMultiTab(type){const shortName=type;document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+shortName).style.display='block';document.getElementById('mtab-'+shortName).classList.add('active');if(allResults[shortName])renderTypeInTab(shortName);}
+   
   // Add sub-tab click handlers
   const subTabs = container.querySelectorAll('.sub-tab');
   subTabs.forEach(tab => {
