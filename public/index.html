@@ -1344,6 +1344,113 @@ function renderMultiResult(nameA, nameB) {
     console.error('❌ tab-overview element not found!');
   }
 }
+  function renderIndividualTab(typeKey, data) {
+  const typeNames = {
+    'Husforsikring': 'Husforsikring',
+    'Bilforsikring': 'Bilforsikring',
+    'Indboforsikring': 'Indboforsikring',
+    'Ulykkesforsikring': 'Ulykkesforsikring',
+    'Rejseforsikring': 'Rejseforsikring'
+  };
+  
+  const typeName = typeNames[typeKey] || typeKey;
+  
+  let html = `
+    <div class="individual-tab-container">
+      <!-- Sub-tabs -->
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-tab="coverage-${typeKey}">Dækningsoversigt</button>
+        <button class="sub-tab" data-tab="pitch-${typeKey}">Salgspitch</button>
+        <button class="sub-tab" data-tab="send-${typeKey}">Send til kunde</button>
+      </div>
+      
+      <!-- Coverage Overview Content -->
+      <div id="coverage-${typeKey}" class="sub-tab-content active">
+        ${generateCoverageHTML(data)}
+      </div>
+      
+      <!-- Placeholder tabs -->
+      <div id="pitch-${typeKey}" class="sub-tab-content">
+        <p style="padding: 20px; color: #666;">Salgspitch kommer snart...</p>
+      </div>
+      
+      <div id="send-${typeKey}" class="sub-tab-content">
+        <p style="padding: 20px; color: #666;">Send til kunde kommer snart...</p>
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+function generateCoverageHTML(data) {
+  if (!data || !data.coverage) return '<p>Ingen data tilgængelig</p>';
+  
+  const aWins = data.coverage.filter(c => c.winner === 'a' || c.winner === 'A').length;
+  const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
+  const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
+  
+  let html = `
+    <div class="coverage-comparison">
+      <div class="company-badges">
+        <span class="badge-green">${data.companyA} bedre på ${aWins} punkter</span>
+        <span class="badge-neutral">${data.companyB} bedre på ${bWins} punkter</span>
+        <span class="badge-neutral">Ens på ${equal} punkter</span>
+      </div>
+      
+      <div class="coverage-grid">
+  `;
+  
+  data.coverage.forEach(item => {
+    const winner = item.winner === 'a' || item.winner === 'A' ? 'A' :
+                   item.winner === 'b' || item.winner === 'B' ? 'B' : 'equal';
+    const winnerClass = winner === 'A' ? 'winner-a' : 
+                       winner === 'B' ? 'winner-b' : 'tie';
+    
+    const iconMap = {
+      'A': '✓',
+      'B': '✓', 
+      'equal': '='
+    };
+    
+    const aDetail = item.a_detail || item.a_details || '';
+    const bDetail = item.b_detail || item.b_details || '';
+    
+    html += `
+      <div class="coverage-card ${winnerClass}">
+        <div class="coverage-header">
+          <span class="coverage-icon">${iconMap[winner]}</span>
+          <h3>${item.category}</h3>
+        </div>
+        
+        <div class="coverage-details">
+          <div class="company-detail ${winner === 'A' ? 'highlight' : ''}">
+            <h4>${data.companyA}</h4>
+            <p>${aDetail}</p>
+          </div>
+          
+          <div class="company-detail ${winner === 'B' ? 'highlight' : ''}">
+            <h4>${data.companyB}</h4>
+            <p>${bDetail}</p>
+          </div>
+        </div>
+        
+        ${item.sales_tip || item.advantage ? `
+          <div class="advantage-note">
+            ${item.sales_tip || item.advantage}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
 
 function switchMultiTab(type){document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+type).style.display='block';document.getElementById('mtab-'+type).classList.add('active');if(allResults[type])renderTypeInTab(type);}
 function switchToOverview(){document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-overview').style.display='block';document.getElementById('mtab-overview').classList.add('active');}
