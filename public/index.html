@@ -472,6 +472,79 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   color: #0f4d2a;
   font-style: italic;
 }
+  /* Individual tab styling */
+.individual-tab-container {
+  margin-top: 1rem;
+}
+
+.sub-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #E3E1D9;
+}
+
+.sub-tab {
+  padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: #7A7870;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.sub-tab:hover {
+  color: #00AEEF;
+  background: #F4F3EF;
+}
+
+.sub-tab.active {
+  color: #00AEEF;
+  border-bottom-color: #00AEEF;
+}
+
+.sub-tab-content {
+  display: none;
+}
+
+.sub-tab-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+.placeholder-content {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #7A7870;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 1rem;
+}
+
+.placeholder-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #141412;
+  margin: 0 0 0.5rem 0;
+}
+
+.placeholder-content p {
+  font-size: 14px;
+  color: #7A7870;
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
 </head>
 <body>
@@ -1570,42 +1643,211 @@ function renderMultiResult(nameA, nameB) {
   }
 }
   function renderIndividualTab(typeKey, data) {
-  const typeNames = {
-    'Husforsikring': 'Husforsikring',
-    'Bilforsikring': 'Bilforsikring',
-    'Indboforsikring': 'Indboforsikring',
-    'Ulykkesforsikring': 'Ulykkesforsikring',
-    'Rejseforsikring': 'Rejseforsikring'
-  };
+  const shortName = typeKey.replace('forsikring', '').toLowerCase();
   
-  const typeName = typeNames[typeKey] || typeKey;
-  
-  let html = `
+  return `
     <div class="individual-tab-container">
-      <!-- Sub-tabs -->
+      <!-- Sub-tabs navigation -->
       <div class="sub-tabs">
-        <button class="sub-tab active" data-tab="coverage-${typeKey}">Dækningsoversigt</button>
-        <button class="sub-tab" data-tab="pitch-${typeKey}">Salgspitch</button>
-        <button class="sub-tab" data-tab="send-${typeKey}">Send til kunde</button>
+        <button class="sub-tab active" onclick="switchSubTab('coverage-${shortName}', this)">📊 Dækningsoversigt</button>
+        <button class="sub-tab" onclick="switchSubTab('pitch-${shortName}', this)">💡 Salgspitch</button>
+        <button class="sub-tab" onclick="switchSubTab('send-${shortName}', this)">📧 Send til kunde</button>
       </div>
       
-      <!-- Coverage Overview Content -->
-      <div id="coverage-${typeKey}" class="sub-tab-content active">
+      <!-- Tab contents -->
+      <div id="coverage-${shortName}" class="sub-tab-content active">
         ${generateCoverageHTML(data)}
       </div>
       
-      <!-- Placeholder tabs -->
-      <div id="pitch-${typeKey}" class="sub-tab-content">
-        <p style="padding: 20px; color: #666;">Salgspitch kommer snart...</p>
+      <div id="pitch-${shortName}" class="sub-tab-content">
+        <div class="placeholder-content">
+          <div class="placeholder-icon">💡</div>
+          <h3>Salgspitch kommer snart</h3>
+          <p>Her vil du kunne se et færdigt salgspitch baseret på analysen.</p>
+        </div>
       </div>
       
-      <div id="send-${typeKey}" class="sub-tab-content">
-        <p style="padding: 20px; color: #666;">Send til kunde kommer snart...</p>
+      <div id="send-${shortName}" class="sub-tab-content">
+        <div class="placeholder-content">
+          <div class="placeholder-icon">📧</div>
+          <h3>Kundemail kommer snart</h3>
+          <p>Her vil du kunne generere en kunde-venlig rapport.</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateCoverageHTML(data) {
+  const aWins = data.coverage.filter(c => c.winner === 'a').length;
+  const bWins = data.coverage.filter(c => c.winner === 'b').length;
+  const ties = data.coverage.filter(c => c.winner === 'equal').length;
+  
+  // Sort: A wins first, then B wins, then ties
+  const sorted = [
+    ...data.coverage.filter(c => c.winner === 'a'),
+    ...data.coverage.filter(c => c.winner === 'b'),
+    ...data.coverage.filter(c => c.winner === 'equal')
+  ];
+  
+  // Summary
+  const summaryHtml = `
+    <div style="display: flex; gap: 2rem; margin-bottom: 2rem; padding: 1rem 0; border-bottom: 2px solid #E3E1D9;">
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span style="font-size: 28px; font-weight: 600; color: #1D9E75;">${aWins}</span>
+        <span style="font-size: 14px; color: #7A7870;">${data.companyA} fordele</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span style="font-size: 28px; font-weight: 600; color: #BA7517;">${bWins}</span>
+        <span style="font-size: 14px; color: #7A7870;">${data.companyB} fordele</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span style="font-size: 28px; font-weight: 600; color: #378ADD;">${ties}</span>
+        <span style="font-size: 14px; color: #7A7870;">Ens niveau</span>
       </div>
     </div>
   `;
   
-  return html;
+  // Cards
+  const cardsHtml = sorted.map((c, idx) => {
+    const isWinner = c.winner === 'a';
+    const isLoser = c.winner === 'b';
+    const isTie = c.winner === 'equal';
+    
+    let borderColor = '#E3E1D9';
+    let headerBg = '#FAFAF9';
+    let badgeBg = '#E6F1FB';
+    let badgeColor = '#0C447C';
+    let badgeText = 'Samme niveau';
+    
+    if (isWinner) {
+      borderColor = '#1D9E75';
+      headerBg = '#E1F5EE';
+      badgeBg = '#E1F5EE';
+      badgeColor = '#0F6E56';
+      badgeText = 'Din fordel';
+    } else if (isLoser) {
+      borderColor = '#BA7517';
+      headerBg = '#FAEEDA';
+      badgeBg = '#FAEEDA';
+      badgeColor = '#633806';
+      badgeText = `${data.companyB} fordel`;
+    }
+    
+    const textAId = `text-${idx}-a`;
+    const textBId = `text-${idx}-b`;
+    const btnAId = `btn-${idx}-a`;
+    const btnBId = `btn-${idx}-b`;
+    
+    return `
+      <div style="background: white; border: ${isTie ? '1px' : '2px'} solid ${borderColor}; ${!isTie ? 'border-left-width: 4px;' : ''} border-radius: 8px; overflow: hidden;">
+        <div style="padding: 1rem 1.25rem; background: ${isTie ? '#FFFFFF' : headerBg}; border-bottom: 1px solid #E3E1D9; display: flex; align-items: center; justify-content: space-between;">
+          <h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">${c.category}</h3>
+          ${!isTie ? `<span style="font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor};">${badgeText}</span>` : ''}
+        </div>
+        
+        <div style="padding: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            
+            <!-- Company A Card -->
+            <div style="background: #FAFAF9; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
+                ${logoHtml(data.companyA, 20)}
+                ${data.companyA}
+              </div>
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.a_status)}; color: ${getStatusColor(c.a_status)}; width: fit-content; margin-bottom: 0.5rem;">
+                ${getStatusIcon(c.a_status)} ${getStatusLabel(c.a_status)}
+              </div>
+              <div style="position: relative;">
+                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.a_detail || 'Ingen detaljer'}</p>
+                ${(c.a_detail && c.a_detail.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                ${(c.sales_tip && isWinner) ? `
+                  <div style="display: none; position: absolute; left: 0; bottom: 100%; margin-bottom: 8px; background: #0A2540; color: white; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.4; max-width: 280px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" class="tooltip-${idx}-a">
+                    💡 ${c.sales_tip}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+            
+            <!-- Company B Card -->
+            <div style="background: #FAFAF9; border: 1px solid #E3E1D9; border-radius: 8px; padding: 1rem;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
+                ${logoHtml(data.companyB, 20)}
+                ${data.companyB}
+              </div>
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.b_status)}; color: ${getStatusColor(c.b_status)}; width: fit-content; margin-bottom: 0.5rem;">
+                ${getStatusIcon(c.b_status)} ${getStatusLabel(c.b_status)}
+              </div>
+              <div style="position: relative;">
+                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.b_detail || 'Ingen detaljer'}</p>
+                ${(c.b_detail && c.b_detail.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                ${(c.objection_tip && isLoser) ? `
+                  <div style="display: none; position: absolute; left: 0; bottom: 100%; margin-bottom: 8px; background: #0A2540; color: white; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.4; max-width: 280px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" class="tooltip-${idx}-b">
+                    ⚠️ ${c.objection_tip}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  return summaryHtml + '<div style="display: grid; gap: 1rem;">' + cardsHtml + '</div>';
+}
+
+function getStatusIcon(status) {
+  if (status === 'yes') return '✓';
+  if (status === 'no') return '✗';
+  if (status === 'partial') return '◐';
+  if (status === 'inib') return '?';
+  return '−';
+}
+
+function getStatusLabel(status) {
+  if (status === 'yes') return 'Dækket';
+  if (status === 'no') return 'Undtaget';
+  if (status === 'partial') return 'Delvist';
+  if (status === 'inib') return 'Ikke nævnt';
+  return 'Ukendt';
+}
+
+function getStatusBg(status) {
+  if (status === 'yes') return '#EAF3DE';
+  if (status === 'no') return '#FCEBEB';
+  if (status === 'partial') return '#FAEEDA';
+  if (status === 'inib') return '#F1EFE8';
+  return '#F1EFE8';
+}
+
+function getStatusColor(status) {
+  if (status === 'yes') return '#3B6D11';
+  if (status === 'no') return '#791F1F';
+  if (status === 'partial') return '#633806';
+  if (status === 'inib') return '#5F5E5A';
+  return '#5F5E5A';
+}
+
+function toggleText(textId, btnId) {
+  const text = document.getElementById(textId);
+  const btn = document.getElementById(btnId);
+  if (text.style.maxHeight === '60px' || !text.style.maxHeight) {
+    text.style.maxHeight = '1000px';
+    btn.textContent = 'Vis mindre ↑';
+  } else {
+    text.style.maxHeight = '60px';
+    btn.textContent = 'Vis mere ↓';
+  }
+}
+
+function switchSubTab(tabId, btn) {
+  const container = btn.closest('.individual-tab-container');
+  container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  container.querySelectorAll('.sub-tab-content').forEach(c => c.style.display = 'none');
+  btn.classList.add('active');
+  document.getElementById(tabId).style.display = 'block';
 }
 
 function generateCoverageHTML(data) {
