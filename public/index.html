@@ -1388,7 +1388,7 @@ try{
         statusEl.style.color='var(--accent2)';
         statusEl.style.borderColor='var(--accent2)';
       }
-      enableTypeTab(type);
+     enableTypeTab(tabName);
     }catch(err){
       console.error('❌ Analysis failed:', err);
       if(statusEl){
@@ -1398,7 +1398,26 @@ try{
     }
   }
 
-function enableTypeTab(type){const tabBtn=document.getElementById('mtab-'+type);if(tabBtn){tabBtn.disabled=false;tabBtn.style.opacity='1';tabBtn.style.cursor='pointer';tabBtn.innerHTML=TYPE_LABELS[type]+' ✓';}renderTypeInTab(type);}
+function enableTypeTab(type){
+  // Map short name back to long name for TYPE_LABELS
+  const typeMap = {
+    'hus': 'Husforsikring',
+    'bil': 'Bilforsikring',
+    'indbo': 'Indboforsikring',
+    'ulykkes': 'Ulykkesforsikring',
+    'rejse': 'Rejseforsikring'
+  };
+  const fullType = typeMap[type] || type;
+  
+  const tabBtn=document.getElementById('mtab-'+type);
+  if(tabBtn){
+    tabBtn.disabled=false;
+    tabBtn.style.opacity='1';
+    tabBtn.style.cursor='pointer';
+    tabBtn.innerHTML=TYPE_LABELS[fullType]+' ✓';
+  }
+  renderTypeInTab(type);
+}
 
 function renderMultiResult(nameA, nameB) {
   const types = Object.keys(allResults);
