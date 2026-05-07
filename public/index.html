@@ -1627,26 +1627,16 @@ function generateCoverageHTML(data) {
   return html;
 }
 
-function switchMultiTab(type){const shortName=type;document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+shortName).style.display='block';document.getElementById('mtab-'+shortName).classList.add('active');if(allResults[shortName])renderTypeInTab(shortName);}
-   
-  // Add sub-tab click handlers
-  const subTabs = container.querySelectorAll('.sub-tab');
-  subTabs.forEach(tab => {
-    tab.addEventListener('click', function() {
-      const targetId = this.getAttribute('data-tab');
-      
-      // Remove active from all sub-tabs and contents in THIS container
-      container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
-      container.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
-      
-      // Add active to clicked tab and its content
-      this.classList.add('active');
-      const targetContent = document.getElementById(targetId);
-      if(targetContent) targetContent.classList.add('active');
-    });
-  });
+function switchMultiTab(type){
+  const shortName=type;
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+shortName).style.display='block';
+  document.getElementById('mtab-'+shortName).classList.add('active');
+  if(allResults[shortName])renderTypeInTab(shortName);
+}
 
-  function renderTypeInTab(type){
+function renderTypeInTab(type){
   const container=document.getElementById('tab-'+type);
   if(!container||!allResults[type])return;
   
@@ -1657,8 +1647,12 @@ function switchMultiTab(type){const shortName=type;document.querySelectorAll('.m
   subTabs.forEach(tab => {
     tab.addEventListener('click', function() {
       const targetId = this.getAttribute('data-tab');
+      
+      // Remove active from all sub-tabs and contents in THIS container
       container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
       container.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+      
+      // Add active to clicked tab and its content
       this.classList.add('active');
       const targetContent = document.getElementById(targetId);
       if(targetContent) targetContent.classList.add('active');
