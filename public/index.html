@@ -1154,10 +1154,10 @@ try{
           console.error('❌ Even fixed JSON failed!', e2);
           throw new Error('JSON fejl');
         }
-      }
+ }
       
       // Map long type name to short tab name
-      const tabName = type.replace('forsikring', ''); // "husforsikring" → "hus"
+      const tabName = type.replace('forsikring', '').toLowerCase(); // "husforsikring" → "hus"
       allResults[tabName] = jsonData;
       console.log('✅ Stored in allResults.' + tabName + ':', allResults[tabName]);
       
