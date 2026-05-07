@@ -1,7 +1,7 @@
-// ========================================
+// ==========================================
 // api/compare.js
 // Sammenligner to forsikringsselskaber
-// ========================================
+// ==========================================
 
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -16,36 +16,36 @@ export default async function handler(req, res) {
 
   try {
     const { prompt } = req.body;
-    
+
     if (!prompt) {
-      return res.status(400).json({ 
-        error: 'Missing prompt' 
+      return res.status(400).json({
+        error: 'Missing prompt'
       });
     }
-    
-    console.log('🚀 Comparing insurance companies with prompt length:', prompt.length);
-    
+
+    console.log('🔍 Comparing insurance companies with prompt length:', prompt.length);
+
     // Send til Claude
     const message = await anthropic.messages.create({
-model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 16000,
       messages: [{
         role: 'user',
         content: prompt
       }]
     });
-    
+
     console.log('✅ Claude response received');
-    
+
     return res.status(200).json({
       content: message.content,
       usage: message.usage
     });
-    
+
   } catch (error) {
     console.error('❌ Comparison failed:', error);
-    return res.status(500).json({ 
-      error: error.message 
+    return res.status(500).json({
+      error: error.message
     });
   }
 }
