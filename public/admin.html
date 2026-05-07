@@ -779,25 +779,54 @@
       .from('feedback')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(10);
-
+      .limit(20);
+ 
     const feedbackContainer = document.getElementById('feedbackList');
     if (!feedback || feedback.length === 0) {
       feedbackContainer.innerHTML = '<div class="empty-state">Ingen feedback endnu</div>';
     } else {
-      feedbackContainer.innerHTML = feedback.map(f => `
-        <div class="activity-entry">
-          <div class="activity-dot"></div>
-          <div style="flex: 1;">
-            <div><strong>Anonym</strong></div>
-            <div class="activity-user">Ingen afdeling</div>
-            <div style="margin-top: 4px; font-size: 13px;">${f.message || f.feedback_text || '—'}</div>
+      feedbackContainer.innerHTML = feedback.map(f => {
+        // Format issue type
+        const issueTypeMap = {
+          'forkert_fordel': '❌ Ikke en reel fordel',
+          'mangler_info': '📝 Mangler information',
+          'forkert_info': '⚠️ Forkert information',
+          'andet': '💬 Andet',
+          'generel': '💬 Generel feedback',
+          'coach_positiv': '👍 Coach positiv',
+          'coach_negativ': '👎 Coach negativ'
+        };
+        
+        const issueLabel = issueTypeMap[f.issue_type] || f.issue_type || '—';
+        
+        // Build title
+        let title = '';
+        if (f.category === 'Generel' || f.category === 'IQSales Coach') {
+          title = `<strong>${f.category}</strong>`;
+        } else {
+          title = `<strong>${f.category || 'Kategori ukendt'}</strong> — ${f.company_a || '?'} vs ${f.company_b || '?'}`;
+        }
+        
+        // Dot color based on type
+        let dotColor = 'var(--green-light)';
+        if (f.issue_type && f.issue_type.includes('negativ')) dotColor = '#DC2626';
+        if (f.issue_type && f.issue_type.includes('positiv')) dotColor = '#16A34A';
+        
+        return `
+          <div class="activity-entry" style="padding: 14px 0;">
+            <div class="activity-dot" style="background: ${dotColor}"></div>
+            <div style="flex: 1;">
+              ${title}
+              <div class="activity-user" style="margin-top: 2px;">
+                ${f.insurance_type || 'Type ukendt'} · ${issueLabel}
+              </div>
+              ${f.comment ? `<div style="margin-top: 6px; font-size: 13px; color: var(--text); background: #F9FAFB; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--green-light);">"${f.comment}"</div>` : ''}
+            </div>
+            <span class="activity-time">${formatDate(f.created_at)}</span>
           </div>
-          <span class="activity-time">${formatDate(f.created_at)}</span>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
-  }
 
   async function loadPDFStatus() {
     // Load insurance terms
