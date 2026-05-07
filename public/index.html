@@ -1646,6 +1646,26 @@ function switchMultiTab(type){const shortName=type;document.querySelectorAll('.m
     });
   });
 
+  function renderTypeInTab(type){
+  const container=document.getElementById('tab-'+type);
+  if(!container||!allResults[type])return;
+  
+  const html = renderIndividualTab(type, allResults[type]);
+  container.innerHTML = html;
+  
+  const subTabs = container.querySelectorAll('.sub-tab');
+  subTabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-tab');
+      container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+      container.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      const targetContent = document.getElementById(targetId);
+      if(targetContent) targetContent.classList.add('active');
+    });
+  });
+}
+
 function ico(s){if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;if(s==='no')return`<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='inib')return`<svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="8.5" r="1" fill="#92400E"/></svg>`;return`<svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>`;}
 function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':'dp';}
 function inibBadge(type){const label=type==='inib'?'Ikke nævnt':'Undtaget';const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;}
