@@ -1119,65 +1119,65 @@ Regler:
 - Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne
 - Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
 
-  try{
-    console.log('🚀 Calling API with prompt length:', prompt.length);
-const res=await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
-console.log('🟤 API response status:', res.status);
-console.log('🟤 API response headers:', res.headers);
-const responseText = await res.text();
-console.log('🟤 Raw response text (first 500 chars):', responseText.substring(0, 500));
-const parsed = JSON.parse(responseText);
-console.log('🟤 API response:', parsed);
-    
-if(parsed.error)throw new Error(parsed.error);
-const txt=parsed.content.map(i=>i.type==='text'?i.text:'').join('\n');
-console.log('📄 Raw text from API:', txt.substring(0, 200));
-const cleaned = txt.replace(/```json|```/g,'').trim();
-console.log('🧹 Cleaned text:', cleaned.substring(0, 200));
-const m = cleaned.match(/\{[\s\S]*\}/);
-console.log('🔍 Matched JSON:', m ? 'YES' : 'NO');
-if(!m) {
-  console.error('❌ No JSON found in response!');
-  throw new Error('Parse fejl - ingen JSON');
-}
-1143  let jsonData;
-1144  try{
-1145    jsonData=JSON.parse(m[0]);
-1146    console.log('✅ JSON parsed successfully:', jsonData);
-1147  }catch(e){
-1148    console.error('❌ JSON parse error:', e);
-1149    let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
-1150    try{
-1151      jsonData=JSON.parse(fixed);
-1152      console.log('✅ Fixed JSON parsed!');
-1153    }catch(e2){
-1154      console.error('❌ Even fixed JSON failed!', e2);
-1155      throw new Error('JSON fejl');
-1156    }
-1157  }
-1158  allResults[type]=jsonData;
-1159  console.log('✅ Stored in allResults.' + type + ':', allResults[type]);
-1160  
-1161  // Render resultaterne på siden
-1162  renderMultiResult(type, jsonData);
-1163  console.log('🎨 Called renderMultiResult for', type);
-1164  
-1165  logAnalysis(nameA,nameB,type);
-1166  if(statusEl){
-1167    statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
-1168    statusEl.style.background='var(--accent-light)';
-1169    statusEl.style.color='var(--accent2)';
-1170    statusEl.style.borderColor='var(--accent2)';
-1171  }
-1172  enableTypeTab(type);
-  }catch(err){
-    console.error('❌ Analysis failed:', err);
-    if(statusEl){
-      statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;
-      statusEl.style.color='var(--danger)';
+ try{
+      console.log('🔍 Calling API with prompt length:', prompt.length);
+      const res=await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+      console.log('⚫ API response status:', res.status);
+      console.log('⚫ API response headers:', res.headers);
+      const responseText = await res.text();
+      console.log('⚫ Raw response text (first 500 chars):', responseText.substring(0, 500));
+      const parsed = JSON.parse(responseText);
+      console.log('⚫ API response:', parsed);
+
+      if(parsed.error)throw new Error(parsed.error);
+      const txt=parsed.content.map(i=>i.type==='text'?i.text:'').join('\n');
+      console.log('🟢 Raw text from API:', txt.substring(0, 200));
+      const cleaned = txt.replace(/```json|```/g,'').trim();
+      console.log('✂️ Cleaned text:', cleaned.substring(0, 200));
+      const m = cleaned.match(/\{[\s\S]*\}/);
+      console.log('🔍 Matched JSON:', m ? 'YES' : 'NO');
+      if(!m) {
+        console.error('❌ No JSON found in response!');
+        throw new Error('Parse fejl - ingen JSON');
+      }
+      let jsonData;
+      try{
+        jsonData=JSON.parse(m[0]);
+        console.log('✅ JSON parsed successfully:', jsonData);
+      }catch(e){
+        console.error('❌ JSON parse error:', e);
+        let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
+        try{
+          jsonData=JSON.parse(fixed);
+          console.log('✅ Fixed JSON parsed!');
+        }catch(e2){
+          console.error('❌ Even fixed JSON failed!', e2);
+          throw new Error('JSON fejl');
+        }
+      }
+      allResults[type]=jsonData;
+      console.log('✅ Stored in allResults.' + type + ':', allResults[type]);
+      
+      // Render resultaterne på siden
+      renderMultiResult(type, jsonData);
+      console.log('🎨 Called renderMultiResult for', type);
+      
+      logAnalysis(nameA,nameB,type);
+      if(statusEl){
+        statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
+        statusEl.style.background='var(--accent-light)';
+        statusEl.style.color='var(--accent2)';
+        statusEl.style.borderColor='var(--accent2)';
+      }
+      enableTypeTab(type);
+    }catch(err){
+      console.error('❌ Analysis failed:', err);
+      if(statusEl){
+        statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;
+        statusEl.style.color='var(--danger)';
+      }
     }
   }
-}
 
 function enableTypeTab(type){const tabBtn=document.getElementById('mtab-'+type);if(tabBtn){tabBtn.disabled=false;tabBtn.style.opacity='1';tabBtn.style.cursor='pointer';tabBtn.innerHTML=TYPE_LABELS[type]+' ✓';}renderTypeInTab(type);}
 
