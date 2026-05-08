@@ -928,6 +928,21 @@ function logoHtml(n,size=28){return getBrandEl(n,size);}
 const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring','Privatsikring','Lærerstandens Brandforsikring','GF Forsikring','Vesta Forsikring','Thisted Forsikring','Runa Forsikring','Bauta Forsikring','Alka','Vejle Brand','Vestjylland Forsikring','Købstedernes Forsikring','Jyske Forsikring','Aros Forsikring','Nærsikring','Bornholms Brandforsikring','Spira Forsikring','Concordia Forsikring','IDA Forsikring','TJM Forsikring','Storstrom Forsikring','OK Forsikring','FDM Forsikring','Himmerland Forsikring','Forsia Forsikring','Frida Forsikring','Dansk Bilforsikring'];
 const cddState={a:'Alm. Brand',b:'Tryg'};
 
+  const TYPE_LABELS = {
+  'hus': 'Husforsikring',
+  'bil': 'Bilforsikring',
+  'indbo': 'Indboforsikring',
+  'ulykke': 'Ulykkesforsikring',
+  'rejse': 'Rejseforsikring',
+  'hund': 'Hundeforsikring',
+  'fritidshus': 'Fritidshusforsikring',
+  'motorcykel': 'Motorcykelforsikring',
+  'lystfartøj': 'Lystfartøjsforsikring',
+  'campingvogn': 'Campingvognsforsikring',
+  'børneulykke': 'Børneulykkesforsikring',
+  'veteranerkøretøj': 'Veterankøretøjsforsikring'
+};
+  
 let fbState={};
 function openFb(category,companyA,companyB,type,side){fbState={category,companyA,companyB,type,side:side||'a',issueType:''};const sideLabel=side==='b'?' (→ '+companyB+')':'';document.getElementById('fb-cat').textContent=category+sideLabel;document.getElementById('fb-comment').value='';document.getElementById('fb-success').classList.add('hidden');document.getElementById('fb-actions').style.display='flex';document.querySelectorAll('.fb-type-btn').forEach(b=>b.classList.remove('active'));document.getElementById('fb-modal-bg').classList.add('open');}
 function closeFb(){document.getElementById('fb-modal-bg').classList.remove('open');}
