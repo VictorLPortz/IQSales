@@ -1544,6 +1544,7 @@ async function analyzeType(type, nameA, nameB) {
     if (statusEl) statusEl.style.color = 'var(--danger)';
     return;
   }
+  console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
 
   const MAX_CHARS = 60000;
   if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
