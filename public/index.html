@@ -1527,7 +1527,7 @@ async function analyze() {
   btn.disabled = false;
   btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
-  function renderMultiResult(nameA, nameB) {
+ function renderMultiResult(nameA, nameB) {
   const types = Object.keys(allResults);
   if (types.length === 0) {
     const overviewEl = document.getElementById('tab-overview');
@@ -1543,7 +1543,7 @@ async function analyze() {
     
     d.coverage.filter(c => c.winner === 'a' && (c.b_status === 'no' || c.b_status === 'inib' || c.sales_tip)).slice(0, 2).forEach(c => {
       strongA.push({
-        type: TYPE_LABELS[t],
+        type: TYPE_LABELS[t] || d.type || t,
         category: c.category,
         detail: c.a_detail || '',
         tip: c.sales_tip || ''
@@ -1559,7 +1559,7 @@ async function analyze() {
     
     d.coverage.filter(c => c.winner === 'b').slice(0, 2).forEach(c => {
       strongB.push({
-        type: TYPE_LABELS[t],
+        type: TYPE_LABELS[t] || d.type || t,
         category: c.category,
         detail: c.b_detail || '',
         tip: c.objection_tip || ''
@@ -1574,7 +1574,7 @@ async function analyze() {
     if (!d || !d.pitch) return;
     
     (d.pitch.advantages_a || []).slice(0, 2).forEach(a => {
-      allAdvA.push({ label: TYPE_LABELS[t], text: a });
+      allAdvA.push({ label: TYPE_LABELS[t] || d.type || t, text: a });
     });
   });
  
