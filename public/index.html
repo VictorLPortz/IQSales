@@ -1624,91 +1624,6 @@ async function analyze() {
   const overviewEl = document.getElementById('tab-overview');
   if (overviewEl) overviewEl.innerHTML = overviewHtml;
 }
-async function analyzeType(type, nameA, nameB) {
-  const shortName = type.replace('forsikring', '').toLowerCase();
-  console.log('🔧 ANALYZE START (from analyzeType) ===');
-  console.log('Type:', type);
-  console.log('Company A:', nameA);
-  console.log('Company B:', nameB);
-  console.log('docsA[type]:', docsA[type]);
-  console.log('docsB[type]:', docsB[type]);
-  console.log('');
-  
-const statusEl=document.getElementById('status-'+shortName);
-  if(statusEl)statusEl.innerHTML=`${TYPE_LABELS[type]} ⟳`;
-
-  let textA='',textB='';
-  
-  // CHECK IF WE SHOULD USE CACHE
-  const usesCacheA = docsA[type]?.fromCache;
-  const usesCacheB = docsB[type]?.fromCache;
-  
-  console.log('🔍 Uses cache A:', usesCacheA);
-  console.log('🔍 Uses cache B:', usesCacheB);
-  
-  try {
-    // GET TEXT FROM CACHE IF AVAILABLE
-    if (usesCacheA) {
-      const keyA = `${nameA}:${type}`;
-      console.log('📦 Looking for cache key A:', keyA);
-      const cacheA = cacheStatusData[keyA];
-      if (cacheA && cacheA.fullText) {
-        textA = cacheA.fullText;
-        console.log('✅ Using cached fullText for A - length:', textA.length);
-      } else {
-        console.log('⚠️ Cache metadata found but no fullText for A');
-        textA = await extractPdfText(docsA[type].data);
-      }
-    } else {
-      console.log('📄 Extracting PDF for A...');
-      textA = await extractPdfText(docsA[type].data);
-      console.log('✅ PDF extracted for A - length:', textA.length);
-    }
-    
-    if (usesCacheB) {
-      const keyB = `${nameB}:${type}`;
-      console.log('📦 Looking for cache key B:', keyB);
-      const cacheB = cacheStatusData[keyB];
-      if (cacheB && cacheB.fullText) {
-        textB = cacheB.fullText;
-        console.log('✅ Using cached fullText for B - length:', textB.length);
-      } else {
-        console.log('⚠️ Cache metadata found but no fullText for B');
-        textB = await extractPdfText(docsB[type].data);
-      }
-    } else {
-      console.log('📄 Extracting PDF for B...');
-      textB = await extractPdfText(docsB[type].data);
-      console.log('✅ PDF extracted for B - length:', textB.length);
-    }
-  } catch(e) {
-    console.error('❌ Text extraction failed:', e);
-    if(statusEl){
-      statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;
-      statusEl.style.color='var(--danger)';
-    }
-    return;
-  }
-
-  const MAX_CHARS=60000;
-  if(textA.length>MAX_CHARS)textA=textA.substring(0,MAX_CHARS)+'\n[afkortet]';
-  if(textB.length>MAX_CHARS)textB=textB.substring(0,MAX_CHARS)+'\n[afkortet]';
-
-  // Check cache
-  const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
-  const cached = loadCache(cacheKey);
-  if(cached){
-    allResults[shortName] = cached;
-    if(statusEl){
-      statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
-      statusEl.style.background='var(--accent-light)';
-      statusEl.style.color='var(--accent2)';
-      statusEl.style.borderColor='var(--accent2)';
-    }
-    enableTypeTab(shortName);
-    return;
-  }
-
 const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
  
 === BETINGELSER FRA ${nameA} ===
@@ -1788,11 +1703,12 @@ BEGRÆNSNINGER = PARTIAL:
  
 ===HUSFORSIKRING - SPECIFIKKE DÆKNINGER===
  
-BLÆSEVEJR vs STORMSKADE (KRITISK):
-- Storm = Vindstyrke 8+ (≥17,2 m/s) - ALLE selskaber dækker
-- Blæsevejr = Vindstyrke <17,2 m/s - Kun Alm. Brand og Gjensidige dækker typisk
-- Hvis Alm. Brand eller Gjensidige nævner "blæsevejr under 17,2 m/s" → UNIK fordel
+BLÆSEVEJR vs STORMSKADE (VIGTIGT AT TJEKKE):
+- Storm = Vindstyrke 8+ (≥17,2 m/s) - ALLE selskaber dækker dette
+- Blæsevejr = Vindstyrke <17,2 m/s - TJEK om selskabet eksplicit nævner dækning under 17,2 m/s
+- Hvis KUN det ene selskab eksplicit nævner "blæsevejr under 17,2 m/s" eller "dækning under vindstyrke 8" → Dette KAN være en fordel
 - Sammenlign altid m/s grænser nøje
+- Antag IKKE at et selskab dækker blæsevejr bare fordi det nævner stormskade
  
 RÅDSKADE (BASERET PÅ FEEDBACK):
 - Tjek om kræver tilvalg (partial) vs inkluderet (yes)
@@ -1818,10 +1734,16 @@ ANDRE VIGTIGE:
  
 ===INDBOFORSIKRING - SPECIFIKKE DÆKNINGER===
  
+ANSVARSFORSIKRING (VIGTIGT):
+- Ansvarsforsikring er som regel ENS på tværs af de fleste selskaber
+- Medmindre der er KONKRET beløbsforskel eller dækningsforskelle → winner=equal
+- Vis IKKE ansvarsforsikring som fordel i top3_a eller top3_b medmindre der er klar dokumenteret forskel
+- Sammenlign kun beløb hvis de er eksplicit forskellige
+ 
+ANDRE DÆKNINGER:
 - Elektronikforsikring: Tjek funktionsfejl efter 2 år vs kun skader
 - Cykeltyveri: Sammenlign beløb og begrænsninger
 - Rejsehjælpsforsikring: Mange har grunddækning inkluderet
-- Ansvarsforsikring: Sammenlign beløb nøje
  
 ===ULYKKESFORSIKRING - SPECIFIKKE DÆKNINGER===
  
