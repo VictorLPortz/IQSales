@@ -1553,6 +1553,7 @@ async function analyzeType(type, nameA, nameB) {
   const cached = loadCache(cacheKey);
   if (cached) {
     allResults[type] = cached;
+    console.log('📦 Loaded from cache for', type, '- data:', cached);
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
       statusEl.style.background = 'var(--accent-light)';
