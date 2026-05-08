@@ -1561,7 +1561,7 @@ async function analyzeType(type, nameA, nameB) {
     return;
   }
 
-  const prompt = `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
+  const analysisPrompt = `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
 
 === BETINGELSER FRA ${nameA} ===
 ${textA}
@@ -1724,7 +1724,7 @@ ANDRE VIGTIGE:
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt: analysisPrompt })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
