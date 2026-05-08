@@ -1628,7 +1628,8 @@ renderMultiResult(nameA, nameB);
   btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
 async function analyzeType(type, nameA, nameB) {
-  console.log('🚀 analyzeType STARTED for:', type, nameA, nameB);
+ console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
+console.log('🔴 DEBUG: About to extract PDF text');
   // Update status to running
   const shortName = type.replace('forsikring', '').toLowerCase();
 const statusEl = document.getElementById('status-' + type);
@@ -1648,6 +1649,8 @@ const statusEl = document.getElementById('status-' + type);
   const MAX_CHARS = 60000;
   if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
   if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
+
+  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
 
   // Check cache
   const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
@@ -1825,6 +1828,8 @@ ANDRE VIGTIGE:
 - Sammenlign æbler med æbler
 - top3_a og top3_b skal være konkrete kategorier hvor den ene HAR klar fordel
 `;
+
+  console.log('🔴 DEBUG: About to call API, no cache found');
 
   try {
     console.log('🟣 Calling API with prompt length:', prompt.length);
