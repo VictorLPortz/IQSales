@@ -1517,6 +1517,8 @@ async function analyze() {
 
   // Run all analyses in parallel - update UI as each completes
   await Promise.all(typesToAnalyze.map(type => analyzeType(type, nameA, nameB)));
+  console.log('✅ allResults after analyses:', allResults);
+console.log('✅ Object.keys(allResults):', Object.keys(allResults));
 
   console.log('✅ All analyses complete');
   console.log('allResults:', allResults);
