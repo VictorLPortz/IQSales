@@ -1845,27 +1845,28 @@ ANDRE VIGTIGE:
     if (!m) throw new Error('Parse fejl');
     let parsed;
     try {
-      parsed = JSON.parse(m[0]);
-    } catch (e) {
-      let fixed = m[0].replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/,\s*([}\]])/g, '$1');
-      try {
-        parsed = JSON.parse(fixed);
-      } catch (e2) {
-        throw new Error('JSON fejl');
-      }
-    }
-   const shortName = type.replace('forsikring', '').toLowerCase();
+  parsed = JSON.parse(m[0]);
+} catch (e) {
+  let fixed = m[0].replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/,\s*([}\]])/g, '$1');
+  try {
+    parsed = JSON.parse(fixed);
+  } catch (e2) {
+    throw new Error('JSON fejl');
+  }
+}
+
+const shortName = type.replace('forsikring', '').toLowerCase();
 allResults[shortName] = parsed;
-    saveCache(cacheKey, parsed);
-    logAnalysis(nameA, nameB, type);
-    if (statusEl) {
-      statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
-      statusEl.style.background = 'var(--accent-light)';
-      statusEl.style.color = 'var(--accent2)';
-      statusEl.style.borderColor = 'var(--accent2)';
-    }
-    enableTypeTab(type);
-  } catch (err) {
+saveCache(cacheKey, parsed);
+logAnalysis(nameA, nameB, type);
+if (statusEl) {
+  statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
+  statusEl.style.background = 'var(--accent-light)';
+  statusEl.style.color = 'var(--accent2)';
+  statusEl.style.borderColor = 'var(--accent2)';
+}
+enableTypeTab(type);
+} catch (err) {
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
       statusEl.style.color = 'var(--danger)';
