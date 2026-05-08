@@ -1548,7 +1548,8 @@ function toggleCacheGroup(gi){
 async function loadFromCache(nameA,nameB,type){
   const cached=await loadSupabaseCache(nameA,nameB,type);
   if(!cached||!cached.data){alert('Analysen er ikke tilgængelig. Lav en ny analyse.');return;}
- allResults[type]=cached.data;
+const shortName = type.replace('forsikring', '').toLowerCase();
+allResults[shortName]=cached.data;
 if(COMPANIES.includes(nameA))selectCdd('a',nameA);
 if(COMPANIES.includes(nameB))selectCdd('b',nameB);
 selectedTypes=[type];
@@ -1652,7 +1653,8 @@ async function analyzeType(type, nameA, nameB) {
   const cached = loadCache(cacheKey);
   console.log('🔍 Cache check for', type, '- cached:', cached);
   if (cached) {
-    allResults[type] = cached;
+    const shortName = type.replace('forsikring', '').toLowerCase();
+allResults[shortName] = cached;
     console.log('📦 Loaded from cache for', type, '- data:', cached);
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
@@ -2842,7 +2844,8 @@ async function toggleFav(category, nameA, nameB, type){
   window._prefs=prefs;
   await savePreferences(nameA,nameB,type,prefs.favorites,prefs.sort_order);
   // Re-render
-  const d=allResults[type];
+  const shortName = type.replace('forsikring', '').toLowerCase();
+const d=allResults[shortName];
   if(d){
     const container=document.getElementById('tab-'+type);
     if(container){container.innerHTML=buildResultHtml(d,prefs);initCoach(d);}
@@ -2887,7 +2890,8 @@ async function rowDrop(event, targetIdx, nameA, nameB, type){
   });
   if(srcIdx===-1||srcIdx===targetIdx)return;
 
-  const d=allResults[type];
+  const shortName = type.replace('forsikring', '').toLowerCase();
+const d=allResults[shortName];
   if(!d)return;
   const prefs=window._prefs||{favorites:[],sort_order:[]};
   // Build current display order
