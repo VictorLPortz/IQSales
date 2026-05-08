@@ -1630,7 +1630,8 @@ renderMultiResult(nameA, nameB);
 async function analyzeType(type, nameA, nameB) {
   console.log('🚀 analyzeType STARTED for:', type, nameA, nameB);
   // Update status to running
-  const statusEl = document.getElementById('status-' + type);
+  const shortName = type.replace('forsikring', '').toLowerCase();
+const statusEl = document.getElementById('status-' + type);
   if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
 
   let textA = '', textB = '';
@@ -1656,7 +1657,7 @@ async function analyzeType(type, nameA, nameB) {
     const shortName = type.replace('forsikring', '').toLowerCase();
 allResults[shortName] = cached;
     console.log('📦 Loaded from cache for', type, '- data:', cached);
-    if (statusEl) {
+   statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
       statusEl.style.background = 'var(--accent-light)';
       statusEl.style.color = 'var(--accent2)';
@@ -1826,6 +1827,7 @@ ANDRE VIGTIGE:
 `;
 
   try {
+    console.log('🟣 Calling API with prompt length:', prompt.length);
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
