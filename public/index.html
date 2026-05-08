@@ -1530,6 +1530,7 @@ console.log('✅ Object.keys(allResults):', Object.keys(allResults));
   btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
 async function analyzeType(type, nameA, nameB) {
+  console.log('🚀 analyzeType STARTED for:', type, nameA, nameB);
   // Update status to running
   const statusEl = document.getElementById('status-' + type);
   if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
