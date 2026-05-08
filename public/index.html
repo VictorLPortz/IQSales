@@ -1551,6 +1551,7 @@ async function analyzeType(type, nameA, nameB) {
   // Check cache
   const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
   const cached = loadCache(cacheKey);
+  console.log('🔍 Cache check for', type, '- cached:', cached);
   if (cached) {
     allResults[type] = cached;
     console.log('📦 Loaded from cache for', type, '- data:', cached);
