@@ -1709,14 +1709,14 @@ const statusEl=document.getElementById('status-'+shortName);
     return;
   }
 
-  const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
-
+const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
+ 
 === BETINGELSER FRA ${nameA} ===
 ${textA}
-
+ 
 === BETINGELSER FRA ${nameB} ===
 ${textB}
-
+ 
 Returner KUN et JSON-objekt uden markdown:
 {
   "companyA": "${nameA}",
@@ -1728,9 +1728,9 @@ Returner KUN et JSON-objekt uden markdown:
     {
       "category": "Dækningskategori",
       "a_status": "yes|no|partial|inib",
-      "a_detail": "Præcis dækning fra ${nameA} med beløb og vilkår.",
+      "a_detail": "Præcis dækning fra ${nameA} med beløb, vilkår OG selvrisiko.",
       "b_status": "yes|no|partial|inib",
-      "b_detail": "Præcis dækning fra ${nameB} med beløb og vilkår.",
+      "b_detail": "Præcis dækning fra ${nameB} med beløb, vilkår OG selvrisiko.",
       "winner": "a|b|equal",
       "sales_tip": "Max 1 sætning. Kun hvis winner=a. Ellers tom streng.",
       "objection_tip": "Max 1 sætning. Kun hvis winner=b. Ellers tom streng.",
@@ -1745,15 +1745,121 @@ Returner KUN et JSON-objekt uden markdown:
   },
   "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
 }
-
-Regler:
-- inib = ikke nævnt i betingelserne, no = eksplicit undtaget — brug KUN no hvis dækningen eksplicit er fravalgt eller afvist. Hvis dækningen kræver tilvalg, har geografiske begrænsninger eller er delvist dækket skal du bruge partial i stedet for no
-- top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
-- top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
-- winner=a automatisk hvis b_status=no eller inib
-- Sæt ALDRIG winner=b hvis ${nameB}s dækning indeholder uspecificerede beløb som "fremgår af police", "ifølge police" eller "beløb angivet i police" — det er ikke muligt at vurdere om det er bedre. Sæt i stedet winner=equal
-- Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne
-- Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
+ 
+===KRITISKE REGLER - BASERET PÅ BRUGER FEEDBACK===
+ 
+STATUS DEFINITIONER (MEGET VIGTIGT):
+- "yes" = Dækningen er INKLUDERET i grundforsikringen uden begrænsninger
+- "partial" = Dækningen har BEGRÆNSNINGER (beløbsgrænser, geografisk, tidsbegrænset, kræver tilvalg, kun visse situationer, ELLER har selvrisiko)
+- "no" = Dækningen er EKSPLICIT UNDTAGET/FRAVALGT i teksten
+- "inib" = IKKE NÆVNT I BETINGELSERNE - gråzone hvor selskabet kan tolke begge veje
+ 
+SELVRISIKO ER KRITISK VIGTIGT:
+- ALTID nævn selvrisiko i detail feltet hvis det fremgår
+- Selvrisiko typer: fast beløb ("5.000 kr"), procentdel ("10%"), brøkdel ("1/3 af skadeomkostninger")
+- Eksempel på 1/3 selvrisiko: Ved skade på 100.000 kr betaler kunde 33.333 kr selv
+- INGEN selvrisiko er en STOR fordel - nævn det eksplicit
+- Sammenlign selvrisiko: Lavere/ingen = bedre dækning
+ 
+TILVALG ER PARTIAL, IKKE NO:
+- "Kræver tilvalg" eller "kan tilkøbes" → brug "partial", IKKE "no"
+- Kunden har sandsynligvis tilvalgt det hvis relevant → potentiel fordel
+- Tilvalg er BEDRE end inib eller no
+ 
+VÆR EKSTREMT SPECIFIK PÅ BELØB:
+- Sammenlign ALTID konkrete tal
+- "10 mio. kr" vs "3 mio. kr" → Højeste vinder
+- "200.000 kr" vs "ubegrænset" → Ubegrænset vinder
+- Ignorer ALDRIG tal i sammenligningen
+ 
+"FREMGÅR AF POLICE":
+- Hvis BEGGE siger "fremgår af police" → winner=equal
+- Kan ikke sammenlignes uden konkrete tal
+ 
+INIB vs NO FORSKELLEN:
+- NO: "Skadedyr er UNDTAGET" → Eksplicit fravalgt
+- INIB: Ikke nævnt overhovedet → Gråzone
+- Brug KUN "no" ved AKTIV undtagelse
+ 
+BEGRÆNSNINGER = PARTIAL:
+- Geografisk: "Kun EU" → partial
+- Tidsbegrænset: "Første 60 dage" → partial
+- Situationel: "Kun privat brug" → partial
+ 
+===HUSFORSIKRING - SPECIFIKKE DÆKNINGER===
+ 
+BLÆSEVEJR vs STORMSKADE (KRITISK):
+- Storm = Vindstyrke 8+ (≥17,2 m/s) - ALLE selskaber dækker
+- Blæsevejr = Vindstyrke <17,2 m/s - Kun Alm. Brand og Gjensidige dækker typisk
+- Hvis Alm. Brand eller Gjensidige nævner "blæsevejr under 17,2 m/s" → UNIK fordel
+- Sammenlign altid m/s grænser nøje
+ 
+RÅDSKADE (BASERET PÅ FEEDBACK):
+- Tjek om kræver tilvalg (partial) vs inkluderet (yes)
+- Tjek selvrisiko - især Tryg har ofte 1/3 selvrisiko på døre/vinduer/facade
+- Eksempel: "Tryg dækker rådskade, men med 1/3 selvrisiko af omkostninger" vs "Alm. Brand dækker uden selvrisiko"
+- Ingen selvrisiko er stor fordel
+ 
+STORM OG STORMSKADER:
+- Sammenlign m/s grænser ("17,2 m/s" vs "20 m/s")
+- Lavere grænse = bedre dækning
+ 
+ANDRE VIGTIGE:
+- Psykologisk krisehjælp: Sammenlign beløb
+- Skjulte rør og kabler: Tjek hovedledninger vs stikledninger
+- Ingen selvrisiko på glas/indbrud: Konkret fordel hvis fremgår
+ 
+===BILFORSIKRING - SPECIFIKKE DÆKNINGER===
+ 
+- Glasskader: De fleste dækker - brug ikke inib medmindre fraværende
+- Frisskade: Sammenlign beløb (Topdanmark har ofte medium/høje)
+- Skadedyr i kabine: Ofte undtaget hos begge
+- Selvrisiko: Sammenlign ALTID
+ 
+===INDBOFORSIKRING - SPECIFIKKE DÆKNINGER===
+ 
+- Elektronikforsikring: Tjek funktionsfejl efter 2 år vs kun skader
+- Cykeltyveri: Sammenlign beløb og begrænsninger
+- Rejsehjælpsforsikring: Mange har grunddækning inkluderet
+- Ansvarsforsikring: Sammenlign beløb nøje
+ 
+===ULYKKESFORSIKRING - SPECIFIKKE DÆKNINGER===
+ 
+DAGLIGDAGSBEVÆGELSER (VIGTIGT AT TJEKKE):
+- Dagligdagsbevægelser = skader fra normale daglige aktiviteter
+- Eksempler: gå ned ad trapper, løbe efter bus, cykle, snuble på fortov
+- TJEK om begge selskaber nævner dagligdagsbevægelser eller kun "egentlige ulykker"
+- Hvis KUN det ene selskab eksplicit nævner dagligdagsbevægelser → Dette KAN være en fordel
+- Hvis begge er tavse om det → Sammenlign hvad de faktisk skriver om dækning
+- Antag IKKE at et selskab ikke dækker det, bare fordi det ikke er nævnt
+ 
+ANDRE VIGTIGE:
+- Invaliditetserstatning: Sammenlign beløb OG procentsatser
+- Tandskade: Sammenlign antal behandlinger og beløb pr behandling
+- Behandlingsudgifter: Tjek om pr år eller pr skade
+- Straksersttatning ved brud: Sammenlign
+ 
+===REJSEFORSIKRING - SPECIFIKKE DÆKNINGER===
+ 
+- Selvrisiko ved lægehjælp: Sammenlign beløb
+- Geografisk dækning: Europa vs globalt
+ 
+===TYPISKE FEJL AT UNDGÅ===
+❌ Automatisk winner=a når b_status=inib
+❌ Brug "no" i stedet for "partial" ved tilvalg/begrænsninger
+❌ Ignorere konkrete tal og beløb
+❌ Sætte winner=b når beløb ikke er konkret
+❌ Bruge "no" for "erhvervsmæssig brug undtaget"
+❌ Ikke skelne mellem INIB og NO
+❌ Glemme at nævne selvrisiko i detail
+ 
+===OUTPUT KVALITET===
+- Find 10-12 vigtige dækningspunkter
+- Brug ALTID konkrete beløb og selvrisiko i detail
+- Vær specifik: "Dækker op til 10 mio. kr uden selvrisiko"
+- Sammenlign æbler med æbler
+- top3_a og top3_b skal være konkrete kategorier hvor den ene HAR klar fordel
+`;
 
 try{
       console.log('🔍 Calling API with prompt length:', prompt.length);
