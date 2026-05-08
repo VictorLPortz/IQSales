@@ -1845,7 +1845,8 @@ ANDRE VIGTIGE:
         throw new Error('JSON fejl');
       }
     }
-    allResults[type] = parsed;
+   const shortName = type.replace('forsikring', '').toLowerCase();
+allResults[shortName] = parsed;
     saveCache(cacheKey, parsed);
     logAnalysis(nameA, nameB, type);
     if (statusEl) {
