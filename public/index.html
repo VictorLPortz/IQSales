@@ -1602,7 +1602,7 @@ async function analyze() {
   resultDiv.innerHTML = `
     <div class="result-section">
       <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
-        ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return`<span id="status-${shortName}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`;}).join('')}
+      ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return `<span id="status-${shortName}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`;}).join('')}
       </div>
       <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
       <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
