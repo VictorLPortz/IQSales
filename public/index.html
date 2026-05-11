@@ -1562,76 +1562,16 @@ renderUploadZones();
   document.getElementById('reset-btn').style.display='block';
   window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
 }
-async function analyze() {
-  console.log('🚀 ANALYZE FUNCTION CALLED');
-  
-  const nameA = getName('a');
-  const nameB = getName('b');
-  
-  if(nameA === nameB) {
-    alert('Vælg to forskellige selskaber.');
-    return;
-  }
+// =================================================================
+// KOMPLET RETTET analyzeType OG enableTypeTab FUNKTION
+// =================================================================
+// Kopiér HELE denne kode og erstat de eksisterende funktioner
+// =================================================================
 
-  // Check that at least one type has both files uploaded
-  const typesToAnalyze = selectedTypes.filter(t => docsA[t] && docsB[t]);
-  
-  if(typesToAnalyze.length === 0) {
-    alert('Upload betingelser for mindst én forsikringstype fra begge selskaber.');
-    return;
-  }
-
-  console.log('📊 Types to analyze:', typesToAnalyze);
-
-  const btn = document.getElementById('analyze-btn');
-  btn.disabled = true;
-  allResults = {};
-
-  // Get result div
-  const resultDiv = document.getElementById('result');
-  if(!resultDiv) {
-    console.error('❌ Result div not found!');
-    return;
-  }
-
-  // Init result area with tabs upfront
-  const tabsInitHtml = `
-    <button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button>
-    ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return`<button class="tab" id="mtab-${shortName}" onclick="switchMultiTab('${shortName}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_LABELS[t]} ⏳</button>`;}).join('')}`;
-
-  resultDiv.innerHTML = `
-    <div class="result-section">
-      <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
-      ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return `<span id="status-${shortName}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`;}).join('')}
-      </div>
-      <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
-      <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
-      ${typesToAnalyze.map(t=>{const shortName=t.replace('forsikring','').toLowerCase();return`<div id="tab-${shortName}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`;}).join('')}
-    </div>`;
-
-  console.log('✅ Result HTML set, length:', resultDiv.innerHTML.length);
-
-  btn.innerHTML = 'Analyserer... <span class="btn-arrow">⟳</span>';
-
-  // Run all analyses in parallel - update UI as each completes
-  await Promise.all(typesToAnalyze.map(type => analyzeType(type, nameA, nameB)));
-  console.log('✅ allResults after analyses:', allResults);
-console.log('✅ Object.keys(allResults):', Object.keys(allResults));
-
-  console.log('✅ All analyses complete');
-  console.log('allResults:', allResults);
-
-renderMultiResult(nameA, nameB);
-  
-  document.getElementById('reset-btn').style.display = 'block';
-  btn.disabled = false;
-  btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
-}
-  
 async function analyzeType(type, nameA, nameB) {
   console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
   console.log('🔴 DEBUG: About to extract PDF text');
-  
+
   // Update status to running
   const shortName = type.replace('forsikring', '').toLowerCase();
   const statusEl = document.getElementById('status-' + shortName);
@@ -1641,7 +1581,8 @@ async function analyzeType(type, nameA, nameB) {
   try {
     textA = await extractPdfText(docsA[type].data);
     textB = await extractPdfText(docsB[type].data);
- } catch (e) {
+    console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
+  } catch (e) {
     console.error('❌ PDF EXTRACTION FAILED:', e);
     console.error('❌ Error details:', e.message, e.stack);
     if (statusEl) {
@@ -1649,28 +1590,22 @@ async function analyzeType(type, nameA, nameB) {
       statusEl.style.color = 'var(--danger)';
     }
     return;
-}
-  
-  console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
+  }
 
   const MAX_CHARS = 60000;
   if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
   if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
 
+  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
+
   // Check cache
   const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
-  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
   const cached = loadCache(cacheKey);
   console.log('🔍 Cache check for', type, '- cached:', cached);
   
   if (cached) {
-    console.log('🟡 CACHE HIT!');
-    console.log('🟡 shortName:', shortName);
-    console.log('🟡 type:', type);
-    console.log('🟡 cached data:', cached);
-    console.log('🟡 allResults BEFORE:', allResults);
     allResults[shortName] = cached;
-    console.log('🟡 allResults AFTER:', allResults);
+    console.log('📦 Loaded from cache for', type, '- allResults now:', allResults);
     console.log('📦 Loaded from cache for', type, '- data:', cached);
     
     if (statusEl) {
@@ -1679,13 +1614,12 @@ async function analyzeType(type, nameA, nameB) {
       statusEl.style.color = 'var(--accent2)';
       statusEl.style.borderColor = 'var(--accent2)';
     }
-    
     enableTypeTab(shortName);
     return;
   }
 
-  console.log('🔵 Cache miss - about to define analysisPrompt');
-  
+  console.log('🔴 DEBUG: About to call API, no cache found');
+
   const analysisPrompt = `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
 
 === BETINGELSER FRA ${nameA} ===
@@ -1705,9 +1639,9 @@ Returner KUN et JSON-objekt uden markdown:
     {
       "category": "Dækningskategori",
       "a_status": "yes|no|partial|inib",
-      "a_detail": "Præcis dækning fra ${nameA} med beløb, vilkår OG selvrisiko.",
+      "a_detail": "Præcis dækning fra ${nameA} med beløb og vilkår.",
       "b_status": "yes|no|partial|inib",
-      "b_detail": "Præcis dækning fra ${nameB} med beløb, vilkår OG selvrisiko.",
+      "b_detail": "Præcis dækning fra ${nameB} med beløb og vilkår.",
       "winner": "a|b|equal",
       "sales_tip": "Max 1 sætning. Kun hvis winner=a. Ellers tom streng.",
       "objection_tip": "Max 1 sætning. Kun hvis winner=b. Ellers tom streng.",
@@ -1723,134 +1657,16 @@ Returner KUN et JSON-objekt uden markdown:
   "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
 }
 
-===KRITISKE REGLER - BASERET PÅ BRUGER FEEDBACK===
-
-STATUS DEFINITIONER (MEGET VIGTIGT):
-- "yes" = Dækningen er INKLUDERET i grundforsikringen uden begrænsninger
-- "partial" = Dækningen har BEGRÆNSNINGER (beløbsgrænser, geografisk, tidsbegrænset, kræver tilvalg, kun visse situationer, ELLER har selvrisiko)
-- "no" = Dækningen er EKSPLICIT UNDTAGET/FRAVALGT i teksten
-- "inib" = IKKE NÆVNT I BETINGELSERNE - gråzone hvor selskabet kan tolke begge veje
-
-SELVRISIKO ER KRITISK VIGTIGT:
-- ALTID nævn selvrisiko i detail feltet hvis det fremgår
-- Selvrisiko typer: fast beløb ("5.000 kr"), procentdel ("10%"), brøkdel ("1/3 af skadeomkostninger")
-- Eksempel på 1/3 selvrisiko: Ved skade på 100.000 kr betaler kunde 33.333 kr selv
-- INGEN selvrisiko er en STOR fordel - nævn det eksplicit
-- Sammenlign selvrisiko: Lavere/ingen = bedre dækning
-
-TILVALG ER PARTIAL, IKKE NO:
-- "Kræver tilvalg" eller "kan tilkøbes" → brug "partial", IKKE "no"
-- Kunden har sandsynligvis tilvalgt det hvis relevant → potentiel fordel
-- Tilvalg er BEDRE end inib eller no
-
-VÆR EKSTREMT SPECIFIK PÅ BELØB:
-- Sammenlign ALTID konkrete tal
-- "10 mio. kr" vs "3 mio. kr" → Højeste vinder
-- "200.000 kr" vs "ubegrænset" → Ubegrænset vinder
-- Ignorer ALDRIG tal i sammenligningen
-
-"FREMGÅR AF POLICE":
-- Hvis BEGGE siger "fremgår af police" → winner=equal
-- Kan ikke sammenlignes uden konkrete tal
-
-INIB VS NO FORSKELLEN:
-- NO: "Skadedyr er UNDTAGET" → Eksplicit fravalgt
-- INIB: Ikke nævnt overhovedet → Gråzone
-- Brug KUN "no" ved AKTIV undtagelse
-
-BEGRÆNSNINGER = PARTIAL:
-- Geografisk: "Kun EU" → partial
-- Tidsbegrænset: "Første 60 dage" → partial
-- Situationel: "Kun privat brug" → partial
-
-===HUSFORSIKRING - SPECIFIKKE DÆKNINGER===
-
-BLÆSEVEJR vs STORMSKADE (VIGTIGT AT TJEKKE):
-- Storm = Vindstyrke 8+ (≥17,2 m/s) - ALLE selskaber dækker dette
-- Blæsevejr = Vindstyrke <17,2 m/s - TJEK om selskabet eksplicit nævner dækning under 17,2 m/s
-- Hvis KUN det ene selskab eksplicit nævner "blæsevejr under 17,2 m/s" eller "dækning under vindstyrke 8" → Dette KAN være en fordel
-- Sammenlign altid m/s grænser nøje
-- Antag IKKE at et selskab dækker blæsevejr bare fordi det nævner stormskade
-
-RÅDSKADE (BASERET PÅ FEEDBACK):
-- Tjek om kræver tilvalg (partial) vs inkluderet (yes)
-- Tjek selvrisiko - især Tryg har ofte 1/3 selvrisiko på døre/vinduer/facade
-- Eksempel: "Tryg dækker rådskade, men med 1/3 selvrisiko af omkostninger" vs "Alm. Brand dækker uden selvrisiko"
-- Ingen selvrisiko er stor fordel
-
-STORM OG STORMSKADER:
-- Sammenlign m/s grænser ("17,2 m/s" vs "20 m/s")
-- Lavere grænse = bedre dækning
-
-ANDRE VIGTIGE:
-- Psykologisk krisehjælp: Sammenlign beløb
-- Skjulte rør og kabler: Tjek hovedledninger vs stikledninger
-- Ingen selvrisiko på glas/indbrud: Konkret fordel hvis fremgår
-
-===BILFORSIKRING - SPECIFIKKE DÆKNINGER===
-
-- Glasskader: De fleste dækker - brug ikke inib medmindre fraværende
-- Frisskade: Sammenlign beløb (Topdanmark har ofte medium/høje)
-- Skadedyr i kabine: Ofte undtaget hos begge
-- Selvrisiko: Sammenlign ALTID
-
-===INDBOFORSIKRING - SPECIFIKKE DÆKNINGER===
-
-ANSVARSFORSIKRING (VIGTIGT):
-- Ansvarsforsikring er som regel ENS på tværs af de fleste selskaber
-- Medmindre der er KONKRET beløbsforskel eller dækningsforskelle → winner=equal
-- Vis IKKE ansvarsforsikring som fordel i top3_a eller top3_b medmindre der er klar dokumenteret forskel
-- Sammenlign kun beløb hvis de er eksplicit forskellige
-
-ANDRE DÆKNINGER:
-- Elektronikforsikring: Tjek funktionsfejl efter 2 år vs kun skader
-- Cykeltyveri: Sammenlign beløb og begrænsninger
-- Rejsehjælpsforsikring: Mange har grunddækning inkluderet
-
-===ULYKKESFORSIKRING - SPECIFIKKE DÆKNINGER===
-
-DAGLIGDAGSBEVÆGELSER (VIGTIGT AT TJEKKE):
-- Dagligdagsbevægelser = skader fra normale daglige aktiviteter
-- Eksempler: gå ned ad trapper, løbe efter bus, cykle, snuble på fortov
-- TJEK om begge selskaber nævner dagligdagsbevægelser eller kun "egentlige ulykker"
-- Hvis KUN det ene selskab eksplicit nævner dagligdagsbevægelser → Dette KAN være en fordel
-- Hvis begge er tavse om det → Sammenlign hvad de faktisk skriver om dækning
-- Antag IKKE at et selskab ikke dækker det, bare fordi det ikke er nævnt
-
-ANDRE VIGTIGE:
-- Invaliditetserstatning: Sammenlign beløb OG procentsatser
-- Tandskade: Sammenlign antal behandlinger og beløb pr behandling
-- Behandlingsudgifter: Tjek om pr år eller pr skade
-- Straksersttatning ved brud: Sammenlign
-
-===REJSEFORSIKRING - SPECIFIKKE DÆKNINGER===
-
-- Selvrisiko ved lægehjælp: Sammenlign beløb
-- Geografisk dækning: Europa vs globalt
-
-===TYPISKE FEJL AT UNDGÅ===
-❌ Automatisk winner=a når b_status=inib
-❌ Brug "no" i stedet for "partial" ved tilvalg/begrænsninger
-❌ Ignorere konkrete tal og beløb
-❌ Sætte winner=b når beløb ikke er konkret
-❌ Bruge "no" for "erhvervsmæssig brug undtaget"
-❌ Ikke skelne mellem INIB og NO
-❌ Glemme at nævne selvrisiko i detail
-
-===OUTPUT KVALITET===
-- Find 10-12 vigtige dækningspunkter
-- Brug ALTID konkrete beløb og selvrisiko i detail
-- Vær specifik: "Dækker op til 10 mio. kr uden selvrisiko"
-- Sammenlign æbler med æbler
-- top3_a og top3_b skal være konkrete kategorier hvor den ene HAR klar fordel
-`;
-
-  console.log('🔵 analysisPrompt defined, length:', analysisPrompt.length);
-  console.log('🔵 About to enter try-catch block');
-  console.log('🔴 DEBUG: About to call API, no cache found');
+Regler:
+- inib = ikke nævnt i betingelserne, no = eksplicit undtaget — brug KUN no hvis dækningen eksplicit er fravalgt eller afvist. Hvis dækningen kræver tilvalg, har geografiske begrænsninger eller er delvist dækket skal du bruge partial i stedet for no
+- top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
+- top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
+- winner=a automatisk hvis b_status=no eller inib
+- Sæt ALDRIG winner=b hvis ${nameB}s dækning indeholder uspecificerede beløb som "fremgår af police", "ifølge police" eller "beløb angivet i police" — det er ikke muligt at vurdere om det er bedre. Sæt i stedet winner=equal
+- Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne
+- Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
 
   try {
-    console.log('🟣 Calling API with prompt length:', analysisPrompt.length);
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1861,7 +1677,6 @@ ANDRE VIGTIGE:
     const txt = data.content.map(i => i.type === 'text' ? i.text : '').join('\n');
     const m = txt.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Parse fejl');
-    
     let parsed;
     try {
       parsed = JSON.parse(m[0]);
@@ -1874,16 +1689,17 @@ ANDRE VIGTIGE:
       }
     }
 
-    console.log('🟢 BEFORE API assignment - allResults:', allResults);
-    console.log('🟢 shortName:', shortName);
-    console.log('🟢 parsed data:', parsed);
+    console.log('● BEFORE API assignment - allResults:', allResults);
+    console.log('● shortName:', shortName);
+    console.log('● parsed data:', parsed);
+
     allResults[shortName] = parsed;
-    console.log('🟢 AFTER API assignment - allResults:', allResults);
+    console.log('● AFTER API assignment - allResults:', allResults);
     saveCache(cacheKey, parsed);
     logAnalysis(nameA, nameB, type);
-    
+
     if (statusEl) {
-      statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
+      statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
       statusEl.style.background = 'var(--accent-light)';
       statusEl.style.color = 'var(--accent2)';
       statusEl.style.borderColor = 'var(--accent2)';
@@ -1896,6 +1712,17 @@ ANDRE VIGTIGE:
       statusEl.style.color = 'var(--danger)';
     }
   }
+}
+
+function enableTypeTab(shortName) {
+  const tabBtn = document.getElementById('mtab-' + shortName);
+  if (tabBtn) {
+    tabBtn.disabled = false;
+    tabBtn.style.opacity = '1';
+    tabBtn.style.cursor = 'pointer';
+    tabBtn.innerHTML = TYPE_LABELS[shortName] + ' ✓';
+  }
+  renderTypeInTab(shortName);
 }
 
 function enableTypeTab(type){
