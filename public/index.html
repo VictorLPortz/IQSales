@@ -1628,11 +1628,12 @@ renderMultiResult(nameA, nameB);
   btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
 async function analyzeType(type, nameA, nameB) {
- console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
-console.log('🔴 DEBUG: About to extract PDF text');
+  console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
+  console.log('🔴 DEBUG: About to extract PDF text');
+  
   // Update status to running
   const shortName = type.replace('forsikring', '').toLowerCase();
-const statusEl = document.getElementById('status-' + type);
+  const statusEl = document.getElementById('status-' + shortName);
   if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
 
   let textA = '', textB = '';
@@ -1640,8 +1641,10 @@ const statusEl = document.getElementById('status-' + type);
     textA = await extractPdfText(docsA[type].data);
     textB = await extractPdfText(docsB[type].data);
   } catch (e) {
-    if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
-    if (statusEl) statusEl.style.color = 'var(--danger)';
+    if (statusEl) {
+      statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
+      statusEl.style.color = 'var(--danger)';
+    }
     return;
   }
   console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
@@ -1650,23 +1653,24 @@ const statusEl = document.getElementById('status-' + type);
   if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
   if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
 
-  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
-
   // Check cache
   const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
+  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
   const cached = loadCache(cacheKey);
   console.log('🔍 Cache check for', type, '- cached:', cached);
+  
   if (cached) {
-    const shortName = type.replace('forsikring', '').toLowerCase();
-allResults[shortName] = cached;
+    allResults[shortName] = cached;
     console.log('📦 Loaded from cache for', type, '- data:', cached);
-   statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
+    
+    if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
       statusEl.style.background = 'var(--accent-light)';
       statusEl.style.color = 'var(--accent2)';
       statusEl.style.borderColor = 'var(--accent2)';
     }
-    enableTypeTab(type);
+    
+    enableTypeTab(shortName);
     return;
   }
 
@@ -1737,7 +1741,7 @@ VÆR EKSTREMT SPECIFIK PÅ BELØB:
 - Hvis BEGGE siger "fremgår af police" → winner=equal
 - Kan ikke sammenlignes uden konkrete tal
 
-INIB vs NO FORSKELLEN:
+INIB VS NO FORSKELLEN:
 - NO: "Skadedyr er UNDTAGET" → Eksplicit fravalgt
 - INIB: Ikke nævnt overhovedet → Gråzone
 - Brug KUN "no" ved AKTIV undtagelse
@@ -1832,7 +1836,7 @@ ANDRE VIGTIGE:
   console.log('🔴 DEBUG: About to call API, no cache found');
 
   try {
-    console.log('🟣 Calling API with prompt length:', prompt.length);
+    console.log('🟣 Calling API with prompt length:', analysisPrompt.length);
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1843,254 +1847,37 @@ ANDRE VIGTIGE:
     const txt = data.content.map(i => i.type === 'text' ? i.text : '').join('\n');
     const m = txt.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Parse fejl');
+    
     let parsed;
     try {
-  parsed = JSON.parse(m[0]);
-} catch (e) {
-  let fixed = m[0].replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/,\s*([}\]])/g, '$1');
-  try {
-    parsed = JSON.parse(fixed);
-  } catch (e2) {
-    throw new Error('JSON fejl');
-  }
-}
+      parsed = JSON.parse(m[0]);
+    } catch (e) {
+      let fixed = m[0].replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/,\s*([}\]])/g, '$1');
+      try {
+        parsed = JSON.parse(fixed);
+      } catch (e2) {
+        throw new Error('JSON fejl');
+      }
+    }
 
-const shortName = type.replace('forsikring', '').toLowerCase();
-allResults[shortName] = parsed;
-saveCache(cacheKey, parsed);
-logAnalysis(nameA, nameB, type);
-if (statusEl) {
-  statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
-  statusEl.style.background = 'var(--accent-light)';
-  statusEl.style.color = 'var(--accent2)';
-  statusEl.style.borderColor = 'var(--accent2)';
-}
-enableTypeTab(type);
-} catch (err) {
+    allResults[shortName] = parsed;
+    saveCache(cacheKey, parsed);
+    logAnalysis(nameA, nameB, type);
+    
+    if (statusEl) {
+      statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
+      statusEl.style.background = 'var(--accent-light)';
+      statusEl.style.color = 'var(--accent2)';
+      statusEl.style.borderColor = 'var(--accent2)';
+    }
+    enableTypeTab(type);
+  } catch (err) {
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
       statusEl.style.color = 'var(--danger)';
     }
   }
-  
-const prompt=`Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
- 
-=== BETINGELSER FRA ${nameA} ===
-${textA}
- 
-=== BETINGELSER FRA ${nameB} ===
-${textB}
- 
-Returner KUN et JSON-objekt uden markdown:
-{
-  "companyA": "${nameA}",
-  "companyB": "${nameB}",
-  "type": "${type}",
-  "top3_a": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
-  "top3_b": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
-  "coverage": [
-    {
-      "category": "Dækningskategori",
-      "a_status": "yes|no|partial|inib",
-      "a_detail": "Præcis dækning fra ${nameA} med beløb, vilkår OG selvrisiko.",
-      "b_status": "yes|no|partial|inib",
-      "b_detail": "Præcis dækning fra ${nameB} med beløb, vilkår OG selvrisiko.",
-      "winner": "a|b|equal",
-      "sales_tip": "Max 1 sætning. Kun hvis winner=a. Ellers tom streng.",
-      "objection_tip": "Max 1 sætning. Kun hvis winner=b. Ellers tom streng.",
-      "customer_explanation": "Max 1 sætning i enkelt dansk med hverdagseksempel."
-    }
-  ],
-  "pitch": {
-    "advantages_a": ["Fordel 1 med konkrete tal","Fordel 2","Fordel 3"],
-    "advantages_b": ["Konkurrentens fordel 1","Fordel 2","Fordel 3"],
-    "remotivering": ["Spørgsmål 1","Spørgsmål 2","Spørgsmål 3","Spørgsmål 4","Spørgsmål 5"],
-    "enliner": "Én sætning der opsummerer den vigtigste forskel"
-  },
-  "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
 }
- 
-===KRITISKE REGLER - BASERET PÅ BRUGER FEEDBACK===
- 
-STATUS DEFINITIONER (MEGET VIGTIGT):
-- "yes" = Dækningen er INKLUDERET i grundforsikringen uden begrænsninger
-- "partial" = Dækningen har BEGRÆNSNINGER (beløbsgrænser, geografisk, tidsbegrænset, kræver tilvalg, kun visse situationer, ELLER har selvrisiko)
-- "no" = Dækningen er EKSPLICIT UNDTAGET/FRAVALGT i teksten
-- "inib" = IKKE NÆVNT I BETINGELSERNE - gråzone hvor selskabet kan tolke begge veje
- 
-SELVRISIKO ER KRITISK VIGTIGT:
-- ALTID nævn selvrisiko i detail feltet hvis det fremgår
-- Selvrisiko typer: fast beløb ("5.000 kr"), procentdel ("10%"), brøkdel ("1/3 af skadeomkostninger")
-- Eksempel på 1/3 selvrisiko: Ved skade på 100.000 kr betaler kunde 33.333 kr selv
-- INGEN selvrisiko er en STOR fordel - nævn det eksplicit
-- Sammenlign selvrisiko: Lavere/ingen = bedre dækning
- 
-TILVALG ER PARTIAL, IKKE NO:
-- "Kræver tilvalg" eller "kan tilkøbes" → brug "partial", IKKE "no"
-- Kunden har sandsynligvis tilvalgt det hvis relevant → potentiel fordel
-- Tilvalg er BEDRE end inib eller no
- 
-VÆR EKSTREMT SPECIFIK PÅ BELØB:
-- Sammenlign ALTID konkrete tal
-- "10 mio. kr" vs "3 mio. kr" → Højeste vinder
-- "200.000 kr" vs "ubegrænset" → Ubegrænset vinder
-- Ignorer ALDRIG tal i sammenligningen
- 
-"FREMGÅR AF POLICE":
-- Hvis BEGGE siger "fremgår af police" → winner=equal
-- Kan ikke sammenlignes uden konkrete tal
- 
-INIB vs NO FORSKELLEN:
-- NO: "Skadedyr er UNDTAGET" → Eksplicit fravalgt
-- INIB: Ikke nævnt overhovedet → Gråzone
-- Brug KUN "no" ved AKTIV undtagelse
- 
-BEGRÆNSNINGER = PARTIAL:
-- Geografisk: "Kun EU" → partial
-- Tidsbegrænset: "Første 60 dage" → partial
-- Situationel: "Kun privat brug" → partial
- 
-===HUSFORSIKRING - SPECIFIKKE DÆKNINGER===
- 
-BLÆSEVEJR vs STORMSKADE (VIGTIGT AT TJEKKE):
-- Storm = Vindstyrke 8+ (≥17,2 m/s) - ALLE selskaber dækker dette
-- Blæsevejr = Vindstyrke <17,2 m/s - TJEK om selskabet eksplicit nævner dækning under 17,2 m/s
-- Hvis KUN det ene selskab eksplicit nævner "blæsevejr under 17,2 m/s" eller "dækning under vindstyrke 8" → Dette KAN være en fordel
-- Sammenlign altid m/s grænser nøje
-- Antag IKKE at et selskab dækker blæsevejr bare fordi det nævner stormskade
- 
-RÅDSKADE (BASERET PÅ FEEDBACK):
-- Tjek om kræver tilvalg (partial) vs inkluderet (yes)
-- Tjek selvrisiko - især Tryg har ofte 1/3 selvrisiko på døre/vinduer/facade
-- Eksempel: "Tryg dækker rådskade, men med 1/3 selvrisiko af omkostninger" vs "Alm. Brand dækker uden selvrisiko"
-- Ingen selvrisiko er stor fordel
- 
-STORM OG STORMSKADER:
-- Sammenlign m/s grænser ("17,2 m/s" vs "20 m/s")
-- Lavere grænse = bedre dækning
- 
-ANDRE VIGTIGE:
-- Psykologisk krisehjælp: Sammenlign beløb
-- Skjulte rør og kabler: Tjek hovedledninger vs stikledninger
-- Ingen selvrisiko på glas/indbrud: Konkret fordel hvis fremgår
- 
-===BILFORSIKRING - SPECIFIKKE DÆKNINGER===
- 
-- Glasskader: De fleste dækker - brug ikke inib medmindre fraværende
-- Frisskade: Sammenlign beløb (Topdanmark har ofte medium/høje)
-- Skadedyr i kabine: Ofte undtaget hos begge
-- Selvrisiko: Sammenlign ALTID
- 
-===INDBOFORSIKRING - SPECIFIKKE DÆKNINGER===
- 
-ANSVARSFORSIKRING (VIGTIGT):
-- Ansvarsforsikring er som regel ENS på tværs af de fleste selskaber
-- Medmindre der er KONKRET beløbsforskel eller dækningsforskelle → winner=equal
-- Vis IKKE ansvarsforsikring som fordel i top3_a eller top3_b medmindre der er klar dokumenteret forskel
-- Sammenlign kun beløb hvis de er eksplicit forskellige
- 
-ANDRE DÆKNINGER:
-- Elektronikforsikring: Tjek funktionsfejl efter 2 år vs kun skader
-- Cykeltyveri: Sammenlign beløb og begrænsninger
-- Rejsehjælpsforsikring: Mange har grunddækning inkluderet
- 
-===ULYKKESFORSIKRING - SPECIFIKKE DÆKNINGER===
- 
-DAGLIGDAGSBEVÆGELSER (VIGTIGT AT TJEKKE):
-- Dagligdagsbevægelser = skader fra normale daglige aktiviteter
-- Eksempler: gå ned ad trapper, løbe efter bus, cykle, snuble på fortov
-- TJEK om begge selskaber nævner dagligdagsbevægelser eller kun "egentlige ulykker"
-- Hvis KUN det ene selskab eksplicit nævner dagligdagsbevægelser → Dette KAN være en fordel
-- Hvis begge er tavse om det → Sammenlign hvad de faktisk skriver om dækning
-- Antag IKKE at et selskab ikke dækker det, bare fordi det ikke er nævnt
- 
-ANDRE VIGTIGE:
-- Invaliditetserstatning: Sammenlign beløb OG procentsatser
-- Tandskade: Sammenlign antal behandlinger og beløb pr behandling
-- Behandlingsudgifter: Tjek om pr år eller pr skade
-- Straksersttatning ved brud: Sammenlign
- 
-===REJSEFORSIKRING - SPECIFIKKE DÆKNINGER===
- 
-- Selvrisiko ved lægehjælp: Sammenlign beløb
-- Geografisk dækning: Europa vs globalt
- 
-===TYPISKE FEJL AT UNDGÅ===
-❌ Automatisk winner=a når b_status=inib
-❌ Brug "no" i stedet for "partial" ved tilvalg/begrænsninger
-❌ Ignorere konkrete tal og beløb
-❌ Sætte winner=b når beløb ikke er konkret
-❌ Bruge "no" for "erhvervsmæssig brug undtaget"
-❌ Ikke skelne mellem INIB og NO
-❌ Glemme at nævne selvrisiko i detail
- 
-===OUTPUT KVALITET===
-- Find 10-12 vigtige dækningspunkter
-- Brug ALTID konkrete beløb og selvrisiko i detail
-- Vær specifik: "Dækker op til 10 mio. kr uden selvrisiko"
-- Sammenlign æbler med æbler
-- top3_a og top3_b skal være konkrete kategorier hvor den ene HAR klar fordel
-`;
-
-try{
-      console.log('🔍 Calling API with prompt length:', prompt.length);
-      const res=await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
-      console.log('⚫ API response status:', res.status);
-      console.log('⚫ API response headers:', res.headers);
-      const responseText = await res.text();
-      console.log('⚫ Raw response text (first 500 chars):', responseText.substring(0, 500));
-      const parsed = JSON.parse(responseText);
-      console.log('⚫ API response:', parsed);
-
-      if(parsed.error)throw new Error(parsed.error);
-      const txt=parsed.content.map(i=>i.type==='text'?i.text:'').join('\n');
-      console.log('🟢 Raw text from API:', txt.substring(0, 200));
-      const cleaned = txt.replace(/```json|```/g,'').trim();
-      console.log('✂️ Cleaned text:', cleaned.substring(0, 200));
-      const m = cleaned.match(/\{[\s\S]*\}/);
-      console.log('🔍 Matched JSON:', m ? 'YES' : 'NO');
-      if(!m) {
-        console.error('❌ No JSON found in response!');
-        throw new Error('Parse fejl - ingen JSON');
-      }
-      let jsonData;
-      try{
-        jsonData=JSON.parse(m[0]);
-        console.log('✅ JSON parsed successfully:', jsonData);
-      }catch(e){
-        console.error('❌ JSON parse error:', e);
-        let fixed=m[0].replace(/[\u0000-\u001F\u007F]/g,' ').replace(/,\s*([}\]])/g,'$1');
-        try{
-          jsonData=JSON.parse(fixed);
-          console.log('✅ Fixed JSON parsed!');
-        }catch(e2){
-          console.error('❌ Even fixed JSON failed!', e2);
-          throw new Error('JSON fejl');
-        }
- }
-      
-      // Map long type name to short tab name
-      const tabName = type.replace('forsikring', '').toLowerCase(); // "husforsikring" → "hus"
-      allResults[tabName] = jsonData;
-  saveCache(cacheKey, jsonData);
-      console.log('✅ Stored in allResults.' + tabName + ':', allResults[tabName]);
-      
-      logAnalysis(nameA,nameB,type);
-      if(statusEl){
-        statusEl.innerHTML=`${TYPE_LABELS[type]} ✓`;
-        statusEl.style.background='var(--accent-light)';
-        statusEl.style.color='var(--accent2)';
-        statusEl.style.borderColor='var(--accent2)';
-      }
-     enableTypeTab(tabName);
-    }catch(err){
-      console.error('❌ Analysis failed:', err);
-      if(statusEl){
-        statusEl.innerHTML=`${TYPE_LABELS[type]} ✗`;
-        statusEl.style.color='var(--danger)';
-      }
-    }
-  }
 
 function enableTypeTab(type){
   // Map short name back to long name for TYPE_LABELS
