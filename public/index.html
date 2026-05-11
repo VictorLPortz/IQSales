@@ -1627,6 +1627,7 @@ renderMultiResult(nameA, nameB);
   btn.disabled = false;
   btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
 }
+  
 async function analyzeType(type, nameA, nameB) {
   console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
   console.log('🔴 DEBUG: About to extract PDF text');
@@ -1659,8 +1660,12 @@ async function analyzeType(type, nameA, nameB) {
   const cached = loadCache(cacheKey);
   console.log('🔍 Cache check for', type, '- cached:', cached);
   
-  if (cached) {
+if (cached) {
+    console.log('🔵 BEFORE assignment - allResults:', allResults);
+    console.log('🔵 shortName:', shortName);
+    console.log('🔵 cached data:', cached);
     allResults[shortName] = cached;
+    console.log('🔵 AFTER assignment - allResults:', allResults);
     console.log('📦 Loaded from cache for', type, '- data:', cached);
     
     if (statusEl) {
