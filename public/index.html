@@ -1636,28 +1636,7 @@ async function analyzeType(type, nameA, nameB) {
   const statusEl = document.getElementById('status-' + shortName);
   if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
 
-  let textA = '', textB = '';
-  try {
-    textA = await extractPdfText(docsA[type].data);
-    textB = await extractPdfText(docsB[type].data);
-    console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
-  } catch (e) {
-    console.error('❌ PDF EXTRACTION FAILED:', e);
-    console.error('❌ Error details:', e.message, e.stack);
-    if (statusEl) {
-      statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
-      statusEl.style.color = 'var(--danger)';
-    }
-    return;
-  }
-
-  const MAX_CHARS = 60000;
-  if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
-  if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
-
-  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
-
-  // Check cache
+  // Check cache FIRST before extracting PDFs
   const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
   const cached = loadCache(cacheKey);
   console.log('🔍 Cache check for', type, '- cached:', cached);
@@ -1681,6 +1660,27 @@ async function analyzeType(type, nameA, nameB) {
     enableTypeTab(shortName);
     return;
   }
+
+  let textA = '', textB = '';
+  try {
+    textA = await extractPdfText(docsA[type].data);
+    textB = await extractPdfText(docsB[type].data);
+    console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
+  } catch (e) {
+    console.error('❌ PDF EXTRACTION FAILED:', e);
+    console.error('❌ Error details:', e.message, e.stack);
+    if (statusEl) {
+      statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
+      statusEl.style.color = 'var(--danger)';
+    }
+    return;
+  }
+
+  const MAX_CHARS = 60000;
+  if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
+  if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
+
+  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
 
   console.log('🔴 DEBUG: About to call API, no cache found');
 
