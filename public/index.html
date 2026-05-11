@@ -1675,6 +1675,8 @@ async function analyzeType(type, nameA, nameB) {
     return;
   }
 
+  console.log('🔵 Cache miss - about to define analysisPrompt');
+  
   const analysisPrompt = `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
 
 === BETINGELSER FRA ${nameA} ===
@@ -1834,6 +1836,8 @@ ANDRE VIGTIGE:
 - top3_a og top3_b skal være konkrete kategorier hvor den ene HAR klar fordel
 `;
 
+  console.log('🔵 analysisPrompt defined, length:', analysisPrompt.length);
+  console.log('🔵 About to enter try-catch block');
   console.log('🔴 DEBUG: About to call API, no cache found');
 
   try {
