@@ -1660,12 +1660,8 @@ async function analyzeType(type, nameA, nameB) {
   const cached = loadCache(cacheKey);
   console.log('🔍 Cache check for', type, '- cached:', cached);
   
-if (cached) {
-    console.log('🔵 BEFORE assignment - allResults:', allResults);
-    console.log('🔵 shortName:', shortName);
-    console.log('🔵 cached data:', cached);
+  if (cached) {
     allResults[shortName] = cached;
-    console.log('🔵 AFTER assignment - allResults:', allResults);
     console.log('📦 Loaded from cache for', type, '- data:', cached);
     
     if (statusEl) {
@@ -1865,13 +1861,13 @@ ANDRE VIGTIGE:
       }
     }
 
-console.log('🟢 BEFORE API assignment - allResults:', allResults);
-console.log('🟢 shortName:', shortName);
-console.log('🟢 parsed data:', parsed);
-allResults[shortName] = parsed;
-console.log('🟢 AFTER API assignment - allResults:', allResults);
-saveCache(cacheKey, parsed);
-logAnalysis(nameA, nameB, type);
+    console.log('🟢 BEFORE API assignment - allResults:', allResults);
+    console.log('🟢 shortName:', shortName);
+    console.log('🟢 parsed data:', parsed);
+    allResults[shortName] = parsed;
+    console.log('🟢 AFTER API assignment - allResults:', allResults);
+    saveCache(cacheKey, parsed);
+    logAnalysis(nameA, nameB, type);
     
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
@@ -1879,10 +1875,9 @@ logAnalysis(nameA, nameB, type);
       statusEl.style.color = 'var(--accent2)';
       statusEl.style.borderColor = 'var(--accent2)';
     }
-    enableTypeTab(type);
-  } 
-  
-  catch (err) {
+    enableTypeTab(shortName);
+  } catch (err) {
+    console.error('❌ Analysis error:', err);
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
       statusEl.style.color = 'var(--danger)';
