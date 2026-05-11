@@ -1637,7 +1637,7 @@ async function analyzeType(type, nameA, nameB) {
   if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
 
   // Check cache FIRST before extracting PDFs
-  const cacheKey = await getCacheKey(textA, textB, nameA, nameB, type);
+ const cacheKey = `${nameA}_${nameB}_${type}`;  // Simpel cache key baseret på navne
   const cached = loadCache(cacheKey);
   console.log('🔍 Cache check for', type, '- cached:', cached);
   
