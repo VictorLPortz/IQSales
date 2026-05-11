@@ -4,36 +4,35 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export async function POST(req) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const { prompt } = await req.json();
-    
-    console.log('📥 Received prompt, length:', prompt?.length || 0);
+    const { prompt } = req.body;
     
     if (!prompt) {
-      throw new Error('No prompt provided');
+      return res.status(400).json({ error: 'Prompt required' });
     }
-    
+
     const message = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022"  // Sonnet 3.5 (stabil)
-      
-      max_tokens: 8000,
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4000,
       messages: [{
         role: 'user',
         content: prompt
       }]
     });
-    
-    console.log('✅ Claude response received');
-    
-    return Response.json({
+
+    return res.status(200).json({
       content: message.content
     });
-    
+
   } catch (error) {
-    console.error('❌ API Error:', error);
-    return Response.json({ 
-      error: error.message 
-    }, { status: 500 });
+    console.error('API Error:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Analysis failed'
+    });
   }
 }
