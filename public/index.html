@@ -1880,7 +1880,9 @@ logAnalysis(nameA, nameB, type);
       statusEl.style.borderColor = 'var(--accent2)';
     }
     enableTypeTab(type);
-  } catch (err) {
+  } 
+  
+  catch (err) {
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
       statusEl.style.color = 'var(--danger)';
