@@ -1663,7 +1663,12 @@ async function analyzeType(type, nameA, nameB) {
   console.log('🔍 Cache check for', type, '- cached:', cached);
   
   if (cached) {
+    console.log('🔴 BEFORE assignment - allResults:', allResults);
+    console.log('🔴 BEFORE assignment - shortName:', shortName);
+    console.log('🔴 BEFORE assignment - cached:', cached);
     allResults[shortName] = cached;
+    console.log('🔴 AFTER assignment - allResults:', allResults);
+    console.log('🔴 AFTER assignment - allResults[shortName]:', allResults[shortName]);
     console.log('📦 Loaded from cache for', type, '- allResults now:', allResults);
     console.log('📦 Loaded from cache for', type, '- data:', cached);
     
