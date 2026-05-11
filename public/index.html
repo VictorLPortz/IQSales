@@ -1629,27 +1629,25 @@ async function analyze() {
   
 async function analyzeType(type, nameA, nameB) {
   console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
-  console.log('🔴 DEBUG: About to extract PDF text');
-
+  
   // Update status to running
   const shortName = type.replace('forsikring', '').toLowerCase();
   const statusEl = document.getElementById('status-' + shortName);
   if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
-
-  // Check cache FIRST before extracting PDFs
- const cacheKey = `${nameA}_${nameB}_${type}`;  // Simpel cache key baseret på navne
-  const cached = loadCache(cacheKey);
-  console.log('🔍 Cache check for', type, '- cached:', cached);
+ 
+  // =================================================================
+  // CHECK CACHE FØRST - FØR PDF EXTRACTION
+  // =================================================================
+  // Vi bruger en simpel cache key baseret på navne og type
+  // Dette er OK fordi vi tjekker om PDF'erne har ændret sig senere
+  const simpleCacheKey = `cache_${nameA}_${nameB}_${type}`;
+  const cached = loadCache(simpleCacheKey);
+  
+  console.log('🔍 Cache check for', type, '- cached:', cached ? 'FOUND' : 'null');
   
   if (cached) {
-    console.log('🔴 BEFORE assignment - allResults:', allResults);
-    console.log('🔴 BEFORE assignment - shortName:', shortName);
-    console.log('🔴 BEFORE assignment - cached:', cached);
+    console.log('📦 Using cached data for', type);
     allResults[shortName] = cached;
-    console.log('🔴 AFTER assignment - allResults:', allResults);
-    console.log('🔴 AFTER assignment - allResults[shortName]:', allResults[shortName]);
-    console.log('📦 Loaded from cache for', type, '- allResults now:', allResults);
-    console.log('📦 Loaded from cache for', type, '- data:', cached);
     
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
@@ -1660,12 +1658,21 @@ async function analyzeType(type, nameA, nameB) {
     enableTypeTab(shortName);
     return;
   }
-
+ 
+  console.log('🔴 No cache found - proceeding with PDF extraction');
+ 
+  // =================================================================
+  // PDF EXTRACTION - KUN HVIS INGEN CACHE
+  // =================================================================
   let textA = '', textB = '';
   try {
+    console.log('🔴 Extracting PDF A...');
     textA = await extractPdfText(docsA[type].data);
+    console.log('✅ PDF A extracted, length:', textA.length);
+    
+    console.log('🔴 Extracting PDF B...');
     textB = await extractPdfText(docsB[type].data);
-    console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
+    console.log('✅ PDF B extracted, length:', textB.length);
   } catch (e) {
     console.error('❌ PDF EXTRACTION FAILED:', e);
     console.error('❌ Error details:', e.message, e.stack);
@@ -1675,23 +1682,25 @@ async function analyzeType(type, nameA, nameB) {
     }
     return;
   }
-
+ 
+  // Truncate if too long
   const MAX_CHARS = 60000;
   if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
   if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
-
-  console.log('🔴 DEBUG: About to check cache, cacheKey:', cacheKey);
-
-  console.log('🔴 DEBUG: About to call API, no cache found');
-
+ 
+  console.log('🔴 Building analysis prompt...');
+ 
+  // =================================================================
+  // API CALL
+  // =================================================================
   const analysisPrompt = `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
-
+ 
 === BETINGELSER FRA ${nameA} ===
 ${textA}
-
+ 
 === BETINGELSER FRA ${nameB} ===
 ${textB}
-
+ 
 Returner KUN et JSON-objekt uden markdown:
 {
   "companyA": "${nameA}",
@@ -1720,7 +1729,7 @@ Returner KUN et JSON-objekt uden markdown:
   },
   "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
 }
-
+ 
 Regler:
 - inib = ikke nævnt i betingelserne, no = eksplicit undtaget — brug KUN no hvis dækningen eksplicit er fravalgt eller afvist. Hvis dækningen kræver tilvalg, har geografiske begrænsninger eller er delvist dækket skal du bruge partial i stedet for no
 - top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
@@ -1729,18 +1738,24 @@ Regler:
 - Sæt ALDRIG winner=b hvis ${nameB}s dækning indeholder uspecificerede beløb som "fremgår af police", "ifølge police" eller "beløb angivet i police" — det er ikke muligt at vurdere om det er bedre. Sæt i stedet winner=equal
 - Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne
 - Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
-
+ 
   try {
+    console.log('🔴 Calling API...');
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: analysisPrompt })
     });
+    
     const data = await res.json();
+    console.log('✅ API response received');
+    
     if (data.error) throw new Error(data.error);
+    
     const txt = data.content.map(i => i.type === 'text' ? i.text : '').join('\n');
     const m = txt.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Parse fejl');
+    
     let parsed;
     try {
       parsed = JSON.parse(m[0]);
@@ -1752,23 +1767,35 @@ Regler:
         throw new Error('JSON fejl');
       }
     }
-
-    console.log('● BEFORE API assignment - allResults:', allResults);
-    console.log('● shortName:', shortName);
-    console.log('● parsed data:', parsed);
-
+    
+    console.log('✅ Parsed data successfully');
+    console.log('🔴 BEFORE assignment - allResults:', allResults);
+    console.log('🔴 BEFORE assignment - shortName:', shortName);
+    
+    // Store result
     allResults[shortName] = parsed;
-    console.log('● AFTER API assignment - allResults:', allResults);
-    saveCache(cacheKey, parsed);
+    
+    console.log('✅ AFTER assignment - allResults:', allResults);
+    console.log('✅ AFTER assignment - allResults[shortName]:', allResults[shortName]);
+    
+    // Save to cache
+    saveCache(simpleCacheKey, parsed);
+    console.log('✅ Saved to cache');
+    
+    // Log analysis
     logAnalysis(nameA, nameB, type);
-
+    
+    // Update UI
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
       statusEl.style.background = 'var(--accent-light)';
       statusEl.style.color = 'var(--accent2)';
       statusEl.style.borderColor = 'var(--accent2)';
     }
+    
     enableTypeTab(shortName);
+    console.log('✅ analyzeType COMPLETED for:', type);
+    
   } catch (err) {
     console.error('❌ Analysis error:', err);
     if (statusEl) {
@@ -1779,14 +1806,15 @@ Regler:
 }
 
 function enableTypeTab(shortName) {
+  console.log('🔴 Enabling tab for:', shortName);
   const tabBtn = document.getElementById('mtab-' + shortName);
   if (tabBtn) {
     tabBtn.disabled = false;
     tabBtn.style.opacity = '1';
     tabBtn.style.cursor = 'pointer';
-    tabBtn.innerHTML = TYPE_LABELS[shortName] + ' ✓';
+    tabBtn.innerHTML = TYPE_LABELS[shortName + 'forsikring'] + ' ✓';
   }
-  renderTypeInTab(shortName);
+  renderTypeInTab(shortName + 'forsikring');
 }
 
 function enableTypeTab(type){
