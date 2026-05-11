@@ -1641,13 +1641,16 @@ async function analyzeType(type, nameA, nameB) {
   try {
     textA = await extractPdfText(docsA[type].data);
     textB = await extractPdfText(docsB[type].data);
-  } catch (e) {
+ } catch (e) {
+    console.error('❌ PDF EXTRACTION FAILED:', e);
+    console.error('❌ Error details:', e.message, e.stack);
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
       statusEl.style.color = 'var(--danger)';
     }
     return;
-  }
+}
+  
   console.log('✅ PDF text extracted, textA length:', textA.length, 'textB length:', textB.length);
 
   const MAX_CHARS = 60000;
