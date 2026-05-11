@@ -1865,9 +1865,13 @@ ANDRE VIGTIGE:
       }
     }
 
-    allResults[shortName] = parsed;
-    saveCache(cacheKey, parsed);
-    logAnalysis(nameA, nameB, type);
+console.log('🟢 BEFORE API assignment - allResults:', allResults);
+console.log('🟢 shortName:', shortName);
+console.log('🟢 parsed data:', parsed);
+allResults[shortName] = parsed;
+console.log('🟢 AFTER API assignment - allResults:', allResults);
+saveCache(cacheKey, parsed);
+logAnalysis(nameA, nameB, type);
     
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[shortName]} ✓`;
