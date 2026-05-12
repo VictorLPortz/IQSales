@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IQSales — Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -618,11 +619,12 @@
                 <th>Afdeling</th>
                 <th>Rolle</th>
                 <th>Oprettet</th>
+                <th>Sidst aktiv</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="userTable">
-              <tr><td colspan="6"><div class="empty-state">Indlæser brugere...</div></td></tr>
+              <tr><td colspan="7"><div class="empty-state">Indlæser brugere...</div></td></tr>
             </tbody>
           </table>
         </div>
@@ -720,14 +722,28 @@
 
       <!-- SUBTAB: API Økonomi -->
       <div id="subtab-api" class="subtab-content">
-        <div class="stats">
-          <div class="stat-card">
-            <div class="stat-label">Estimeret omkostning i dag</div>
-            <div class="stat-value" id="apiCostToday">— kr</div>
+        <!-- Time filter -->
+        <div style="display: flex; gap: 12px; margin-bottom: 24px; align-items: center;">
+          <label style="font-size: 13px; font-weight: 600; color: var(--text);">Tidsperiode:</label>
+          <select id="timeFilter" onchange="loadAPIStats()" style="padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif;">
+            <option value="today">I dag</option>
+            <option value="week">Denne uge</option>
+            <option value="month" selected>Denne måned</option>
+            <option value="custom">Valgfri periode</option>
+          </select>
+          <div id="customDateRange" style="display: none; gap: 8px;">
+            <input type="date" id="dateFrom" style="padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif;">
+            <span style="color: var(--muted);">til</span>
+            <input type="date" id="dateTo" style="padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif;">
+            <button onclick="loadAPIStats()" class="btn-primary" style="padding: 8px 16px; font-size: 13px;">Opdater</button>
           </div>
+        </div>
+
+        <div class="stats" style="grid-template-columns: repeat(3, 1fr);">
           <div class="stat-card">
-            <div class="stat-label">Denne måned</div>
-            <div class="stat-value" id="apiCostMonth">— kr</div>
+            <div class="stat-label">Total omkostning</div>
+            <div class="stat-value" id="apiCostTotal">— kr</div>
+            <div class="stat-subtext" id="apiCostPeriod">—</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Cache hit rate</div>
@@ -737,24 +753,50 @@
           <div class="stat-card">
             <div class="stat-label">Cache savings</div>
             <div class="stat-value" id="cacheSavings">— kr</div>
-            <div class="stat-subtext">i denne måned</div>
+            <div class="stat-subtext">spart via cache</div>
           </div>
         </div>
 
-        <!-- Token usage meter -->
-        <div class="card">
+        <div class="stats" style="grid-template-columns: repeat(3, 1fr); margin-top: 16px;">
+          <div class="stat-card">
+            <div class="stat-label">Gns. responstid</div>
+            <div class="stat-value" id="avgResponseTime">—</div>
+            <div class="stat-subtext">sekunder per analyse</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Success rate</div>
+            <div class="stat-value" id="successRate">—%</div>
+            <div class="stat-subtext">completed vs failed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Unikke besøgende</div>
+            <div class="stat-value" id="uniqueVisitors">—</div>
+            <div class="stat-subtext">forskellige brugere</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="card" style="margin-top: 24px;">
           <div class="card-header">
             <div>
-              <h2>Token forbrug i dag</h2>
-              <p id="tokenUsageText">—</p>
+              <h2>Omkostning over tid</h2>
+              <p>Daglig omkostning i valgt periode</p>
             </div>
           </div>
           <div class="card-body">
-            <div class="cost-meter">
-              <div class="cost-meter-fill" id="tokenMeter" style="width: 0%;">
-                <span id="tokenPercent">0%</span>
-              </div>
+            <canvas id="costChart" style="max-height: 250px;"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Cache hit rate trend</h2>
+              <p>Performance over tid</p>
             </div>
+          </div>
+          <div class="card-body">
+            <canvas id="cacheChart" style="max-height: 250px;"></canvas>
           </div>
         </div>
 
@@ -763,7 +805,7 @@
           <div class="card-header">
             <div>
               <h2>Top 10 dyreste analyser</h2>
-              <p>Denne måned</p>
+              <p>I valgt periode</p>
             </div>
           </div>
           <div style="overflow-x:auto;">
@@ -774,12 +816,13 @@
                   <th>Selskaber</th>
                   <th>Tokens</th>
                   <th>Omkostning</th>
+                  <th>Responstid</th>
                   <th>Cache</th>
                   <th>Dato</th>
                 </tr>
               </thead>
               <tbody id="topAnalysesTable">
-                <tr><td colspan="6"><div class="empty-state">Indlæser...</div></td></tr>
+                <tr><td colspan="7"><div class="empty-state">Indlæser...</div></td></tr>
               </tbody>
             </table>
           </div>
@@ -997,19 +1040,39 @@
 
     document.getElementById('userCount').textContent = `${profiles.length} bruger${profiles.length !== 1 ? 'e' : ''}`;
 
+    // Fetch last login for each user
+    const { data: lastLogins } = await sb
+      .from('login_history')
+      .select('user_id, logged_in_at')
+      .order('logged_in_at', { ascending: false });
+
+    const lastLoginMap = {};
+    if (lastLogins) {
+      lastLogins.forEach(login => {
+        if (!lastLoginMap[login.user_id]) {
+          lastLoginMap[login.user_id] = login.logged_in_at;
+        }
+      });
+    }
+
     const tbody = document.getElementById('userTable');
     if (profiles.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Ingen brugere endnu</div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">Ingen brugere endnu</div></td></tr>';
       return;
     }
 
-    tbody.innerHTML = profiles.map(p => `
+    tbody.innerHTML = profiles.map(p => {
+      const lastActive = lastLoginMap[p.id];
+      const lastActiveText = lastActive ? formatDate(lastActive) : '<span style="color:var(--muted)">Aldrig</span>';
+      
+      return `
       <tr>
         <td><strong>${p.full_name || '—'}</strong></td>
         <td style="color:var(--muted)">${p.email || '—'}</td>
         <td>${p.department || '—'}</td>
         <td><span class="badge badge-${p.role}">${p.role === 'admin' ? 'Admin' : 'Sælger'}</span></td>
         <td style="color:var(--muted);font-size:13px">${formatDate(p.created_at)}</td>
+        <td style="color:var(--muted);font-size:13px">${lastActiveText}</td>
         <td>
           ${p.id !== currentUser.id
             ? `<button class="btn-primary" style="padding:6px 12px;font-size:12px;margin-right:8px;" onclick="editUser('${p.id}', '${p.full_name || ''}', '${p.email}', '${p.department || ''}')">Rediger</button><button class="btn-danger" onclick="deleteUser('${p.id}', '${p.full_name || p.email}')">Slet</button>`
@@ -1017,7 +1080,8 @@
           }
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
   }
 
   async function loadStats() {
@@ -1161,16 +1225,215 @@
     await loadFeedback();
   }
 
+  let costChart = null;
+  let cacheChart = null;
+
   async function loadAPIStats() {
-    // Mock data - skulle hentes fra analytics table
-    document.getElementById('apiCostToday').textContent = '—';
-    document.getElementById('apiCostMonth').textContent = '—';
-    document.getElementById('cacheHitRate').textContent = '—';
-    document.getElementById('cacheSavings').textContent = '—';
-    document.getElementById('tokenUsageText').textContent = 'Data kommer snart...';
-    
-    const topTable = document.getElementById('topAnalysesTable');
-    topTable.innerHTML = '<tr><td colspan="6"><div class="empty-state">Analytics tracking kommer med næste deployment</div></td></tr>';
+    // Show custom date range if selected
+    const filter = document.getElementById('timeFilter').value;
+    const customRange = document.getElementById('customDateRange');
+    if (filter === 'custom') {
+      customRange.style.display = 'flex';
+    } else {
+      customRange.style.display = 'none';
+    }
+
+    // Calculate date range
+    let startDate, endDate;
+    const now = new Date();
+    endDate = now.toISOString();
+
+    if (filter === 'today') {
+      startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+      document.getElementById('apiCostPeriod').textContent = 'i dag';
+    } else if (filter === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      startDate = weekAgo.toISOString();
+      document.getElementById('apiCostPeriod').textContent = 'denne uge';
+    } else if (filter === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      startDate = monthAgo.toISOString();
+      document.getElementById('apiCostPeriod').textContent = 'denne måned';
+    } else if (filter === 'custom') {
+      const from = document.getElementById('dateFrom').value;
+      const to = document.getElementById('dateTo').value;
+      if (!from || !to) return;
+      startDate = new Date(from).toISOString();
+      endDate = new Date(to + 'T23:59:59').toISOString();
+      document.getElementById('apiCostPeriod').textContent = 'valgt periode';
+    }
+
+    // Fetch analytics data
+    try {
+      const { data: analyses, error } = await sb
+        .from('analytics')
+        .select('*')
+        .gte('timestamp', startDate)
+        .lte('timestamp', endDate)
+        .order('timestamp', { ascending: true });
+
+      if (error) throw error;
+
+      if (!analyses || analyses.length === 0) {
+        document.getElementById('apiCostTotal').textContent = '0';
+        document.getElementById('cacheHitRate').textContent = '—';
+        document.getElementById('cacheSavings').textContent = '0';
+        document.getElementById('avgResponseTime').textContent = '—';
+        document.getElementById('successRate').textContent = '—';
+        document.getElementById('uniqueVisitors').textContent = '0';
+        
+        const topTable = document.getElementById('topAnalysesTable');
+        topTable.innerHTML = '<tr><td colspan="7"><div class="empty-state">Ingen analyser i denne periode</div></td></tr>';
+        
+        // Clear charts
+        if (costChart) costChart.destroy();
+        if (cacheChart) cacheChart.destroy();
+        return;
+      }
+
+      // Calculate stats
+      const completed = analyses.filter(a => a.event_type === 'analysis_completed');
+      const failed = analyses.filter(a => a.event_type === 'analysis_failed');
+      const pageViews = analyses.filter(a => a.event_type === 'page_view');
+
+      // Total cost
+      const totalCost = completed.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
+      document.getElementById('apiCostTotal').textContent = totalCost.toFixed(0);
+
+      // Cache hit rate
+      const cacheHits = completed.filter(a => a.cache_used).length;
+      const cacheRate = completed.length > 0 ? (cacheHits / completed.length * 100).toFixed(0) : 0;
+      document.getElementById('cacheHitRate').textContent = cacheRate;
+
+      // Cache savings (estimated)
+      const avgCostPerAnalysis = completed.length > 0 ? totalCost / completed.length : 0;
+      const savings = cacheHits * avgCostPerAnalysis;
+      document.getElementById('cacheSavings').textContent = savings.toFixed(0);
+
+      // Avg response time
+      const responseTimes = completed.filter(a => a.response_time_ms).map(a => a.response_time_ms);
+      const avgTime = responseTimes.length > 0
+        ? (responseTimes.reduce((sum, t) => sum + t, 0) / responseTimes.length / 1000).toFixed(1)
+        : '—';
+      document.getElementById('avgResponseTime').textContent = avgTime;
+
+      // Success rate
+      const total = completed.length + failed.length;
+      const successRate = total > 0 ? (completed.length / total * 100).toFixed(0) : '—';
+      document.getElementById('successRate').textContent = successRate;
+
+      // Unique visitors
+      const uniqueUsers = new Set(pageViews.map(a => a.user_id).filter(Boolean));
+      document.getElementById('uniqueVisitors').textContent = uniqueUsers.size;
+
+      // Daily cost chart
+      const dailyCosts = {};
+      completed.forEach(a => {
+        const date = new Date(a.timestamp).toLocaleDateString('da-DK');
+        dailyCosts[date] = (dailyCosts[date] || 0) + (a.cost_estimate || 0);
+      });
+
+      const costLabels = Object.keys(dailyCosts);
+      const costData = Object.values(dailyCosts);
+
+      if (costChart) costChart.destroy();
+      const costCtx = document.getElementById('costChart').getContext('2d');
+      costChart = new Chart(costCtx, {
+        type: 'line',
+        data: {
+          labels: costLabels,
+          datasets: [{
+            label: 'Omkostning (DKK)',
+            data: costData,
+            borderColor: '#1A3C2E',
+            backgroundColor: 'rgba(26, 60, 46, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+
+      // Daily cache hit rate chart
+      const dailyCache = {};
+      const dailyTotal = {};
+      completed.forEach(a => {
+        const date = new Date(a.timestamp).toLocaleDateString('da-DK');
+        dailyTotal[date] = (dailyTotal[date] || 0) + 1;
+        if (a.cache_used) {
+          dailyCache[date] = (dailyCache[date] || 0) + 1;
+        }
+      });
+
+      const cacheLabels = Object.keys(dailyTotal);
+      const cacheData = cacheLabels.map(date => {
+        const hits = dailyCache[date] || 0;
+        const total = dailyTotal[date] || 1;
+        return (hits / total * 100).toFixed(0);
+      });
+
+      if (cacheChart) cacheChart.destroy();
+      const cacheCtx = document.getElementById('cacheChart').getContext('2d');
+      cacheChart = new Chart(cacheCtx, {
+        type: 'line',
+        data: {
+          labels: cacheLabels,
+          datasets: [{
+            label: 'Cache Hit Rate (%)',
+            data: cacheData,
+            borderColor: '#52B788',
+            backgroundColor: 'rgba(82, 183, 136, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100 }
+          }
+        }
+      });
+
+      // Top 10 most expensive analyses
+      const sorted = [...completed]
+        .sort((a, b) => (b.cost_estimate || 0) - (a.cost_estimate || 0))
+        .slice(0, 10);
+
+      const topTable = document.getElementById('topAnalysesTable');
+      if (sorted.length === 0) {
+        topTable.innerHTML = '<tr><td colspan="7"><div class="empty-state">Ingen completed analyser</div></td></tr>';
+      } else {
+        topTable.innerHTML = sorted.map(a => `
+          <tr>
+            <td>${a.insurance_type || '—'}</td>
+            <td style="font-size:13px;">${a.company_a || '?'} vs ${a.company_b || '?'}</td>
+            <td>${(a.tokens_used || 0).toLocaleString()}</td>
+            <td style="font-weight:600;">${(a.cost_estimate || 0).toFixed(2)} kr</td>
+            <td>${a.response_time_ms ? (a.response_time_ms / 1000).toFixed(1) + 's' : '—'}</td>
+            <td>${a.cache_used ? '<span class="badge badge-ready">Cache</span>' : '—'}</td>
+            <td style="font-size:12px;color:var(--muted)">${formatDate(a.timestamp)}</td>
+          </tr>
+        `).join('');
+      }
+
+    } catch (error) {
+      console.error('Error loading API stats:', error);
+      document.getElementById('apiCostTotal').textContent = 'Fejl';
+    }
   }
 
   async function loadPDFStatus() {
