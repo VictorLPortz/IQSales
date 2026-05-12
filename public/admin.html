@@ -1273,7 +1273,7 @@
     } catch (error) {
       console.error('Refresh failed:', error);
       showToast('❌ Refresh failed: ' + error.message, 'error');
-      progressText.textContent = 'Fejl: ' + error.message';
+      progressText.textContent = 'Fejl: ' + error.message;
     } finally {
       btn.disabled = false;
       btn.innerHTML = '🔄 Refresh alle PDFs';
