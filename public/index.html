@@ -2408,12 +2408,40 @@ function generateCoverageHTML(data) {
 }
 
 function switchMultiTab(type){
-  const shortName=type;
+  console.log('🔴 Switching to tab:', type);
+  
+  const shortName = type;
+  
+  // Hide all tabs
   document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  
+  // Remove active from all buttons
   document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-'+shortName).style.display='block';
-  document.getElementById('mtab-'+shortName).classList.add('active');
-  if(allResults[shortName])renderTypeInTab(shortName);
+  
+  // Show selected tab - try both naming conventions
+  const fullType = shortName.charAt(0).toUpperCase() + shortName.slice(1) + 'forsikring';
+  const tabElement = document.getElementById('tab-' + fullType) || 
+                     document.getElementById('tab-' + shortName);
+  
+  if (tabElement) {
+    tabElement.style.display = 'block';
+    console.log('✅ Tab displayed:', tabElement.id);
+  } else {
+    console.error('❌ Tab not found for:', shortName, fullType);
+    const availableTabs = Array.from(document.querySelectorAll('.multi-tab-content')).map(t => t.id);
+    console.log('Available tabs:', availableTabs);
+  }
+  
+  // Activate button
+  const btnElement = document.getElementById('mtab-' + shortName);
+  if (btnElement) {
+    btnElement.classList.add('active');
+  }
+  
+  // Render content if not already done
+  if(allResults[shortName]) {
+    renderTypeInTab(shortName);
+  }
 }
 
   function switchToOverview(){
