@@ -1682,7 +1682,7 @@ async function analyzeType(type, nameA, nameB) {
       statusEl.style.color = 'var(--accent2)';
       statusEl.style.borderColor = 'var(--accent2)';
     }
-    enableTypeTab(shortName);
+    enableTypeTab(type);
     return;
   }
  
@@ -1820,7 +1820,7 @@ Regler:
       statusEl.style.borderColor = 'var(--accent2)';
     }
     
-    enableTypeTab(shortName);
+    enableTypeTab(type);
     console.log('✅ analyzeType COMPLETED for:', type);
     
   } catch (err) {
