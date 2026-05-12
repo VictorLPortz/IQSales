@@ -991,6 +991,58 @@ function showFeedbackBadge(type, count) {
   }
 }
 
+// ============================================================
+// ANALYTICS TRACKING
+// ============================================================
+
+// Track events to analytics table
+async function trackEvent(eventType, data) {
+  try {
+    const userId = getUserId();
+    
+    await fetch(SUPABASE_URL + '/rest/v1/analytics', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        event_type: eventType,
+        user_id: userId,
+        insurance_type: data.insurance_type || null,
+        company_a: data.company_a || null,
+        company_b: data.company_b || null,
+        tokens_used: data.tokens_used || null,
+        cost_estimate: data.cost_estimate || null,
+        cache_used: data.cache_used || false,
+        response_time_ms: data.response_time_ms || null,
+        metadata: data.metadata || null
+      })
+    });
+  } catch(e) {
+    console.error('Analytics tracking failed:', e);
+  }
+}
+
+// Calculate cost based on tokens (Claude Sonnet 4.6 pricing)
+function calculateCost(inputTokens, outputTokens) {
+  // Claude Sonnet 4.6: $3 per 1M input tokens, $15 per 1M output tokens
+  const inputCost = (inputTokens / 1000000) * 3;
+  const outputCost = (outputTokens / 1000000) * 15;
+  const totalUSD = inputCost + outputCost;
+  const totalDKK = totalUSD * 7.5; // USD to DKK conversion
+  return totalDKK;
+}
+
+// Track page view on load
+window.addEventListener('load', function() {
+  trackEvent('page_view', {
+    metadata: { url: window.location.pathname }
+  });
+});
+
 const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://www.tryg.dk','Topdanmark':'https://www.topdanmark.dk','Codan':'https://www.codan.dk','IF Forsikring':'https://www.if.dk','Gjensidige':'https://www.gjensidige.dk','LB Forsikring':'https://www.lb.dk','Privatsikring':'https://www.privatsikring.dk','Lærerstandens Brandforsikring':'https://www.lb.dk','GF Forsikring':'https://www.gfforsikring.dk','Vesta Forsikring':'https://www.vesta.dk','Thisted Forsikring':'https://www.thistedforsikring.dk','Runa Forsikring':'https://www.lb.dk','Bauta Forsikring':'https://www.lb.dk','Alka':'https://www.alka.dk','Vejle Brand':'https://www.vejlebrand.dk','Vestjylland Forsikring':'https://www.vestjyllandforsikring.dk','Købstedernes Forsikring':'https://www.kforsikring.dk','Jyske Forsikring':'https://www.jyskeforsikring.dk','Aros Forsikring':'https://www.arosforsikring.dk','Nærsikring':'https://www.naersikring.dk','Bornholms Brandforsikring':'https://www.bornholmsbrand.dk','Spira Forsikring':'https://www.spiraforsikring.dk','Concordia Forsikring':'https://www.concordia.dk','IDA Forsikring':'https://www.idaforsikring.dk','TJM Forsikring':'https://www.tjm.dk','Storstrom Forsikring':'https://www.storstromforsikring.dk','OK Forsikring':'https://www.ok.dk','FDM Forsikring':'https://www.fdm.dk','Himmerland Forsikring':'https://www.himmerlandforsikring.dk','Forsia Forsikring':'https://www.sonderjyskforsikring.dk','Frida Forsikring':'https://www.fridaforsikring.dk','Dansk Bilforsikring':'https://www.danskbilforsikring.dk'};
 
 function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[side];const link=document.getElementById('link-'+side);if(!link)return;const url=BETINGELSER_LINKS[name];if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}else{link.href='#';link.style.display='none';}});}
@@ -1707,6 +1759,9 @@ async function analyze() {
 async function analyzeType(type, nameA, nameB) {
   console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
   
+  // Track start time for response time calculation
+  const startTime = Date.now();
+  
   // Update status to running
   const shortName = type.replace('forsikring', '').toLowerCase();
   const statusEl = document.getElementById('status-' + shortName);
@@ -1725,6 +1780,16 @@ async function analyzeType(type, nameA, nameB) {
   if (cached) {
     console.log('📦 Using cached data for', type);
     allResults[shortName] = cached;
+    
+    // Track cache hit
+    const responseTime = Date.now() - startTime;
+    trackEvent('analysis_completed', {
+      insurance_type: type,
+      company_a: nameA,
+      company_b: nameB,
+      cache_used: true,
+      response_time_ms: responseTime
+    });
     
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
@@ -1884,6 +1949,24 @@ Regler:
     // Log analysis
     logAnalysis(nameA, nameB, type);
     
+    // Track completed analysis with token usage
+    const responseTime = Date.now() - startTime;
+    const usage = data.usage || {};
+    const inputTokens = usage.input_tokens || 0;
+    const outputTokens = usage.output_tokens || 0;
+    const totalTokens = inputTokens + outputTokens;
+    const cost = calculateCost(inputTokens, outputTokens);
+    
+    trackEvent('analysis_completed', {
+      insurance_type: type,
+      company_a: nameA,
+      company_b: nameB,
+      tokens_used: totalTokens,
+      cost_estimate: cost,
+      cache_used: false,
+      response_time_ms: responseTime
+    });
+    
     // Update UI
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
@@ -1897,6 +1980,17 @@ Regler:
     
   } catch (err) {
     console.error('❌ Analysis error:', err);
+    
+    // Track failed analysis
+    const responseTime = Date.now() - startTime;
+    trackEvent('analysis_failed', {
+      insurance_type: type,
+      company_a: nameA,
+      company_b: nameB,
+      response_time_ms: responseTime,
+      metadata: { error: err.message }
+    });
+    
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
       statusEl.style.color = 'var(--danger)';
