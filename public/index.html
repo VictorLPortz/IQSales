@@ -1672,19 +1672,23 @@ async function analyzeType(type, nameA, nameB) {
   
   console.log('🔍 Cache check for', type, '- cached:', cached ? 'FOUND' : 'null');
   
-  if (cached) {
-    console.log('📦 Using cached data for', type);
-    allResults[shortName] = cached;
-    
-    if (statusEl) {
-      statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
-      statusEl.style.background = 'var(--accent-light)';
-      statusEl.style.color = 'var(--accent2)';
-      statusEl.style.borderColor = 'var(--accent2)';
-    }
-    enableTypeTab(shortName);
-    return;
+ if (cached) {
+  console.log('📦 Using cached data for', type);
+  allResults[shortName] = cached;
+  
+  if (statusEl) {
+    statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
+    statusEl.style.background = 'var(--accent-light)';
+    statusEl.style.color = 'var(--accent2)';
+    statusEl.style.borderColor = 'var(--accent2)';
   }
+  enableTypeTab(shortName);
+  
+  // ✅ RENDER CACHED DATA IMMEDIATELY!
+  renderTypeInTab(type, cached);
+  
+  return;
+}
  
   console.log('🔴 No cache found - proceeding with PDF extraction');
  
