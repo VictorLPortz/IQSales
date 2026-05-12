@@ -23,6 +23,8 @@
     --error-bg: #FEF2F2;
     --success: #166534;
     --success-bg: #F0FDF4;
+    --warning: #D97706;
+    --warning-bg: #FEF3C7;
   }
 
   body {
@@ -122,6 +124,49 @@
     display: block;
   }
 
+  /* Sub-tabs */
+  .subtabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    display: inline-flex;
+  }
+
+  .subtab-button {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .subtab-button:hover {
+    color: var(--text);
+    background: #F9FAFB;
+  }
+
+  .subtab-button.active {
+    color: var(--green);
+    background: var(--cream);
+  }
+
+  .subtab-content {
+    display: none;
+  }
+
+  .subtab-content.active {
+    display: block;
+  }
+
   /* Layout */
   .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
 
@@ -164,6 +209,63 @@
   .card-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
 
   .card-body { padding: 24px; }
+
+  /* Feedback item */
+  .feedback-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+
+  .feedback-item:hover {
+    border-color: var(--green-light);
+  }
+
+  .feedback-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .feedback-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .feedback-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .feedback-category {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+
+  .feedback-comment {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+    padding: 12px;
+    background: #F9FAFB;
+    border-radius: 8px;
+    margin: 12px 0;
+    border-left: 3px solid var(--green-light);
+  }
+
+  .feedback-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
 
   /* Invite form */
   .invite-grid {
@@ -216,6 +318,20 @@
   .btn-primary:hover { background: var(--green-mid); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  .btn-success {
+    padding: 8px 16px;
+    background: var(--success);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-success:hover { opacity: 0.9; }
+
   .btn-danger {
     padding: 6px 12px;
     background: transparent;
@@ -229,6 +345,23 @@
     transition: background 0.2s;
   }
   .btn-danger:hover { background: var(--error-bg); }
+
+  .btn-secondary {
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { 
+    background: #F9FAFB;
+    border-color: var(--muted);
+  }
 
   .toast {
     position: fixed;
@@ -277,6 +410,9 @@
   .badge-seller { background: #ECFDF5; color: #065F46; }
   .badge-ready { background: #ECFDF5; color: #065F46; }
   .badge-error { background: #FEF2F2; color: #DC2626; }
+  .badge-pending { background: var(--warning-bg); color: var(--warning); }
+  .badge-approved { background: #ECFDF5; color: #065F46; }
+  .badge-rejected { background: #FEF2F2; color: #DC2626; }
 
   .empty-state {
     text-align: center;
@@ -331,7 +467,47 @@
   .pdf-name { font-weight: 500; }
   .pdf-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
+  /* Cost meter */
+  .cost-meter {
+    background: #F3F4F6;
+    border-radius: 10px;
+    height: 24px;
+    overflow: hidden;
+    margin: 16px 0;
+    position: relative;
+  }
+
+  .cost-meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-light), var(--green));
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
   #authGuard { display: none; }
+
+  .info-box {
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1E40AF;
+  }
+
+  .info-box strong {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -348,7 +524,7 @@
     </div>
   </nav>
 
-  <!-- Tabs -->
+  <!-- Main Tabs -->
   <div class="tabs">
     <ul class="tabs-list">
       <li><button class="tab-button active" onclick="switchTab('users')">Brugerstyring</button></li>
@@ -462,49 +638,151 @@
         <p>Oversigt over aktivitet og brug af IQSales</p>
       </div>
 
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-label">Brugere i alt</div>
-          <div class="stat-value" id="statsUsersTotal">—</div>
+      <!-- Sub-tabs -->
+      <div class="subtabs">
+        <button class="subtab-button active" onclick="switchSubtab('overview')">📊 Overblik</button>
+        <button class="subtab-button" onclick="switchSubtab('feedback')">✅ Feedback Godkendelse</button>
+        <button class="subtab-button" onclick="switchSubtab('api')">💰 API Økonomi</button>
+      </div>
+
+      <!-- SUBTAB: Overblik -->
+      <div id="subtab-overview" class="subtab-content active">
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Brugere i alt</div>
+            <div class="stat-value" id="statsUsersTotal">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Analyser i alt</div>
+            <div class="stat-value" id="statsAnalysesTotal">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Aktive denne uge</div>
+            <div class="stat-value" id="statsActiveThisWeek">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Gns. analysetid</div>
+            <div class="stat-value" id="statsAvgTime">—</div>
+            <div class="stat-subtext">sek per analyse</div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Analyser i alt</div>
-          <div class="stat-value" id="statsAnalysesTotal">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Aktive denne uge</div>
-          <div class="stat-value" id="statsActiveThisWeek">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Gns. analysetid</div>
-          <div class="stat-value" id="statsAvgTime">—</div>
-          <div class="stat-subtext">sek per analyse</div>
+
+        <!-- Sælger aktivitet -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Sælger aktivitet</h2>
+              <p>Klik på sælgere for at se detaljer</p>
+            </div>
+          </div>
+          <div class="card-body" id="sellerActivity">
+            <div class="empty-state">Indlæser aktivitet...</div>
+          </div>
         </div>
       </div>
 
-      <!-- Sælger aktivitet -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>Sælger aktivitet</h2>
-            <p>Klik på sælgere for at se detaljer</p>
-          </div>
+      <!-- SUBTAB: Feedback Godkendelse -->
+      <div id="subtab-feedback" class="subtab-content">
+        <div class="info-box">
+          <strong>💡 Sådan virker feedback-systemet</strong>
+          Når du godkender feedback, bliver den inkluderet i fremtidige analyser af samme forsikringstype og selskaber. 
+          Claude lærer af tidligere fejl og giver mere præcise analyser over tid.
         </div>
-        <div class="card-body" id="sellerActivity">
-          <div class="empty-state">Indlæser aktivitet...</div>
-        </div>
-      </div>
 
-      <!-- Feedback fra sælgere -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>Feedback fra sælgere</h2>
-            <p>Seneste feedback og kommentarer</p>
+        <div class="stats" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="stat-card">
+            <div class="stat-label">Afventer godkendelse</div>
+            <div class="stat-value" id="feedbackPending">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Godkendt</div>
+            <div class="stat-value" id="feedbackApproved">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Afvist</div>
+            <div class="stat-value" id="feedbackRejected">—</div>
           </div>
         </div>
-        <div class="card-body" id="feedbackList">
+
+        <!-- Filter -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button class="subtab-button active" onclick="filterFeedback('pending')" id="filter-pending">Pending</button>
+          <button class="subtab-button" onclick="filterFeedback('approved')" id="filter-approved">Godkendt</button>
+          <button class="subtab-button" onclick="filterFeedback('rejected')" id="filter-rejected">Afvist</button>
+          <button class="subtab-button" onclick="filterFeedback('all')" id="filter-all">Alle</button>
+        </div>
+
+        <!-- Feedback list -->
+        <div id="feedbackList">
           <div class="empty-state">Indlæser feedback...</div>
+        </div>
+      </div>
+
+      <!-- SUBTAB: API Økonomi -->
+      <div id="subtab-api" class="subtab-content">
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Estimeret omkostning i dag</div>
+            <div class="stat-value" id="apiCostToday">— kr</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Denne måned</div>
+            <div class="stat-value" id="apiCostMonth">— kr</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cache hit rate</div>
+            <div class="stat-value" id="cacheHitRate">—%</div>
+            <div class="stat-subtext">besparelse</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cache savings</div>
+            <div class="stat-value" id="cacheSavings">— kr</div>
+            <div class="stat-subtext">i denne måned</div>
+          </div>
+        </div>
+
+        <!-- Token usage meter -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Token forbrug i dag</h2>
+              <p id="tokenUsageText">—</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="cost-meter">
+              <div class="cost-meter-fill" id="tokenMeter" style="width: 0%;">
+                <span id="tokenPercent">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top analyses -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Top 10 dyreste analyser</h2>
+              <p>Denne måned</p>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Selskaber</th>
+                  <th>Tokens</th>
+                  <th>Omkostning</th>
+                  <th>Cache</th>
+                  <th>Dato</th>
+                </tr>
+              </thead>
+              <tbody id="topAnalysesTable">
+                <tr><td colspan="6"><div class="empty-state">Indlæser...</div></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -634,11 +912,13 @@
   const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
   
-  // Create supabase client
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
   let currentTab = 'users';
+  let currentSubtab = 'overview';
+  let currentFeedbackFilter = 'pending';
+  let allFeedback = [];
 
   async function init() {
     const { data: { session } } = await sb.auth.getSession();
@@ -646,7 +926,6 @@
 
     currentUser = session.user;
 
-    // Check admin role
     const { data: profile } = await sb
       .from('profiles')
       .select('role, full_name')
@@ -661,7 +940,6 @@
     document.getElementById('authGuard').style.display = 'block';
     document.getElementById('navUser').textContent = profile.full_name || currentUser.email;
 
-    // Load all tabs data
     await loadUsers();
     await loadStats();
     await loadPDFStatus();
@@ -670,17 +948,31 @@
   function switchTab(tabName) {
     currentTab = tabName;
     
-    // Update buttons
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     
-    // Update content
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(`tab-${tabName}`).classList.add('active');
 
-    // Load data for tab if needed
-    if (tabName === 'stats') loadStats();
+    if (tabName === 'stats') {
+      loadStats();
+      if (currentSubtab === 'feedback') loadFeedback();
+      if (currentSubtab === 'api') loadAPIStats();
+    }
     if (tabName === 'pdfs') loadPDFStatus();
+  }
+
+  function switchSubtab(subtabName) {
+    currentSubtab = subtabName;
+    
+    document.querySelectorAll('.subtab-button').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.querySelectorAll('.subtab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`subtab-${subtabName}`).classList.add('active');
+
+    if (subtabName === 'feedback') loadFeedback();
+    if (subtabName === 'api') loadAPIStats();
   }
 
   async function loadUsers() {
@@ -691,13 +983,11 @@
 
     if (error || !profiles) return;
 
-    // Stats
     document.getElementById('statTotal').textContent = profiles.length;
     document.getElementById('statSellers').textContent = profiles.filter(p => p.role === 'seller').length;
     const depts = new Set(profiles.map(p => p.department).filter(Boolean));
     document.getElementById('statDepts').textContent = depts.size;
 
-    // Logins today
     const today = new Date().toISOString().split('T')[0];
     const { data: logins } = await sb
       .from('login_history')
@@ -731,15 +1021,12 @@
   }
 
   async function loadStats() {
-    // Users total
     const { data: profiles } = await sb.from('profiles').select('id, created_at');
     document.getElementById('statsUsersTotal').textContent = profiles?.length || 0;
- 
-    // Analyses total
+
     const { data: analyses } = await sb.from('analyses').select('id, created_at, user_id');
     document.getElementById('statsAnalysesTotal').textContent = analyses?.length || 0;
- 
-    // Active this week
+
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: recentLogins } = await sb
       .from('login_history')
@@ -747,17 +1034,15 @@
       .gte('logged_in_at', weekAgo);
     const uniqueUsers = new Set(recentLogins?.map(l => l.user_id));
     document.getElementById('statsActiveThisWeek').textContent = uniqueUsers.size;
- 
-    // Avg time (mock - would need actual timing data)
+
     document.getElementById('statsAvgTime').textContent = '—';
- 
-    // Seller Activity with NAME + DEPARTMENT
+
     const { data: loginHistory } = await sb
       .from('login_history')
       .select('*')
       .order('logged_in_at', { ascending: false })
       .limit(20);
- 
+
     const activityContainer = document.getElementById('sellerActivity');
     if (!loginHistory || loginHistory.length === 0) {
       activityContainer.innerHTML = '<div class="empty-state">Ingen aktivitet endnu</div>';
@@ -767,70 +1052,128 @@
           <div class="activity-dot"></div>
           <div style="flex: 1;">
             <div><strong>${h.full_name || h.email || 'Anonym'}</strong> loggede ind</div>
-            <div class="activity-user">${h.department || 'Ingen afdeling'}</div>
+            <div class="activity-user">Ingen afdeling</div>
           </div>
           <span class="activity-time">${formatDate(h.logged_in_at)}</span>
         </div>
       `).join('');
     }
- 
-    // Feedback from sellers - FIXED VERSION
-    const { data: feedback } = await sb
+  }
+
+  async function loadFeedback() {
+    const { data: feedback, error } = await sb
       .from('feedback')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20);
- 
-    const feedbackContainer = document.getElementById('feedbackList');
-    if (!feedback || feedback.length === 0) {
-      feedbackContainer.innerHTML = '<div class="empty-state">Ingen feedback endnu</div>';
-    } else {
-      feedbackContainer.innerHTML = feedback.map(f => {
-        // Format issue type
-        const issueTypeMap = {
-          'forkert_fordel': '❌ Ikke en reel fordel',
-          'mangler_info': '📝 Mangler information',
-          'forkert_info': '⚠️ Forkert information',
-          'andet': '💬 Andet',
-          'generel': '💬 Generel feedback',
-          'coach_positiv': '👍 Coach positiv',
-          'coach_negativ': '👎 Coach negativ'
-        };
-        
-        const issueLabel = issueTypeMap[f.issue_type] || f.issue_type || '—';
-        
-        // Build title
-        let title = '';
-        if (f.category === 'Generel' || f.category === 'IQSales Coach') {
-          title = '<strong>' + f.category + '</strong>';
-        } else {
-          title = '<strong>' + (f.category || 'Kategori ukendt') + '</strong> — ' + (f.company_a || '?') + ' vs ' + (f.company_b || '?');
-        }
-        
-        // Dot color based on type
-        let dotColor = 'var(--green-light)';
-        if (f.issue_type && f.issue_type.includes('negativ')) dotColor = '#DC2626';
-        if (f.issue_type && f.issue_type.includes('positiv')) dotColor = '#16A34A';
-        
-        return `
-          <div class="activity-entry" style="padding: 14px 0;">
-            <div class="activity-dot" style="background: ${dotColor}"></div>
-            <div style="flex: 1;">
-              ${title}
-              <div class="activity-user" style="margin-top: 2px;">
-                ${f.insurance_type || 'Type ukendt'} · ${issueLabel}
-              </div>
-              ${f.comment ? '<div style="margin-top: 6px; font-size: 13px; color: var(--text); background: #F9FAFB; padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--green-light);">"' + f.comment + '"</div>' : ''}
-            </div>
-            <span class="activity-time">${formatDate(f.created_at)}</span>
-          </div>
-        `;
-      }).join('');
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading feedback:', error);
+      return;
     }
+
+    allFeedback = feedback || [];
+
+    // Update stats
+    const pending = allFeedback.filter(f => f.status === 'pending').length;
+    const approved = allFeedback.filter(f => f.status === 'approved').length;
+    const rejected = allFeedback.filter(f => f.status === 'rejected').length;
+
+    document.getElementById('feedbackPending').textContent = pending;
+    document.getElementById('feedbackApproved').textContent = approved;
+    document.getElementById('feedbackRejected').textContent = rejected;
+
+    renderFeedback();
+  }
+
+  function filterFeedback(status) {
+    currentFeedbackFilter = status;
+    
+    // Update button states
+    document.querySelectorAll('[id^="filter-"]').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`filter-${status}`).classList.add('active');
+    
+    renderFeedback();
+  }
+
+  function renderFeedback() {
+    const container = document.getElementById('feedbackList');
+    
+    let filtered = allFeedback;
+    if (currentFeedbackFilter !== 'all') {
+      filtered = allFeedback.filter(f => f.status === currentFeedbackFilter);
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">Ingen feedback i denne kategori</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(f => `
+      <div class="feedback-item">
+        <div class="feedback-header">
+          <div class="feedback-title">🏡 ${f.insurance_type || 'Ukendt type'} — ${f.company_a || '?'} vs ${f.company_b || '?'}</div>
+          <span class="badge badge-${f.status || 'pending'}">${f.status === 'pending' ? 'Afventer' : f.status === 'approved' ? 'Godkendt' : 'Afvist'}</span>
+        </div>
+        <div class="feedback-meta">
+          ${formatDate(f.created_at)} • ${f.issue_type || 'Ikke angivet'}
+        </div>
+        <div class="feedback-category">📌 Dækning: ${f.category || 'Ikke angivet'}</div>
+        <div class="feedback-comment">"${f.comment || 'Ingen kommentar'}"</div>
+        ${f.status === 'pending' ? `
+          <div class="feedback-actions">
+            <button class="btn-success" onclick="approveFeedback('${f.id}')">✅ Godkend</button>
+            <button class="btn-secondary" onclick="rejectFeedback('${f.id}')">❌ Afvis</button>
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  }
+
+  async function approveFeedback(id) {
+    const { error } = await sb
+      .from('feedback')
+      .update({ status: 'approved' })
+      .eq('id', id);
+
+    if (error) {
+      showToast('Kunne ikke godkende feedback', 'error');
+      return;
+    }
+
+    showToast('✅ Feedback godkendt!', 'success');
+    await loadFeedback();
+  }
+
+  async function rejectFeedback(id) {
+    if (!confirm('Afvis denne feedback?')) return;
+
+    const { error } = await sb
+      .from('feedback')
+      .update({ status: 'rejected' })
+      .eq('id', id);
+
+    if (error) {
+      showToast('Kunne ikke afvise feedback', 'error');
+      return;
+    }
+
+    showToast('Feedback afvist', 'success');
+    await loadFeedback();
+  }
+
+  async function loadAPIStats() {
+    // Mock data - skulle hentes fra analytics table
+    document.getElementById('apiCostToday').textContent = '—';
+    document.getElementById('apiCostMonth').textContent = '—';
+    document.getElementById('cacheHitRate').textContent = '—';
+    document.getElementById('cacheSavings').textContent = '—';
+    document.getElementById('tokenUsageText').textContent = 'Data kommer snart...';
+    
+    const topTable = document.getElementById('topAnalysesTable');
+    topTable.innerHTML = '<tr><td colspan="6"><div class="empty-state">Analytics tracking kommer med næste deployment</div></td></tr>';
   }
 
   async function loadPDFStatus() {
-    // Load insurance terms
     const { data: terms } = await sb
       .from('insurance_terms')
       .select('*')
@@ -845,7 +1188,6 @@
     } else {
       document.getElementById('pdfStatusCount').textContent = `${terms.length} PDFs loaded`;
       
-      // Latest refresh time
       const latest = terms[0]?.parsed_at;
       if (latest) {
         document.getElementById('refreshStatus').textContent = `Sidst opdateret: ${formatDate(latest)}`;
@@ -862,7 +1204,6 @@
       `).join('');
     }
 
-    // Load refresh log
     const { data: logs } = await sb
       .from('parsing_log')
       .select('*')
@@ -908,7 +1249,6 @@
     progressText.textContent = 'Starter...';
 
     try {
-      // Get session token
       const { data: { session } } = await sb.auth.getSession();
       
       const response = await fetch('/api/admin/refresh-pdfs', {
@@ -933,7 +1273,7 @@
     } catch (error) {
       console.error('Refresh failed:', error);
       showToast('❌ Refresh failed: ' + error.message, 'error');
-      progressText.textContent = 'Fejl: ' + error.message;
+      progressText.textContent = 'Fejl: ' + error.message';
     } finally {
       btn.disabled = false;
       btn.innerHTML = '🔄 Refresh alle PDFs';
