@@ -1833,32 +1833,16 @@ Regler:
 }
 
 function enableTypeTab(type){
-  // Map short name back to long name for TYPE_LABELS
-  const TYPE_LABELS = {
-  'hus': 'Husforsikring',
-  'bil': 'Bilforsikring',
-  'indbo': 'Indboforsikring',
-  'ulykke': 'Ulykkesforsikring',
-  'rejse': 'Rejseforsikring',
-  'hund': 'Hundeforsikring',
-  'fritidshus': 'Fritidshusforsikring',
-  'motorcykel': 'Motorcykelforsikring',
-  'lystfartøj': 'Lystfartøjsforsikring',
-  'campingvogn': 'Campingvognsforsikring',
-  'børneulykke': 'Børneulykkesforsikring',
-  'veteranerkøretøj': 'Veterankøretøjsforsikring'
-};
-  const fullType = TYPE_LABELS[type] || type;
-const shortName = type.replace('forsikring', '').toLowerCase();
-
-const tabBtn=document.getElementById('mtab-'+shortName);
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  
+  const tabBtn = document.getElementById('mtab-' + shortName);
   if(tabBtn){
-  tabBtn.disabled = false;
-  tabBtn.style.opacity = '1';
-  tabBtn.style.cursor = 'pointer';
-  tabBtn.innerHTML = TYPE_LABELS[type] + ' ✓';
-}
-renderTypeInTab(type);
+    tabBtn.disabled = false;
+    tabBtn.style.opacity = '1';
+    tabBtn.style.cursor = 'pointer';
+    tabBtn.innerHTML = TYPE_LABELS[type] + ' ✓';  // Bruger GLOBAL TYPE_LABELS
+  }
+  renderTypeInTab(type);
 }
 
 
