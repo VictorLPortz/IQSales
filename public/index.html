@@ -803,7 +803,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         <button class="type-btn" data-type="Børneulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">👶</span>Børneulykke</button>
         <button class="type-btn" data-type="Veterankøretøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🏎️</span>Veterankøretøj</button>
       </div>
-      <div class="type-max-note" id="type-max-note">Du kan max vælge 5 forsikringstyper ad gangen</div>
+      <div class="type-max-note" id="type-max-note">Du kan max vælge 8 forsikringstyper ad gangen</div>
     </div>
     <div class="card">
       <div class="section-lbl">2. Vælg selskaber og upload betingelser</div>
@@ -1168,7 +1168,7 @@ function onCustomInput(side){const val=document.getElementById('custom-'+side).v
 function getName(side){if(cddState[side]==='andet')return document.getElementById('custom-'+side).value.trim()||'Selskab '+side.toUpperCase();return cddState[side];}
 document.addEventListener('click',e=>{if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));}});
 
-function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(type)){if(selectedTypes.length===1){return;}selectedTypes=selectedTypes.filter(t=>t!==type);btn.classList.remove('selected');delete docsA[type];delete docsB[type];}else{if(selectedTypes.length>=5){document.getElementById('type-max-note').classList.add('show');setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);return;}selectedTypes.push(type);btn.classList.add('selected');}renderUploadZones();}
+function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(type)){if(selectedTypes.length===1){return;}selectedTypes=selectedTypes.filter(t=>t!==type);btn.classList.remove('selected');delete docsA[type];delete docsB[type];}else{if(selectedTypes.length>=8){document.getElementById('type-max-note').classList.add('show');setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);return;}selectedTypes.push(type);btn.classList.add('selected');}renderUploadZones();}
 
 const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
 
