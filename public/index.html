@@ -898,6 +898,19 @@ function toggleFaq(i){const body=document.getElementById('faq-body-'+i);const ar
   <div class="fb-modal">
     <div class="fb-modal-title">Giv feedback på dækning</div>
     <div class="fb-modal-cat" id="fb-cat"></div>
+    
+    <!-- Guide til god feedback -->
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px;margin-bottom:12px;font-size:11px;line-height:1.5;">
+      <div style="font-weight:600;color:#1E40AF;margin-bottom:4px;">💡 Tip til god feedback:</div>
+      <div style="color:#1E40AF;">
+        <strong>Vær konkret og faktuel!</strong><br>
+        ✅ Godt: "Alm. Brand dækker kun 50 km, ikke 100 km - jf. betingelser side 12"<br>
+        ✅ Godt: "Tryg's selvrisiko er 3.500 kr, ikke 2.500 kr"<br>
+        ❌ Undgå: "Tryg burde nok dække det her"<br>
+        ❌ Undgå: "Kig ekstra efter..."
+      </div>
+    </div>
+    
     <div class="fb-type-grid">
       <button class="fb-type-btn" data-type="forkert_fordel" onclick="setFbType(this)">Ikke en reel fordel</button>
       <button class="fb-type-btn" data-type="mangler_info" onclick="setFbType(this)">Mangler information</button>
@@ -935,10 +948,47 @@ function setFbType(btn){document.querySelectorAll('.fb-type-btn').forEach(b=>b.c
 async function sendFb(){
   if(!fbState.issueType){alert('Vælg venligst en fejltype.');return;}
   const comment=document.getElementById('fb-comment').value.trim();
-  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:fbState.companyA,company_b:fbState.companyB,insurance_type:fbState.type,category:fbState.category,issue_type:fbState.issueType,comment:(comment||'')+(fbState.side==='b'?' [Feedback om '+fbState.companyB+']':''),user_id:getUserId()})});}catch(e){}
+  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:fbState.companyA,company_b:fbState.companyB,insurance_type:fbState.type,category:fbState.category,issue_type:fbState.issueType,comment:(comment||'')+(fbState.side==='b'?' [Feedback om '+fbState.companyB+']':''),user_id:getUserId(),status:'pending'})});}catch(e){}
   document.getElementById('fb-success').classList.remove('hidden');
   document.getElementById('fb-actions').style.display='none';
   setTimeout(()=>closeFb(),1500);
+}
+
+// Fetch approved feedback for use in analysis
+async function fetchApprovedFeedback(type, companyA, companyB) {
+  try {
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/feedback?insurance_type=eq.' + type + 
+      '&company_a=eq.' + companyA + 
+      '&company_b=eq.' + companyB + 
+      '&status=eq.approved',
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      }
+    );
+    if (!res.ok) return [];
+    return await res.json();
+  } catch(e) {
+    console.error('Could not fetch approved feedback:', e);
+    return [];
+  }
+}
+
+// Show feedback badge on tab when approved feedback is used
+function showFeedbackBadge(type, count) {
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  const tabBtn = document.getElementById('mtab-' + shortName);
+  
+  if (tabBtn && !tabBtn.querySelector('.feedback-badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'feedback-badge';
+    badge.textContent = '🔍 ' + count;
+    badge.style.cssText = 'background: #ECFDF5; color: #065F46; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 6px;';
+    tabBtn.appendChild(badge);
+  }
 }
 
 const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://www.tryg.dk','Topdanmark':'https://www.topdanmark.dk','Codan':'https://www.codan.dk','IF Forsikring':'https://www.if.dk','Gjensidige':'https://www.gjensidige.dk','LB Forsikring':'https://www.lb.dk','Privatsikring':'https://www.privatsikring.dk','Lærerstandens Brandforsikring':'https://www.lb.dk','GF Forsikring':'https://www.gfforsikring.dk','Vesta Forsikring':'https://www.vesta.dk','Thisted Forsikring':'https://www.thistedforsikring.dk','Runa Forsikring':'https://www.lb.dk','Bauta Forsikring':'https://www.lb.dk','Alka':'https://www.alka.dk','Vejle Brand':'https://www.vejlebrand.dk','Vestjylland Forsikring':'https://www.vestjyllandforsikring.dk','Købstedernes Forsikring':'https://www.kforsikring.dk','Jyske Forsikring':'https://www.jyskeforsikring.dk','Aros Forsikring':'https://www.arosforsikring.dk','Nærsikring':'https://www.naersikring.dk','Bornholms Brandforsikring':'https://www.bornholmsbrand.dk','Spira Forsikring':'https://www.spiraforsikring.dk','Concordia Forsikring':'https://www.concordia.dk','IDA Forsikring':'https://www.idaforsikring.dk','TJM Forsikring':'https://www.tjm.dk','Storstrom Forsikring':'https://www.storstromforsikring.dk','OK Forsikring':'https://www.ok.dk','FDM Forsikring':'https://www.fdm.dk','Himmerland Forsikring':'https://www.himmerlandforsikring.dk','Forsia Forsikring':'https://www.sonderjyskforsikring.dk','Frida Forsikring':'https://www.fridaforsikring.dk','Dansk Bilforsikring':'https://www.danskbilforsikring.dk'};
@@ -1718,9 +1768,31 @@ async function analyzeType(type, nameA, nameB) {
   console.log('🔴 Building analysis prompt...');
  
   // =================================================================
+  // FETCH APPROVED FEEDBACK
+  // =================================================================
+  const approvedFeedback = await fetchApprovedFeedback(type, nameA, nameB);
+  
+  let feedbackSection = '';
+  if (approvedFeedback.length > 0) {
+    console.log('✅ Fandt ' + approvedFeedback.length + ' godkendt feedback for ' + type);
+    
+    feedbackSection = '\n\n=== VERIFICERET FEEDBACK FRA TIDLIGERE ANALYSER ===\n' +
+      'Følgende information er blevet verificeret af eksperter og SKAL respekteres i din analyse:\n\n' +
+      approvedFeedback.map(function(f) {
+        return '📌 Dækning: ' + f.category + '\n' +
+               '   Problem identificeret: ' + f.issue_type + '\n' +
+               '   Korrekt information: ' + f.comment + '\n' +
+               '   → Sørg for at din analyse reflekterer denne korrekte information!\n';
+      }).join('\n') + '\n';
+    
+    // Vis badge i UI
+    showFeedbackBadge(type, approvedFeedback.length);
+  }
+ 
+  // =================================================================
   // API CALL
   // =================================================================
-  const analysisPrompt = `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
+  const analysisPrompt = feedbackSection + `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
  
 === BETINGELSER FRA ${nameA} ===
 ${textA}
