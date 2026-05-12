@@ -1832,18 +1832,6 @@ Regler:
   }
 }
 
-function enableTypeTab(shortName) {
-  console.log('🔴 Enabling tab for:', shortName);
-  const tabBtn = document.getElementById('mtab-' + shortName);
-  if (tabBtn) {
-    tabBtn.disabled = false;
-    tabBtn.style.opacity = '1';
-    tabBtn.style.cursor = 'pointer';
-    tabBtn.innerHTML = TYPE_LABELS[type] + ' ✓';
-  }
-  renderTypeInTab(shortName + 'forsikring');
-}
-
 function enableTypeTab(type){
   // Map short name back to long name for TYPE_LABELS
   const TYPE_LABELS = {
@@ -1864,11 +1852,11 @@ function enableTypeTab(type){
   
   const tabBtn=document.getElementById('mtab-'+type);
   if(tabBtn){
-    tabBtn.disabled=false;
-    tabBtn.style.opacity='1';
-    tabBtn.style.cursor='pointer';
-    tabBtn.innerHTML=TYPE_LABELS[fullType]+' ✓';
-  }
+  tabBtn.disabled = false;
+  tabBtn.style.opacity = '1';
+  tabBtn.style.cursor = 'pointer';
+  tabBtn.innerHTML = TYPE_LABELS[fullType] + ' ✓';
+}
 renderTypeInTab(type);
 }
 
