@@ -493,6 +493,64 @@
 
   #authGuard { display: none; }
 
+  .employee-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+    background: var(--surface);
+  }
+
+  .employee-card:hover {
+    border-color: var(--green-light);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .employee-rank {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    color: var(--green);
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .employee-info {
+    flex: 1;
+  }
+
+  .employee-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .employee-dept {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .employee-stats {
+    text-align: right;
+  }
+
+  .employee-analyses {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--green);
+    margin-bottom: 2px;
+  }
+
+  .employee-cost {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
   .info-box {
     background: #EFF6FF;
     border: 1px solid #BFDBFE;
@@ -669,16 +727,31 @@
           </div>
         </div>
 
-        <!-- Sælger aktivitet -->
+        <!-- Mest aktive medarbejdere -->
         <div class="card">
           <div class="card-header">
             <div>
-              <h2>Sælger aktivitet</h2>
-              <p>Klik på sælgere for at se detaljer</p>
+              <h2>🏆 Mest aktive medarbejdere</h2>
+              <p>Baseret på antal analyser</p>
             </div>
           </div>
-          <div class="card-body" id="sellerActivity">
-            <div class="empty-state">Indlæser aktivitet...</div>
+          <div class="card-body">
+            <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
+              <input type="text" id="employeeSearch" placeholder="🔍 Søg medarbejder..." style="flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif;" oninput="filterEmployees()">
+              <select id="employeePeriod" onchange="loadActiveEmployees()" style="padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif;">
+                <option value="week">Denne uge</option>
+                <option value="month" selected>Denne måned</option>
+                <option value="all">Altid</option>
+              </select>
+            </div>
+            <div id="employeeList">
+              <div class="empty-state">Indlæser medarbejdere...</div>
+            </div>
+            <div id="showMoreContainer" style="text-align: center; margin-top: 16px; display: none;">
+              <button class="btn-secondary" onclick="showMoreEmployees()" id="showMoreBtn" style="padding: 10px 24px; font-size: 14px;">
+                ↓ Vis 5 mere
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1101,27 +1174,145 @@
 
     document.getElementById('statsAvgTime').textContent = '—';
 
-    const { data: loginHistory } = await sb
-      .from('login_history')
-      .select('*')
-      .order('logged_in_at', { ascending: false })
-      .limit(20);
+    // Load active employees
+    await loadActiveEmployees();
+  }
 
-    const activityContainer = document.getElementById('sellerActivity');
-    if (!loginHistory || loginHistory.length === 0) {
-      activityContainer.innerHTML = '<div class="empty-state">Ingen aktivitet endnu</div>';
+  let allEmployeeData = [];
+  let displayedCount = 5;
+
+  async function loadActiveEmployees() {
+    const period = document.getElementById('employeePeriod').value;
+    
+    let startDate;
+    const now = new Date();
+    
+    if (period === 'week') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (period === 'month') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
     } else {
-      activityContainer.innerHTML = loginHistory.map(h => `
-        <div class="activity-entry">
-          <div class="activity-dot"></div>
-          <div style="flex: 1;">
-            <div><strong>${h.full_name || h.email || 'Anonym'}</strong> loggede ind</div>
-            <div class="activity-user">Ingen afdeling</div>
-          </div>
-          <span class="activity-time">${formatDate(h.logged_in_at)}</span>
-        </div>
-      `).join('');
+      startDate = '2020-01-01T00:00:00.000Z'; // All time
     }
+
+    try {
+      // Fetch all analytics data for the period
+      const { data: analytics, error } = await sb
+        .from('analytics')
+        .select('user_id, event_type, cost_estimate')
+        .gte('timestamp', startDate)
+        .eq('event_type', 'analysis_completed');
+
+      if (error) throw error;
+
+      // Fetch all profiles
+      const { data: profiles } = await sb
+        .from('profiles')
+        .select('id, full_name, department');
+
+      if (!profiles) return;
+
+      // Group by user
+      const userStats = {};
+      
+      (analytics || []).forEach(a => {
+        if (!a.user_id) return;
+        if (!userStats[a.user_id]) {
+          userStats[a.user_id] = { analyses: 0, cost: 0 };
+        }
+        userStats[a.user_id].analyses++;
+        userStats[a.user_id].cost += (a.cost_estimate || 0);
+      });
+
+      // Combine with profile data
+      allEmployeeData = profiles
+        .map(p => ({
+          id: p.id,
+          name: p.full_name || p.email || 'Ukendt',
+          department: p.department || 'Ingen afdeling',
+          analyses: userStats[p.id]?.analyses || 0,
+          cost: userStats[p.id]?.cost || 0
+        }))
+        .filter(e => e.analyses > 0) // Only show users with analyses
+        .sort((a, b) => b.analyses - a.analyses); // Sort by analyses desc
+
+      displayedCount = 5;
+      renderEmployees();
+
+    } catch (error) {
+      console.error('Error loading active employees:', error);
+      document.getElementById('employeeList').innerHTML = '<div class="empty-state">Kunne ikke indlæse medarbejdere</div>';
+    }
+  }
+
+  function renderEmployees(filteredData = null) {
+    const data = filteredData || allEmployeeData;
+    const container = document.getElementById('employeeList');
+    const showMoreContainer = document.getElementById('showMoreContainer');
+    const showMoreBtn = document.getElementById('showMoreBtn');
+
+    if (data.length === 0) {
+      container.innerHTML = '<div class="empty-state">Ingen aktive medarbejdere i denne periode</div>';
+      showMoreContainer.style.display = 'none';
+      return;
+    }
+
+    const toShow = data.slice(0, displayedCount);
+    
+    container.innerHTML = toShow.map((emp, index) => `
+      <div class="employee-card">
+        <div class="employee-rank">${index + 1}</div>
+        <div class="employee-info">
+          <div class="employee-name">${emp.name}</div>
+          <div class="employee-dept">${emp.department}</div>
+        </div>
+        <div class="employee-stats">
+          <div class="employee-analyses">${emp.analyses} analyser</div>
+          <div class="employee-cost">${emp.cost.toFixed(0)} kr</div>
+        </div>
+      </div>
+    `).join('');
+
+    // Show/hide "Show more" button
+    if (displayedCount < data.length) {
+      showMoreContainer.style.display = 'block';
+      const remaining = data.length - displayedCount;
+      showMoreBtn.textContent = `↓ Vis ${Math.min(5, remaining)} mere`;
+    } else {
+      showMoreContainer.style.display = 'none';
+    }
+  }
+
+  function showMoreEmployees() {
+    displayedCount += 5;
+    const searchTerm = document.getElementById('employeeSearch').value.toLowerCase();
+    if (searchTerm) {
+      const filtered = allEmployeeData.filter(e => 
+        e.name.toLowerCase().includes(searchTerm) || 
+        e.department.toLowerCase().includes(searchTerm)
+      );
+      renderEmployees(filtered);
+    } else {
+      renderEmployees();
+    }
+  }
+
+  function filterEmployees() {
+    const searchTerm = document.getElementById('employeeSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+      displayedCount = 5;
+      renderEmployees();
+      return;
+    }
+
+    const filtered = allEmployeeData.filter(e => 
+      e.name.toLowerCase().includes(searchTerm) || 
+      e.department.toLowerCase().includes(searchTerm)
+    );
+
+    displayedCount = filtered.length; // Show all filtered results
+    renderEmployees(filtered);
   }
 
   async function loadFeedback() {
