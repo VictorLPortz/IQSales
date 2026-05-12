@@ -1634,8 +1634,7 @@ async function analyze() {
       </div>
       <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
       <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
-      ${typesToAnalyze.map(t => `<div id="tab-${t}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`).join('')}
-    </div>`;
+     ${typesToAnalyze.map(t => {const shortName = t.replace('forsikring','').toLowerCase(); return `<div id="tab-${shortName}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`;}).join('')}
 
   console.log('✅ Result HTML set, length:', resultDiv.innerHTML.length);
 
@@ -1836,44 +1835,23 @@ Regler:
   }
 }
 
-function enableTypeTab(shortName) {
-  console.log('🔴 Enabling tab for:', shortName);
+function enableTypeTab(type) {
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  console.log('🔴 Enabling tab for type:', type, '→ shortName:', shortName);
+  
   const tabBtn = document.getElementById('mtab-' + shortName);
   if (tabBtn) {
     tabBtn.disabled = false;
     tabBtn.style.opacity = '1';
     tabBtn.style.cursor = 'pointer';
-    tabBtn.innerHTML = TYPE_LABELS[shortName + 'forsikring'] + ' ✓';
+    tabBtn.innerHTML = TYPE_LABELS[type] + ' ✓';
+    console.log('✅ Tab button enabled:', tabBtn.id);
+  } else {
+    console.error('❌ Tab button not found: mtab-' + shortName);
   }
-  renderTypeInTab(shortName + 'forsikring');
-}
-
-function enableTypeTab(type){
-  // Map short name back to long name for TYPE_LABELS
-  const TYPE_LABELS = {
-  'hus': 'Husforsikring',
-  'bil': 'Bilforsikring',
-  'indbo': 'Indboforsikring',
-  'ulykke': 'Ulykkesforsikring',
-  'rejse': 'Rejseforsikring',
-  'hund': 'Hundeforsikring',
-  'fritidshus': 'Fritidshusforsikring',
-  'motorcykel': 'Motorcykelforsikring',
-  'lystfartøj': 'Lystfartøjsforsikring',
-  'campingvogn': 'Campingvognsforsikring',
-  'børneulykke': 'Børneulykkesforsikring',
-  'veteranerkøretøj': 'Veterankøretøjsforsikring'
-};
-  const fullType = TYPE_LABELS[type] || type;
   
-  const tabBtn=document.getElementById('mtab-'+type);
-  if(tabBtn){
-    tabBtn.disabled=false;
-    tabBtn.style.opacity='1';
-    tabBtn.style.cursor='pointer';
-    tabBtn.innerHTML=TYPE_LABELS[fullType]+' ✓';
-  }
-renderTypeInTab(type);
+  // Render the content into the tab
+  renderTypeInTab(type, allResults[shortName]);
 }
 
 
@@ -2411,10 +2389,8 @@ function generateCoverageHTML(data) {
   return summaryHtml + '<div class="coverage-grid">' + cardsHtml + '</div>';
 }
 
-function switchMultiTab(type){
-  console.log('🔴 Switching to tab:', type);
-  
-  const shortName = type;
+function switchMultiTab(shortName){
+  console.log('🔴 Switching to tab:', shortName);
   
   // Hide all tabs
   document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
@@ -2422,16 +2398,14 @@ function switchMultiTab(type){
   // Remove active from all buttons
   document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
   
-  // Show selected tab - try both naming conventions
-  const fullType = shortName.charAt(0).toUpperCase() + shortName.slice(1) + 'forsikring';
-  const tabElement = document.getElementById('tab-' + fullType) || 
-                     document.getElementById('tab-' + shortName);
+  // Show selected tab (now using shortName consistently)
+  const tabElement = document.getElementById('tab-' + shortName);
   
   if (tabElement) {
     tabElement.style.display = 'block';
     console.log('✅ Tab displayed:', tabElement.id);
   } else {
-    console.error('❌ Tab not found for:', shortName, fullType);
+    console.error('❌ Tab not found: tab-' + shortName);
     const availableTabs = Array.from(document.querySelectorAll('.multi-tab-content')).map(t => t.id);
     console.log('Available tabs:', availableTabs);
   }
@@ -2440,11 +2414,13 @@ function switchMultiTab(type){
   const btnElement = document.getElementById('mtab-' + shortName);
   if (btnElement) {
     btnElement.classList.add('active');
+    console.log('✅ Button activated:', btnElement.id);
   }
   
-  // Render content if not already done
+  // Render content if available
   if(allResults[shortName]) {
-    renderTypeInTab(shortName);
+    const fullType = shortName.charAt(0).toUpperCase() + shortName.slice(1) + 'forsikring';
+    renderTypeInTab(fullType, allResults[shortName]);
   }
 }
 
@@ -2455,13 +2431,28 @@ function switchMultiTab(type){
   document.getElementById('mtab-overview').classList.add('active');
 }
 
-function renderTypeInTab(type){
-  const container=document.getElementById('tab-'+type);
+function renderTypeInTab(type, data){
   const shortName = type.replace('forsikring', '').toLowerCase();
-  if(!container||!allResults[shortName])return;
+  const container = document.getElementById('tab-' + shortName);
   
-  const html = renderIndividualTab(type, allResults[shortName]);
-container.innerHTML = html;
+  console.log('🔵 renderTypeInTab called with type:', type, '→ shortName:', shortName);
+  console.log('🔵 Looking for container: tab-' + shortName);
+  
+  if(!container) {
+    console.error('❌ Container not found: tab-' + shortName);
+    return;
+  }
+  
+  // Use provided data or fall back to allResults
+  const resultData = data || allResults[shortName];
+  if(!resultData) {
+    console.error('❌ No data found for:', shortName);
+    return;
+  }
+  
+  console.log('✅ Rendering content into:', container.id);
+  const html = renderIndividualTab(type, resultData);
+  container.innerHTML = html;
   
   const subTabs = container.querySelectorAll('.sub-tab');
   subTabs.forEach(tab => {
