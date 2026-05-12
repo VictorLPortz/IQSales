@@ -1849,8 +1849,9 @@ function enableTypeTab(type){
   'veteranerkøretøj': 'Veterankøretøjsforsikring'
 };
   const fullType = TYPE_LABELS[type] || type;
-  
-  const tabBtn=document.getElementById('mtab-'+type);
+const shortName = type.replace('forsikring', '').toLowerCase();
+
+const tabBtn=document.getElementById('mtab-'+shortName);
   if(tabBtn){
   tabBtn.disabled = false;
   tabBtn.style.opacity = '1';
