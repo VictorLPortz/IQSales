@@ -791,7 +791,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
   <div id="setup-area">
     <div class="card">
-      <div class="section-lbl">1. Forsikringstyper <span style="font-weight:400;color:var(--muted)">(vælg op til 5)</span></div>
+      <div class="section-lbl">1. Forsikringstyper <span style="font-weight:400;color:var(--muted)">(vælg op til 8)</span></div>
       <div class="type-grid" style="grid-template-columns:repeat(6,1fr)">
         <button class="type-btn selected" data-type="Husforsikring" onclick="toggleType(this)"><span class="type-icon">🏡</span>Hus</button>
         <button class="type-btn" data-type="Bilforsikring" onclick="toggleType(this)"><span class="type-icon">🚗</span>Bil</button>
@@ -822,7 +822,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
           <div class="cdd" id="cdd-a">
             <div class="cdd-trigger" id="cdd-a-trigger" onclick="toggleCdd('a')">
               <div id="cdd-a-logo"></div>
-              <span class="cdd-label" id="cdd-a-label">Alm. Brand</span>
+              <span class="cdd-label" id="cdd-a-label" style="color:var(--muted)">Vælg selskab...</span>
               <span class="cdd-arrow"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></span>
             </div>
             <div class="cdd-menu" id="cdd-a-menu"></div>
@@ -841,7 +841,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
           <div class="cdd" id="cdd-b">
             <div class="cdd-trigger" id="cdd-b-trigger" onclick="toggleCdd('b')">
               <div id="cdd-b-logo"></div>
-              <span class="cdd-label" id="cdd-b-label">Tryg</span>
+              <span class="cdd-label" id="cdd-b-label" style="color:var(--muted)">Vælg selskab...</span>
               <span class="cdd-arrow"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></span>
             </div>
             <div class="cdd-menu" id="cdd-b-menu"></div>
@@ -973,16 +973,16 @@ function toggleFaq(i){const body=document.getElementById('faq-body-'+i);const ar
 const SUPABASE_URL='https://pnzpdgjstzuapgknagsa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
 
-const BRAND_COLORS={'Alm. Brand':{bg:'#00AEEF',text:'#fff',initials:'AB'},'Tryg':{bg:'#E2001A',text:'#fff',initials:'TR'},'Topdanmark':{bg:'#12205F',text:'#fff',initials:'TD'},'Codan':{bg:'#2B3FDB',text:'#fff',initials:'CO'},'IF Forsikring':{bg:'#1A56DB',text:'#fff',initials:'IF'},'Gjensidige':{bg:'#1B2473',text:'#fff',initials:'GJ'},'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},'Privatsikring':{bg:'#F5A623',text:'#fff',initials:'PS'},'Lærerstandens Brandforsikring':{bg:'#5B8DB8',text:'#fff',initials:'LB'},'GF Forsikring':{bg:'#2E8B2E',text:'#fff',initials:'GF'},'Vesta Forsikring':{bg:'#6EE7B7',text:'#1B4D3E',initials:'VE'},'Thisted Forsikring':{bg:'#1E5FA6',text:'#fff',initials:'TF'},'Runa Forsikring':{bg:'#D41A3A',text:'#fff',initials:'RU'},'Bauta Forsikring':{bg:'#4DB89A',text:'#fff',initials:'BA'},'Alka':{bg:'#5C5757',text:'#fff',initials:'AL'},'Vejle Brand':{bg:'#1E4D2B',text:'#fff',initials:'VB'},'Vestjylland Forsikring':{bg:'#2D4B7A',text:'#fff',initials:'VJ'},'Købstedernes Forsikring':{bg:'#C8102E',text:'#fff',initials:'KF'},'Jyske Forsikring':{bg:'#1A4D2E',text:'#fff',initials:'JF'},'Aros Forsikring':{bg:'#4A2D82',text:'#fff',initials:'AR'},'Nærsikring':{bg:'#4A90C4',text:'#fff',initials:'NS'},'Bornholms Brandforsikring':{bg:'#5C5757',text:'#fff',initials:'BB'},'Spira Forsikring':{bg:'#2D6A2D',text:'#fff',initials:'SP'},'Concordia Forsikring':{bg:'#1A56A0',text:'#fff',initials:'CF'},'IDA Forsikring':{bg:'#5B7499',text:'#fff',initials:'ID'},'TJM Forsikring':{bg:'#E85D0A',text:'#fff',initials:'TJ'},'Storstrom Forsikring':{bg:'#1A5C1A',text:'#fff',initials:'ST'},'OK Forsikring':{bg:'#C8102E',text:'#fff',initials:'OK'},'FDM Forsikring':{bg:'#1A5C8A',text:'#fff',initials:'FD'},'Himmerland Forsikring':{bg:'#C8102E',text:'#fff',initials:'HI'},'Forsia Forsikring':{bg:'#1A3A6B',text:'#fff',initials:'SJ'},'Frida Forsikring':{bg:'#E85D9A',text:'#fff',initials:'FR'},'Dansk Bilforsikring':{bg:'#1A5C8A',text:'#fff',initials:'DB'}};
+const BRAND_COLORS={'Alm. Brand':{bg:'#00AEEF',text:'#fff',initials:'AB'},'Tryg':{bg:'#E2001A',text:'#fff',initials:'TR'},'Topdanmark':{bg:'#12205F',text:'#fff',initials:'TD'},'Codan':{bg:'#2B3FDB',text:'#fff',initials:'CO'},'IF Forsikring':{bg:'#1A56DB',text:'#fff',initials:'IF'},'Gjensidige':{bg:'#1B2473',text:'#fff',initials:'GJ'},'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},'Privatsikring':{bg:'#F5A623',text:'#fff',initials:'PS'},'Lærerstandens Brandforsikring':{bg:'#5B8DB8',text:'#fff',initials:'LB'},'GF Forsikring':{bg:'#2E8B2E',text:'#fff',initials:'GF'},'Vesta Forsikring':{bg:'#6EE7B7',text:'#1B4D3E',initials:'VE'},'Thisted Forsikring':{bg:'#1E5FA6',text:'#fff',initials:'TF'},'Runa Forsikring':{bg:'#D41A3A',text:'#fff',initials:'RU'},'Bauta Forsikring':{bg:'#4DB89A',text:'#fff',initials:'BA'},'Alka':{bg:'#5C5757',text:'#fff',initials:'AL'},'Vejle Brand':{bg:'#1E4D2B',text:'#fff',initials:'VB'},'Vestjylland Forsikring':{bg:'#2D4B7A',text:'#fff',initials:'VJ'},'Købstedernes Forsikring':{bg:'#C8102E',text:'#fff',initials:'KF'},'Jyske Forsikring':{bg:'#1A4D2E',text:'#fff',initials:'JF'},'Aros Forsikring':{bg:'#4A2D82',text:'#fff',initials:'AR'},'Nærsikring':{bg:'#4A90C4',text:'#fff',initials:'NS'},'Bornholms Brandforsikring':{bg:'#5C5757',text:'#fff',initials:'BB'},'Spira Forsikring':{bg:'#2D6A2D',text:'#fff',initials:'SP'},'Concordia Forsikring':{bg:'#1A56A0',text:'#fff',initials:'CF'},'IDA Forsikring':{bg:'#5B7499',text:'#fff',initials:'ID'},'TJM Forsikring':{bg:'#E85D0A',text:'#fff',initials:'TJ'},'Storstrom Forsikring':{bg:'#1A5C1A',text:'#fff',initials:'ST'},'OK Forsikring':{bg:'#C8102E',text:'#fff',initials:'OK'},'FDM Forsikring':{bg:'#1A5C8A',text:'#fff',initials:'FD'},'Himmerland Forsikring':{bg:'#C8102E',text:'#fff',initials:'HI'},'Forsia Forsikring':{bg:'#1A3A6B',text:'#fff',initials:'SJ'},'Frida Forsikring':{bg:'#E85D9A',text:'#fff',initials:'FR'},'Dansk Bilforsikring':{bg:'#1A5C8A',text:'#fff',initials:'DB'},'Gavmild':{bg:'#7FE6C3',text:'#2D3E3F',initials:'GA'}};
 
-let selectedTypes=['Husforsikring'],docsA={},docsB={},allResults={};
+let selectedTypes=[],docsA={},docsB={},allResults={};
 
 function getBrandEl(name,size=32,id=''){const brand=BRAND_COLORS[name];const initials=brand?brand.initials:name.substring(0,2).toUpperCase();const bg=brand?brand.bg:'#E3E1D9';const color=brand?brand.text:'#7A7870';const r=size>24?8:4;const idAttr=id?` id="${id}"`:'';return`<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;}
 function makeFallback(name,size,id){return getBrandEl(name,size,id);}
 function logoHtml(n,size=28){return getBrandEl(n,size);}
 
-const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring','Privatsikring','Lærerstandens Brandforsikring','GF Forsikring','Vesta Forsikring','Thisted Forsikring','Runa Forsikring','Bauta Forsikring','Alka','Vejle Brand','Vestjylland Forsikring','Købstedernes Forsikring','Jyske Forsikring','Aros Forsikring','Nærsikring','Bornholms Brandforsikring','Spira Forsikring','Concordia Forsikring','IDA Forsikring','TJM Forsikring','Storstrom Forsikring','OK Forsikring','FDM Forsikring','Himmerland Forsikring','Forsia Forsikring','Frida Forsikring','Dansk Bilforsikring'];
-const cddState={a:'Alm. Brand',b:'Tryg'};
+const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring','Privatsikring','Lærerstandens Brandforsikring','GF Forsikring','Vesta Forsikring','Thisted Forsikring','Runa Forsikring','Bauta Forsikring','Alka','Vejle Brand','Vestjylland Forsikring','Købstedernes Forsikring','Jyske Forsikring','Aros Forsikring','Nærsikring','Bornholms Brandforsikring','Spira Forsikring','Concordia Forsikring','IDA Forsikring','TJM Forsikring','Storstrom Forsikring','OK Forsikring','FDM Forsikring','Himmerland Forsikring','Forsia Forsikring','Frida Forsikring','Dansk Bilforsikring','Gavmild'];
+const cddState={a:'',b:''};
   
 let fbState={};
 function openFb(category,companyA,companyB,type,side){
