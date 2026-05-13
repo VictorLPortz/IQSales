@@ -746,6 +746,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   }
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  // Configure PDF.js worker
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
 </head>
 <body>
 <header>
@@ -1622,26 +1629,66 @@ function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+
 async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getUserId()})});}catch(e){}}
 
  async function extractPdfText(base64data) {
-  // Decode base64 to raw text
+  try {
+    // Use PDF.js for proper PDF parsing
+    if (typeof pdfjsLib !== 'undefined') {
+      console.log('🔵 Using PDF.js for extraction');
+      
+      // Convert base64 to Uint8Array
+      const binaryString = atob(base64data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Load PDF with PDF.js
+      const loadingTask = pdfjsLib.getDocument({ data: bytes });
+      const pdf = await loadingTask.promise;
+      
+      console.log('📄 PDF loaded, pages:', pdf.numPages);
+      
+      // Extract text from all pages
+      let fullText = '';
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      // Clean up text
+      fullText = fullText.replace(/\s+/g, ' ').trim();
+      
+      console.log('✅ PDF.js extraction complete, length:', fullText.length);
+      
+      // Truncate if too long
+      const MAX_CHARS = 100000;
+      if (fullText.length > MAX_CHARS) {
+        fullText = fullText.substring(0, MAX_CHARS) + '\n[afkortet]';
+      }
+      
+      return fullText;
+    }
+  } catch (e) {
+    console.warn('⚠️ PDF.js extraction failed, falling back to simple method:', e.message);
+  }
+  
+  // Fallback: Simple extraction (original method)
+  console.log('🔶 Using fallback extraction method');
   const binary = atob(base64data);
   
-  // PDF files have text embedded - just extract it
-  // Remove binary junk and keep readable text
   let text = '';
   for (let i = 0; i < binary.length; i++) {
     const char = binary.charCodeAt(i);
-    // Keep printable characters and common Danish letters
     if ((char >= 32 && char <= 126) || char >= 128) {
       text += binary[i];
     } else if (char === 10 || char === 13) {
-      text += ' '; // Replace newlines with spaces
+      text += ' ';
     }
   }
   
-  // Clean up multiple spaces
   text = text.replace(/\s+/g, ' ').trim();
   
-  // Truncate if too long
   const MAX_CHARS = 100000;
   if (text.length > MAX_CHARS) {
     text = text.substring(0, MAX_CHARS) + '\n[afkortet]';
