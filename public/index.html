@@ -159,6 +159,9 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .fb-modal{background:var(--surface);border-radius:var(--r);padding:1.25rem;width:340px;max-width:90vw;border:1px solid var(--border)}
 .fb-modal-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px}
 .fb-modal-cat{font-size:12px;color:var(--muted);margin-bottom:1rem}
+.scope-option:hover{border-color:var(--accent2)!important;background:#F9FAFB}
+.scope-option input[type="radio"]:checked + div{color:var(--accent2)}
+.scope-option:has(input[type="radio"]:checked){border-color:var(--accent2)!important;background:#F0FDF4}
 .fb-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:1rem}
 .fb-type-btn{padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;text-align:left;transition:all .15s}
 .fb-type-btn:hover{border-color:var(--danger);color:var(--danger)}
@@ -894,6 +897,46 @@ FAQS.forEach((faq,i)=>{
 function toggleFaq(i){const body=document.getElementById('faq-body-'+i);const arrow=document.getElementById('faq-arrow-'+i);const open=body.style.display==='block';body.style.display=open?'none':'block';arrow.style.transform=open?'':'rotate(180deg)';}
 </script>
 
+<!-- Scope Selection Modal (Step 1) -->
+<div class="fb-modal-bg" id="fb-scope-modal-bg">
+  <div class="fb-modal" style="max-width: 500px;">
+    <div class="fb-modal-title">Hvem gælder denne feedback for?</div>
+    <div class="fb-modal-cat" id="fb-scope-cat" style="margin-bottom: 20px;"></div>
+    
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <label style="display: flex; align-items: start; padding: 14px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s;" class="scope-option">
+        <input type="radio" name="feedbackScope" value="specific" style="margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 4px;">Kun denne sammenligning</div>
+          <div style="font-size: 12px; color: var(--muted);" id="scope-specific-text">—</div>
+        </div>
+      </label>
+      
+      <label style="display: flex; align-items: start; padding: 14px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s;" class="scope-option">
+        <input type="radio" name="feedbackScope" value="company_a" checked style="margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 4px;">Alle analyser med <span id="scope-companyA-name">—</span></div>
+          <div style="font-size: 12px; color: var(--muted);">Anbefalet for generel information om selskabet</div>
+        </div>
+      </label>
+      
+      <label style="display: flex; align-items: start; padding: 14px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s;" class="scope-option">
+        <input type="radio" name="feedbackScope" value="company_b" style="margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 4px;">Alle analyser med <span id="scope-companyB-name">—</span></div>
+          <div style="font-size: 12px; color: var(--muted);">Anbefalet for generel information om selskabet</div>
+        </div>
+      </label>
+    </div>
+    
+    <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
+      <button class="fb-cancel" onclick="closeScopeFb()">Annuller</button>
+      <button class="fb-send" onclick="proceedToFeedbackForm()" style="padding: 10px 24px;">Næste →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback Details Modal (Step 2) -->
 <div class="fb-modal-bg" id="fb-modal-bg">
   <div class="fb-modal">
     <div class="fb-modal-title">Giv feedback på dækning</div>
@@ -942,13 +985,49 @@ const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjens
 const cddState={a:'Alm. Brand',b:'Tryg'};
   
 let fbState={};
-function openFb(category,companyA,companyB,type,side){fbState={category,companyA,companyB,type,side:side||'a',issueType:''};const sideLabel=side==='b'?' (→ '+companyB+')':'';document.getElementById('fb-cat').textContent=category+sideLabel;document.getElementById('fb-comment').value='';document.getElementById('fb-success').classList.add('hidden');document.getElementById('fb-actions').style.display='flex';document.querySelectorAll('.fb-type-btn').forEach(b=>b.classList.remove('active'));document.getElementById('fb-modal-bg').classList.add('open');}
+function openFb(category,companyA,companyB,type,side){
+  fbState={category,companyA,companyB,type,side:side||'a',issueType:'',scopeType:'company_a'};
+  
+  // Populate scope modal
+  document.getElementById('fb-scope-cat').textContent=category;
+  document.getElementById('scope-specific-text').textContent=companyA+' vs '+companyB;
+  document.getElementById('scope-companyA-name').textContent=companyA;
+  document.getElementById('scope-companyB-name').textContent=companyB;
+  
+  // Reset radio selection
+  document.querySelector('input[name="feedbackScope"][value="company_a"]').checked=true;
+  
+  // Open scope selection modal (step 1)
+  document.getElementById('fb-scope-modal-bg').classList.add('open');
+}
+
+function closeScopeFb(){
+  document.getElementById('fb-scope-modal-bg').classList.remove('open');
+}
+
+function proceedToFeedbackForm(){
+  // Get selected scope
+  const selectedScope=document.querySelector('input[name="feedbackScope"]:checked').value;
+  fbState.scopeType=selectedScope;
+  
+  // Close scope modal
+  document.getElementById('fb-scope-modal-bg').classList.remove('open');
+  
+  // Open feedback details modal (step 2)
+  const sideLabel=fbState.side==='b'?' (→ '+fbState.companyB+')':'';
+  document.getElementById('fb-cat').textContent=fbState.category+sideLabel;
+  document.getElementById('fb-comment').value='';
+  document.getElementById('fb-success').classList.add('hidden');
+  document.getElementById('fb-actions').style.display='flex';
+  document.querySelectorAll('.fb-type-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('fb-modal-bg').classList.add('open');
+}
 function closeFb(){document.getElementById('fb-modal-bg').classList.remove('open');}
 function setFbType(btn){document.querySelectorAll('.fb-type-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');fbState.issueType=btn.dataset.type;}
 async function sendFb(){
   if(!fbState.issueType){alert('Vælg venligst en fejltype.');return;}
   const comment=document.getElementById('fb-comment').value.trim();
-  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:fbState.companyA,company_b:fbState.companyB,insurance_type:fbState.type,category:fbState.category,issue_type:fbState.issueType,comment:(comment||'')+(fbState.side==='b'?' [Feedback om '+fbState.companyB+']':''),user_id:getUserId(),status:'pending'})});}catch(e){}
+  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:fbState.companyA,company_b:fbState.companyB,insurance_type:fbState.type,category:fbState.category,issue_type:fbState.issueType,comment:(comment||'')+(fbState.side==='b'?' [Feedback om '+fbState.companyB+']':''),user_id:getUserId(),status:'pending',scope_type:fbState.scopeType})});}catch(e){}
   document.getElementById('fb-success').classList.remove('hidden');
   document.getElementById('fb-actions').style.display='none';
   setTimeout(()=>closeFb(),1500);
@@ -957,11 +1036,9 @@ async function sendFb(){
 // Fetch approved feedback for use in analysis
 async function fetchApprovedFeedback(type, companyA, companyB) {
   try {
+    // Fetch all approved feedback for this insurance type
     const res = await fetch(
-      SUPABASE_URL + '/rest/v1/feedback?insurance_type=eq.' + type + 
-      '&company_a=eq.' + companyA + 
-      '&company_b=eq.' + companyB + 
-      '&status=eq.approved',
+      SUPABASE_URL + '/rest/v1/feedback?insurance_type=eq.' + type + '&status=eq.approved',
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -970,7 +1047,25 @@ async function fetchApprovedFeedback(type, companyA, companyB) {
       }
     );
     if (!res.ok) return [];
-    return await res.json();
+    const allFeedback = await res.json();
+    
+    // Filter to match scopes:
+    // 1. specific: exact match on both companies
+    // 2. company_a: matches company_a (regardless of company_b)
+    // 3. company_b: matches company_b (regardless of company_a)
+    const matchingFeedback = allFeedback.filter(f => {
+      if (f.scope_type === 'specific') {
+        return f.company_a === companyA && f.company_b === companyB;
+      } else if (f.scope_type === 'company_a') {
+        return f.company_a === companyA;
+      } else if (f.scope_type === 'company_b') {
+        return f.company_b === companyB;
+      }
+      // Legacy feedback without scope_type defaults to specific matching
+      return f.company_a === companyA && f.company_b === companyB;
+    });
+    
+    return matchingFeedback;
   } catch(e) {
     console.error('Could not fetch approved feedback:', e);
     return [];
