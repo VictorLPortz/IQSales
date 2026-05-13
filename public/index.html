@@ -1642,7 +1642,7 @@ async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyse
   text = text.replace(/\s+/g, ' ').trim();
   
   // Truncate if too long
-  const MAX_CHARS = 60000;
+  const MAX_CHARS = 100000;
   if (text.length > MAX_CHARS) {
     text = text.substring(0, MAX_CHARS) + '\n[afkortet]';
   }
@@ -1921,7 +1921,7 @@ async function analyzeType(type, nameA, nameB) {
   }
  
   // Truncate if too long
-  const MAX_CHARS = 60000;
+  const MAX_CHARS = 100000;
   if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
   if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
  
