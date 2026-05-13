@@ -1,8 +1,3 @@
-// ==========================================
-// api/compare.js
-// Sammenligner to forsikringsselskaber
-// ==========================================
-
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
@@ -16,36 +11,90 @@ export default async function handler(req, res) {
 
   try {
     const { prompt } = req.body;
-
+    
     if (!prompt) {
-      return res.status(400).json({
-        error: 'Missing prompt'
-      });
+      return res.status(400).json({ error: 'Prompt required' });
     }
 
-    console.log('🔍 Comparing insurance companies with prompt length:', prompt.length);
-
-    // Send til Claude
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 16000,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8000,
+      system: `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
+
+# DIN OPGAVE
+Analyser de to sæt forsikringsbetingelser MEGET nøje og identificer præcist hvad hvert selskab dækker og IKKE dækker.
+
+# KRITISKE REGLER FOR SAMMENLIGNING
+
+## ✅ REGEL 1: Højere beløb = Fordel
+Hvis Selskab A dækker 50.000 kr og Selskab B dækker 100.000 kr → winner=b
+
+## ✅ REGEL 2: Kun én nævner dækningen = Fordel
+Hvis Selskab A nævner "blæsevejr" og Selskab B ikke gør → winner=a
+VIGTIGT: Dette gælder MEDMINDRE Selskab B eksplicit undtager det.
+
+## ✅ REGEL 3: Bedre vilkår = Fordel
+Lavere selvrisiko, længere periode, bredere geografi = Fordel
+
+## ⚖️ REGEL 4: Vage beløb = Equal
+"50.000 kr" vs "fremgår af police" → winner=equal (kan ikke sammenlignes)
+
+## Status-definitioner
+- **yes**: Dækkes eksplicit med konkrete beløb/vilkår
+- **partial**: Dækkes med begrænsninger (kræver tilvalg, geografisk, tidsmæssigt)
+- **no**: Eksplicit fravalgt eller undtaget
+- **inib**: Ikke nævnt i betingelserne (betyder IKKE at det ikke dækkes)
+
+## Winner-logik
+- **winner=a**: A er bedre (højere beløb, bedre vilkår, eller A nævner det/B gør ikke)
+- **winner=b**: B er bedre (højere beløb, bedre vilkår, eller B nævner det/A gør ikke)
+- **winner=equal**: Lige gode, eller ikke sammenlignelige
+
+# EKSEMPLER
+
+**Eksempel 1: Klar fordel**
+A: "Vejhjælp op til 100 km"
+B: "Vejhjælp op til 50 km"
+→ winner=a (dobbelt så langt)
+
+**Eksempel 2: Kun én nævner**
+A: "Blæsevejr dækket"
+B: [nævner ikke]
+→ winner=a, b_status=inib
+
+**Eksempel 3: Vagt beløb**
+A: "25.000 kr"
+B: "fremgår af police"
+→ winner=equal
+
+**Eksempel 4: Undtagelse**
+A: "Kosmetisk skade dækket"
+B: "Kosmetisk skade undtaget"
+→ winner=a, b_status=no
+
+# VIGTIGE PÅMINDELSER
+1. Læs HELE betingelserne nøje
+2. Brug konkrete beløb fra teksten
+3. Vær præcis med vilkår
+4. Hvis begge er lige gode, sig det
+5. Find 8-10 vigtige dækningspunkter
+6. Fokuser på hvad kunden faktisk ville bekymre sig om
+
+Returner KUN valid JSON uden markdown backticks.`,
       messages: [{
         role: 'user',
         content: prompt
       }]
     });
 
-    console.log('✅ Claude response received');
-
     return res.status(200).json({
-      content: message.content,
-      usage: message.usage
+      content: message.content
     });
 
   } catch (error) {
-    console.error('❌ Comparison failed:', error);
-    return res.status(500).json({
-      error: error.message
+    console.error('API Error:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Analysis failed'
     });
   }
 }
