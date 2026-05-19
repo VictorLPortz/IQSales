@@ -139,7 +139,7 @@ async function regenerateSingleCache(cache) {
   });
 
   // 5. Parse response
-  const txt = message.content.map(i => i.type === 'text' ? i.text : '').join('\n');
+  const txt = message.content.map(function(i) { return i.type === 'text' ? i.text : ''; }).join('\n');
   const m = txt.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
   
   if (!m) {
@@ -183,7 +183,7 @@ ${textB.substring(0, 100000)}
 
   if (feedbacks.length > 0) {
     prompt += `\n\nGODKENDT FEEDBACK (VIGTIGT - tag højde for dette):\n`;
-    feedbacks.forEach((f, i) => {
+    feedbacks.forEach(function(f, i) {
       prompt += `${i + 1}. ${f.category}: ${f.comment}\n`;
     });
   }
