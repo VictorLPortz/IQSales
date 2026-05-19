@@ -1,14 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -24,17 +21,22 @@ export default async function handler(req, res) {
 
     console.log(`🔄 Starting regeneration for ${insurance_type}...`);
 
-    // Find all caches for this insurance type
-    const { data: caches, error: cacheError } = await supabase
-      .from('analysis_cache')
-      .select('*')
-      .eq('insurance_type', insurance_type);
+    // Find all caches for this insurance type using REST API
+    const cachesResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/analysis_cache?insurance_type=eq.${insurance_type}&select=*`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
 
-    if (cacheError) {
-      console.error('Error fetching caches:', cacheError);
-      return res.status(500).json({ error: 'Failed to fetch caches' });
+    if (!cachesResponse.ok) {
+      throw new Error('Failed to fetch caches');
     }
 
+    const caches = await cachesResponse.json();
     console.log(`📊 Found ${caches.length} caches to regenerate`);
 
     // Regenerate each cache
@@ -70,40 +72,59 @@ export default async function handler(req, res) {
 }
 
 async function regenerateSingleCache(cache) {
-  // 1. Hent PDFs fra insurance_terms
-  const { data: pdfA, error: errorA } = await supabase
-    .from('insurance_terms')
-    .select('full_text, pdf_hash')
-    .eq('selskab', cache.company_a)
-    .eq('produkt_type', cache.insurance_type)
-    .single();
+  // 1. Hent PDFs fra insurance_terms using REST API
+  const pdfAResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/insurance_terms?selskab=eq.${encodeURIComponent(cache.company_a)}&produkt_type=eq.${encodeURIComponent(cache.insurance_type)}&select=full_text,pdf_hash`,
+    {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    }
+  );
 
-  const { data: pdfB, error: errorB } = await supabase
-    .from('insurance_terms')
-    .select('full_text, pdf_hash')
-    .eq('selskab', cache.company_b)
-    .eq('produkt_type', cache.insurance_type)
-    .single();
+  const pdfBResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/insurance_terms?selskab=eq.${encodeURIComponent(cache.company_b)}&produkt_type=eq.${encodeURIComponent(cache.insurance_type)}&select=full_text,pdf_hash`,
+    {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    }
+  );
 
-  if (errorA || errorB || !pdfA || !pdfB) {
+  if (!pdfAResponse.ok || !pdfBResponse.ok) {
+    throw new Error('PDFs not found in insurance_terms');
+  }
+
+  const [pdfA] = await pdfAResponse.json();
+  const [pdfB] = await pdfBResponse.json();
+
+  if (!pdfA || !pdfB) {
     throw new Error('PDFs not found in insurance_terms');
   }
 
   // 2. Hent godkendt feedback
-  const { data: feedbacks } = await supabase
-    .from('feedback')
-    .select('*')
-    .eq('insurance_type', cache.insurance_type)
-    .eq('status', 'approved');
+  const feedbackResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(cache.insurance_type)}&status=eq.approved&select=*`,
+    {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    }
+  );
 
-  // 3. Byg prompt (samme som i index.html)
+  const feedbacks = feedbackResponse.ok ? await feedbackResponse.json() : [];
+
+  // 3. Byg prompt
   const prompt = buildAnalysisPrompt(
     cache.company_a,
     cache.company_b,
     cache.insurance_type,
     pdfA.full_text,
     pdfB.full_text,
-    feedbacks || []
+    feedbacks
   );
 
   // 4. Kald Claude API
@@ -127,16 +148,25 @@ async function regenerateSingleCache(cache) {
 
   const parsed = JSON.parse(m[0]);
 
-  // 6. Opdater cache
-  const { error: updateError } = await supabase
-    .from('analysis_cache')
-    .update({ 
-      result: parsed,
-      created_at: new Date().toISOString() // Update timestamp
-    })
-    .eq('id', cache.id);
+  // 6. Opdater cache using REST API
+  const updateResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/analysis_cache?id=eq.${cache.id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ 
+        result: parsed,
+        created_at: new Date().toISOString()
+      })
+    }
+  );
 
-  if (updateError) {
+  if (!updateResponse.ok) {
     throw new Error('Failed to update cache');
   }
 }
