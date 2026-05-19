@@ -1385,6 +1385,19 @@
   }
 
   async function approveFeedback(id) {
+    // Hent feedback først for at få insurance_type
+    const { data: feedback, error: fetchError } = await sb
+      .from('feedback')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      showToast('Kunne ikke hente feedback', 'error');
+      return;
+    }
+
+    // Godkend feedback
     const { error } = await sb
       .from('feedback')
       .update({ status: 'approved' })
@@ -1396,7 +1409,30 @@
     }
 
     showToast('✅ Feedback godkendt!', 'success');
+    
+    // Start background regeneration
+    regenerateAnalysesInBackground(feedback.insurance_type);
+    
     await loadFeedback();
+  }
+
+  async function regenerateAnalysesInBackground(insuranceType) {
+    try {
+      showToast('🔄 Opdaterer analyser i baggrunden...', 'info');
+      
+      // Kald server endpoint
+      const response = await fetch('/api/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ insurance_type: insuranceType })
+      });
+
+      if (!response.ok) {
+        console.error('Regeneration failed:', await response.text());
+      }
+    } catch (error) {
+      console.error('Regeneration error:', error);
+    }
   }
 
   async function rejectFeedback(id) {
