@@ -628,11 +628,6 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   color: #791F1F;
 }
 
-.status-partial {
-  background: #FAEEDA;
-  color: #633806;
-}
-
 .status-inib {
   background: #F1EFE8;
   color: #5F5E5A;
@@ -2017,9 +2012,9 @@ Returner KUN et JSON-objekt uden markdown:
   "coverage": [
     {
       "category": "Dækningskategori",
-      "a_status": "yes|no|partial|inib",
+      "a_status": "yes|no|inib",
       "a_detail": "Præcis dækning fra ${nameA} med beløb og vilkår.",
-      "b_status": "yes|no|partial|inib",
+      "b_status": "yes|no|inib",
       "b_detail": "Præcis dækning fra ${nameB} med beløb og vilkår.",
       "winner": "a|b|equal",
       "sales_tip": "Max 1 sætning. Kun hvis winner=a. Ellers tom streng.",
@@ -2037,7 +2032,8 @@ Returner KUN et JSON-objekt uden markdown:
 }
  
 Regler:
-- inib = ikke nævnt i betingelserne, no = eksplicit undtaget — brug KUN no hvis dækningen eksplicit er fravalgt eller afvist. Hvis dækningen kræver tilvalg, har geografiske begrænsninger eller er delvist dækket skal du bruge partial i stedet for no
+- yes = Dækkes eksplicit med konkrete vilkår. no = Eksplicit undtaget eller udelukket. inib = INIB (Ikke Nævnt I Betingelserne) - dækningen nævnes slet ikke i betingelserne.
+- VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger, brug "yes" og beskriv begrænsningen i detail-feltet.
 - top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
 - top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
 - winner=a automatisk hvis b_status=no eller inib
@@ -2291,12 +2287,8 @@ function enableTypeTab(type){
             <span>Undtaget</span>
           </div>
           <div class="badge-legend-item">
-            <div class="badge-legend-icon" style="background: #FAEEDA; color: #633806; border: 1px solid #F4D9A6;">◐</div>
-            <span>Delvist</span>
-          </div>
-          <div class="badge-legend-item">
             <div class="badge-legend-icon" style="background: #F1EFE8; color: #5F5E5A; border: 1px solid #E3E1D9;">?</div>
-            <span>Ikke nævnt</span>
+            <span>INIB</span>
           </div>
         </div>
       </div>
@@ -2468,12 +2460,8 @@ function generateCoverageHTML(data) {
         <span>Undtaget</span>
       </div>
       <div class="badge-legend-item">
-        <div class="badge-legend-icon" style="background: #FAEEDA; color: #633806; border: 1px solid #F4D9A6;">◐</div>
-        <span>Delvist</span>
-      </div>
-      <div class="badge-legend-item">
         <div class="badge-legend-icon" style="background: #F1EFE8; color: #5F5E5A; border: 1px solid #E3E1D9;">?</div>
-        <span>Ikke nævnt</span>
+        <span>INIB</span>
       </div>
     </div>
   `;
@@ -2484,7 +2472,7 @@ function generateCoverageHTML(data) {
 function getStatusIcon(status) {
   if (status === 'yes') return '✓';
   if (status === 'no') return '✗';
-  if (status === 'partial') return '◐';
+  // partial removed
   if (status === 'inib') return '?';
   return '−';
 }
@@ -2492,15 +2480,15 @@ function getStatusIcon(status) {
 function getStatusLabel(status) {
   if (status === 'yes') return 'Dækket';
   if (status === 'no') return 'Undtaget';
-  if (status === 'partial') return 'Delvist';
-  if (status === 'inib') return 'Ikke nævnt';
+  // partial removed
+  if (status === 'inib') return 'INIB';
   return 'Ukendt';
 }
 
 function getStatusBg(status) {
   if (status === 'yes') return '#EAF3DE';
   if (status === 'no') return '#FCEBEB';
-  if (status === 'partial') return '#FAEEDA';
+  // partial removed
   if (status === 'inib') return '#F1EFE8';
   return '#F8F9FA';
 }
@@ -2508,7 +2496,7 @@ function getStatusBg(status) {
 function getStatusColor(status) {
   if (status === 'yes') return '#3B6D11';
   if (status === 'no') return '#791F1F';
-  if (status === 'partial') return '#633806';
+  // partial removed
   if (status === 'inib') return '#5F5E5A';
   return '#6C757D';
 }
@@ -2516,7 +2504,7 @@ function getStatusColor(status) {
 function getStatusBorder(status) {
   if (status === 'yes') return '#C6E5B3';
   if (status === 'no') return '#F5C6CB';
-  if (status === 'partial') return '#F4D9A6';
+  // partial removed
   if (status === 'inib') return '#E3E1D9';
   return '#DEE2E6';
 }
@@ -2524,7 +2512,7 @@ function getStatusBorder(status) {
 function getStatusIcon(status) {
   if (status === 'yes') return '✓';
   if (status === 'no') return '✗';
-  if (status === 'partial') return '◐';
+  // partial removed
   if (status === 'inib') return '?';
   return '−';
 }
@@ -2532,15 +2520,15 @@ function getStatusIcon(status) {
 function getStatusLabel(status) {
   if (status === 'yes') return 'Dækket';
   if (status === 'no') return 'Undtaget';
-  if (status === 'partial') return 'Delvist';
-  if (status === 'inib') return 'Ikke nævnt';
+  // partial removed
+  if (status === 'inib') return 'INIB';
   return 'Ukendt';
 }
 
 function getStatusBg(status) {
   if (status === 'yes') return '#EAF3DE';
   if (status === 'no') return '#FCEBEB';
-  if (status === 'partial') return '#FAEEDA';
+  // partial removed
   if (status === 'inib') return '#F1EFE8';
   return '#F1EFE8';
 }
@@ -2548,7 +2536,7 @@ function getStatusBg(status) {
 function getStatusColor(status) {
   if (status === 'yes') return '#3B6D11';
   if (status === 'no') return '#791F1F';
-  if (status === 'partial') return '#633806';
+  // partial removed
   if (status === 'inib') return '#5F5E5A';
   return '#5F5E5A';
 }
@@ -2556,7 +2544,7 @@ function getStatusColor(status) {
   function getStatusBorder(status) {
   if (status === 'yes') return '#C6E5B3';
   if (status === 'no') return '#F5C6CB';
-  if (status === 'partial') return '#F4D9A6';
+  // partial removed
   if (status === 'inib') return '#E3E1D9';
   return '#DEE2E6';
 }
@@ -2759,7 +2747,7 @@ container.innerHTML = html;
 
 function ico(s){if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;if(s==='no')return`<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='inib')return`<svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="8.5" r="1" fill="#92400E"/></svg>`;return`<svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>`;}
 function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':'dp';}
-function inibBadge(type){const label=type==='inib'?'Ikke nævnt':'Undtaget';const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;}
+function inibBadge(type){const label=type==='inib'?'INIB':'Undtaget';const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;}
 
 function buildResultHtml(d,prefs){
   prefs=prefs||{favorites:[],sort_order:[]};
@@ -2819,7 +2807,7 @@ function buildResultHtml(d,prefs){
   return`<div class="tabs"><button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button><button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button><button class="tab" id="t3" onclick="sw('send')">Send til kunde</button></div>
 <div class="sum-bar"><strong>${d.companyA}</strong> bedre på ${aW} punkter<span class="sum-dot"></span><strong>${d.companyB}</strong> bedre på ${bW} punkter<span class="sum-dot"></span>Ens på ${eq} punkter</div>
 <table class="sync-table"><thead><tr><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyA)}</div><div><div class="co-nm">${d.companyA}<span class="yours-tag">Dit selskab</span></div><div class="co-sub">Hold musen over rækker for salgstips</div></div></div></th><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyB)}</div><div><div class="co-nm">${d.companyB}</div><div class="co-sub">Kundens nuværende selskab</div></div></div></th></tr></thead><tbody>${rows}</tbody></table>
-<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center"><span style="display:flex;align-items:center;gap:4px"><span class="dot dy" style="width:14px;height:14px">${ico('yes')}</span>Dækket</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">${ico('partial')}</span>Delvist dækket</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dn" style="width:14px;height:14px">${ico('no')}</span>Undtaget</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">${ico('inib')}</span>Ikke nævnt i betingelserne</span></div>
+<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center"><span style="display:flex;align-items:center;gap:4px"><span class="dot dy" style="width:14px;height:14px">✓</span>Dækket</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dn" style="width:14px;height:14px">✗</span>Undtaget</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">?</span>INIB (Ikke nævnt i betingelserne)</span></div>
 <div class="disclaimer" style="margin-top:10px">${d.disclaimer}</div>
 ${window._isAdmin?(()=>{const lowConf=coverage.filter(c=>c.confidence==='low'||c.confidence==='medium');return lowConf.length>0?`<div class="conf-panel"><div class="conf-panel-title">⚠ Admin: ${lowConf.length} dækning${lowConf.length>1?'er':''} med lav/middel sikkerhed</div>${lowConf.map(c=>`<div class="conf-item"><strong>${c.category}</strong> — ${c.confidence==='low'?'Lav':'Middel'} sikkerhed${c.confidence_reason?': '+c.confidence_reason:''}</div>`).join('')}</div>`:'';})():''}
 </div>
