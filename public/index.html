@@ -740,6 +740,289 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     grid-template-columns: repeat(2, 1fr);
   }
 }
+/* ============================================
+   PROGRESS MODAL STYLES
+   ============================================ */
+.progress-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 37, 64, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+.progress-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.progress-modal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.progress-modal-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.progress-bar-container {
+  background: #F4F3EF;
+  border-radius: 100px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, var(--accent2), #22C55E);
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-percentage {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+.progress-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 10px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.3s;
+}
+
+.progress-item.active {
+  background: #F0FDF4;
+  border-color: #86EFAC;
+}
+
+.progress-item.complete {
+  background: #F0FDF4;
+  border-color: #22C55E;
+  opacity: 0.7;
+}
+
+.progress-item.error {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+}
+
+.progress-item-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.progress-item-content {
+  flex: 1;
+}
+
+.progress-item-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.progress-item-status {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.progress-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent2);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.progress-error-box {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.progress-error-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #991B1B;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-error-message {
+  font-size: 13px;
+  color: #7F1D1D;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.progress-error-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.progress-error-actions button {
+  padding: 8px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+
+.progress-error-actions button.primary {
+  background: var(--accent2);
+  color: white;
+}
+
+.progress-error-actions button.primary:hover {
+  background: #15803D;
+}
+
+.progress-error-actions button.secondary {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.progress-error-actions button.secondary:hover {
+  border-color: var(--accent2);
+  color: var(--accent2);
+}
+
+.progress-success-box {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.progress-success-icon {
+  font-size: 48px;
+  margin-bottom: 1rem;
+  animation: successPop 0.4s ease-out;
+}
+
+@keyframes successPop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.progress-success-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.progress-success-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.progress-success-button {
+  padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--accent2);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.progress-success-button:hover {
+  background: #15803D;
+  transform: translateY(-1px);
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -1834,6 +2117,234 @@ renderUploadZones();
 // Kopiér HELE denne kode og erstat de eksisterende funktioner
 // =================================================================
 
+// ============================================
+// PROGRESS MODAL FUNCTIONS
+// ============================================
+
+let progressModal = null;
+let progressState = {};
+
+function showProgressModal(types) {
+  // Initialize progress state
+  progressState = {
+    types: types,
+    completed: 0,
+    total: types.length,
+    items: {}
+  };
+  
+  types.forEach(type => {
+    progressState.items[type] = {
+      status: 'waiting', // waiting, reading, analyzing, complete, error
+      progress: 0,
+      error: null
+    };
+  });
+  
+  // Create modal HTML
+  const modalHTML = `
+    <div class="progress-modal-overlay" id="progress-modal-overlay">
+      <div class="progress-modal">
+        <div class="progress-modal-title">Analyserer forsikringer</div>
+        <div class="progress-modal-subtitle">${types.length} ${types.length === 1 ? 'forsikring' : 'forsikringer'} bliver sammenlignet</div>
+        
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-percentage" id="progress-percentage">0%</div>
+        
+        <div class="progress-items" id="progress-items">
+          ${types.map(type => `
+            <div class="progress-item" id="progress-item-${type}" data-type="${type}">
+              <div class="progress-item-icon" id="progress-icon-${type}">⏳</div>
+              <div class="progress-item-content">
+                <div class="progress-item-name">${TYPE_LABELS[type]}</div>
+                <div class="progress-item-status" id="progress-status-${type}">Venter...</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div id="progress-error-container"></div>
+        <div id="progress-success-container"></div>
+      </div>
+    </div>
+  `;
+  
+  // Add to DOM
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  progressModal = document.getElementById('progress-modal-overlay');
+}
+
+function updateProgressItem(type, status, message) {
+  progressState.items[type].status = status;
+  
+  const item = document.getElementById(`progress-item-${type}`);
+  const icon = document.getElementById(`progress-icon-${type}`);
+  const statusEl = document.getElementById(`progress-status-${type}`);
+  
+  if (!item || !icon || !statusEl) return;
+  
+  // Remove all status classes
+  item.classList.remove('active', 'complete', 'error');
+  
+  // Update based on status
+  switch(status) {
+    case 'reading':
+      item.classList.add('active');
+      icon.innerHTML = '📄';
+      statusEl.innerHTML = message || 'Læser PDFer...';
+      break;
+    case 'analyzing':
+      item.classList.add('active');
+      icon.innerHTML = '🤖';
+      statusEl.innerHTML = message || 'Claude analyserer...';
+      break;
+    case 'complete':
+      item.classList.add('complete');
+      icon.innerHTML = '✅';
+      statusEl.innerHTML = 'Færdig!';
+      progressState.completed++;
+      updateOverallProgress();
+      break;
+    case 'error':
+      item.classList.add('error');
+      icon.innerHTML = '❌';
+      statusEl.innerHTML = message || 'Fejl';
+      progressState.items[type].error = message;
+      break;
+    default:
+      icon.innerHTML = '⏳';
+      statusEl.innerHTML = 'Venter...';
+  }
+}
+
+function updateOverallProgress() {
+  const percentage = Math.round((progressState.completed / progressState.total) * 100);
+  const bar = document.getElementById('progress-bar-fill');
+  const percentText = document.getElementById('progress-percentage');
+  
+  if (bar) bar.style.width = percentage + '%';
+  if (percentText) percentText.textContent = percentage + '%';
+}
+
+function showProgressError(type, errorMessage, errorType = 'generic') {
+  const container = document.getElementById('progress-error-container');
+  if (!container) return;
+  
+  let userMessage = '';
+  let canRetry = true;
+  
+  switch(errorType) {
+    case 'network':
+      userMessage = 'Kunne ikke forbinde til serveren. Tjek din internetforbindelse.';
+      break;
+    case 'timeout':
+      userMessage = 'Analysen tog for lang tid. Dette kan skyldes midlertidig høj belastning på serveren.';
+      break;
+    case 'auth':
+      userMessage = 'Din session er udløbet. Log venligst ind igen.';
+      canRetry = false;
+      break;
+    case 'json':
+      userMessage = 'Serveren returnerede ugyldig data. Prøv igen om lidt.';
+      break;
+    default:
+      userMessage = errorMessage || 'Der opstod en uventet fejl. Prøv igen.';
+  }
+  
+  container.innerHTML = `
+    <div class="progress-error-box">
+      <div class="progress-error-title">
+        ⚠️ ${TYPE_LABELS[type]} fejlede
+      </div>
+      <div class="progress-error-message">${userMessage}</div>
+      <div class="progress-error-actions">
+        ${canRetry ? `<button class="primary" onclick="retryAnalysis('${type}')">Prøv igen</button>` : ''}
+        <button class="secondary" onclick="skipAnalysis('${type}')">Spring over</button>
+        ${progressState.completed > 0 ? `<button class="secondary" onclick="closeProgressModal()">Se resultater</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function showProgressSuccess() {
+  const container = document.getElementById('progress-success-container');
+  if (!container) return;
+  
+  container.innerHTML = `
+    <div class="progress-success-box">
+      <div class="progress-success-icon">🎉</div>
+      <div class="progress-success-title">Analyse færdig!</div>
+      <div class="progress-success-subtitle">
+        ${progressState.completed} ${progressState.completed === 1 ? 'forsikring' : 'forsikringer'} analyseret
+      </div>
+      <button class="progress-success-button" onclick="closeProgressModal()">
+        Se resultater →
+      </button>
+    </div>
+  `;
+}
+
+function closeProgressModal() {
+  if (progressModal) {
+    progressModal.style.animation = 'fadeOut 0.2s forwards';
+    setTimeout(() => {
+      if (progressModal && progressModal.parentNode) {
+        progressModal.parentNode.removeChild(progressModal);
+      }
+      progressModal = null;
+    }, 200);
+  }
+}
+
+function retryAnalysis(type) {
+  // Re-run analysis for this type
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  // Clear error
+  const errorContainer = document.getElementById('progress-error-container');
+  if (errorContainer) errorContainer.innerHTML = '';
+  
+  // Reset item
+  updateProgressItem(type, 'waiting', 'Forsøger igen...');
+  
+  // Re-run
+  analyzeType(type, nameA, nameB);
+}
+
+function skipAnalysis(type) {
+  // Mark as skipped
+  updateProgressItem(type, 'complete', 'Sprunget over');
+  
+  // Clear error
+  const errorContainer = document.getElementById('progress-error-container');
+  if (errorContainer) errorContainer.innerHTML = '';
+  
+  // Check if all done
+  checkIfAllComplete();
+}
+
+function checkIfAllComplete() {
+  const allDone = Object.values(progressState.items).every(item => 
+    item.status === 'complete' || item.status === 'error'
+  );
+  
+  if (allDone && progressState.completed > 0) {
+    showProgressSuccess();
+  }
+}
+
+// Add fadeOut animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeOut {
+    to { opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
 async function analyze() {
   const nameA = getName('a'), nameB = getName('b');
   if (nameA === nameB) {
@@ -1850,9 +2361,11 @@ async function analyze() {
 
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
-  // allResults = {};  // Kommenteret ud - lad cache data blive
 
   console.log('🚀 Types to analyze:', typesToAnalyze);
+
+  // Show progress modal
+  showProgressModal(typesToAnalyze);
 
   // Get result div
   const resultDiv = document.getElementById('result');
@@ -1881,16 +2394,24 @@ async function analyze() {
   btn.innerHTML = 'Analyserer... <span class="btn-arrow">⟳</span>';
 
   // Run all analyses in parallel - update UI as each completes
-  await Promise.all(typesToAnalyze.map(type => analyzeType(type, nameA, nameB)));
-
-  console.log('✅ All analyses complete');
-  console.log('allResults:', allResults);
-
-  renderMultiResult(nameA, nameB);
-
-  document.getElementById('reset-btn').style.display = 'block';
-  btn.disabled = false;
-  btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+  try {
+    await Promise.all(typesToAnalyze.map(type => analyzeType(type, nameA, nameB)));
+    
+    console.log('✅ All analyses complete');
+    console.log('allResults:', allResults);
+    
+    // Show success
+    showProgressSuccess();
+    
+    renderMultiResult(nameA, nameB);
+    
+    document.getElementById('reset-btn').style.display = 'block';
+  } catch (error) {
+    console.error('❌ Analysis failed:', error);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+  }
 }
   
 async function analyzeType(type, nameA, nameB) {
@@ -1907,6 +2428,8 @@ async function analyzeType(type, nameA, nameB) {
   // =================================================================
   // CHECK SUPABASE CACHE FØRST
   // =================================================================
+  updateProgressItem(type, 'reading', 'Tjekker cache...');
+  
   const cacheResult = await loadSupabaseCache(nameA, nameB, type);
   const cached = cacheResult ? cacheResult.data : null;
   
@@ -1926,6 +2449,8 @@ async function analyzeType(type, nameA, nameB) {
       response_time_ms: responseTime
     });
     
+    updateProgressItem(type, 'complete');
+    
     if (statusEl) {
       statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
       statusEl.style.background = 'var(--accent-light)';
@@ -1943,6 +2468,8 @@ async function analyzeType(type, nameA, nameB) {
   // =================================================================
 
   try {
+    updateProgressItem(type, 'analyzing', 'Claude analyserer betingelser...');
+    
     console.log('🔴 Calling API...');
     
     // Get auth token
@@ -1982,6 +2509,10 @@ async function analyzeType(type, nameA, nameB) {
     // Cache is saved by API to Supabase analysis_cache table
     console.log('✅ Saved to cache');
     
+    // Update progress - complete!
+    updateProgressItem(type, 'complete');
+    checkIfAllComplete();
+    
     // Log analysis
     logAnalysis(nameA, nameB, type);
     
@@ -2016,6 +2547,24 @@ async function analyzeType(type, nameA, nameB) {
     
   } catch (err) {
     console.error('❌ Analysis error:', err);
+    
+    // Determine error type
+    let errorType = 'generic';
+    let errorMessage = err.message;
+    
+    if (err.message.includes('fetch') || err.message.includes('network')) {
+      errorType = 'network';
+    } else if (err.message.includes('JSON') || err.message.includes('parse')) {
+      errorType = 'json';
+    } else if (err.message.includes('auth') || err.message.includes('401')) {
+      errorType = 'auth';
+    } else if (err.message.includes('timeout')) {
+      errorType = 'timeout';
+    }
+    
+    // Update progress with error
+    updateProgressItem(type, 'error', errorMessage);
+    showProgressError(type, errorMessage, errorType);
     
     // Track failed analysis
     const responseTime = Date.now() - startTime;
