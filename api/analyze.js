@@ -164,13 +164,26 @@ ${pdfB.full_text.substring(0, 100000)}
 
     // Parse response
     const txt = message.content.map(function(i) { return i.type === 'text' ? i.text : ''; }).join('\n');
-    const match = txt.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    let cleanedText = txt.replace(/```json|```/g, '').trim();
+    
+    // Extract JSON object
+    const match = cleanedText.match(/\{[\s\S]*\}/);
     
     if (!match) {
       throw new Error('Failed to parse analysis result');
     }
 
-    const parsed = JSON.parse(match[0]);
+    let jsonStr = match[0];
+    
+    // Clean common JSON issues
+    jsonStr = jsonStr
+      .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
+      .replace(/\n/g, ' ')             // Remove newlines
+      .replace(/\r/g, '')              // Remove carriage returns
+      .replace(/\t/g, ' ')             // Replace tabs with spaces
+      .replace(/  +/g, ' ');           // Collapse multiple spaces
+
+    const parsed = JSON.parse(jsonStr);
 
     // Cache the result
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_cache`, {
