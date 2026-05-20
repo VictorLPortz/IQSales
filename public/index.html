@@ -1390,11 +1390,11 @@ function getCacheAge(side, type) {
     const d = allResults[t];
     if (!d || !d.coverage) return;
     
-    d.coverage.filter(c => c.winner === 'a' && (c.b_status === 'no' || c.b_status === 'inib' || c.sales_tip)).slice(0, 2).forEach(c => {
+    d.coverage.filter(c => c.winner === 'a' && (c.status_b === 'no' || c.status_b === 'inib' || c.sales_tip)).slice(0, 2).forEach(c => {
       strongA.push({
         type: TYPE_LABELS[t] || d.type || t,
         category: c.category,
-        detail: c.a_detail || '',
+        detail: c.amount_a || '',
         tip: c.sales_tip || ''
       });
     });
@@ -1410,7 +1410,7 @@ function getCacheAge(side, type) {
       strongB.push({
         type: TYPE_LABELS[t] || d.type || t,
         category: c.category,
-        detail: c.b_detail || '',
+        detail: c.amount_b || '',
         tip: c.objection_tip || ''
       });
     });
@@ -2112,12 +2112,12 @@ function enableTypeTab(type){
               logoHtml(data.companyA, 20) +
               data.companyA +
             '</div>' +
-            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.a_status) + '; color: ' + getStatusColor(c.a_status) + '; border: 1px solid ' + getStatusBorder(c.a_status) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
-              getStatusIcon(c.a_status) + ' ' + getStatusLabel(c.a_status) +
+            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.status_a) + '; color: ' + getStatusColor(c.status_a) + '; border: 1px solid ' + getStatusBorder(c.status_a) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
+              getStatusIcon(c.status_a) + ' ' + getStatusLabel(c.status_a) +
             '</div>' +
             '<div style="position: relative;">' +
-              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.a_detail || 'Ingen detaljer') + '</p>' +
-              ((c.a_detail && c.a_detail.length > 150) ? '<button onclick="toggleText(\'' + textAId + '\', \'' + btnAId + '\')" id="' + btnAId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_a || 'Ingen detaljer') + '</p>' +
+              ((c.amount_a && c.amount_a.length > 150) ? '<button onclick="toggleText(\'' + textAId + '\', \'' + btnAId + '\')" id="' + btnAId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
             '</div>' +
             ((c.sales_tip && isWinner) ? 
               '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
@@ -2132,12 +2132,12 @@ function enableTypeTab(type){
               logoHtml(data.companyB, 20) +
               data.companyB +
             '</div>' +
-            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.b_status) + '; color: ' + getStatusColor(c.b_status) + '; border: 1px solid ' + getStatusBorder(c.b_status) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
-              getStatusIcon(c.b_status) + ' ' + getStatusLabel(c.b_status) +
+            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.status_b) + '; color: ' + getStatusColor(c.status_b) + '; border: 1px solid ' + getStatusBorder(c.status_b) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
+              getStatusIcon(c.status_b) + ' ' + getStatusLabel(c.status_b) +
             '</div>' +
             '<div style="position: relative;">' +
-              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.b_detail || 'Ingen detaljer') + '</p>' +
-              ((c.b_detail && c.b_detail.length > 150) ? '<button onclick="toggleText(\'' + textBId + '\', \'' + btnBId + '\')" id="' + btnBId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_b || 'Ingen detaljer') + '</p>' +
+              ((c.amount_b && c.amount_b.length > 150) ? '<button onclick="toggleText(\'' + textBId + '\', \'' + btnBId + '\')" id="' + btnBId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
             '</div>' +
             ((c.objection_tip && isLoser) ? 
               '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
@@ -2295,12 +2295,12 @@ function generateCoverageHTML(data) {
                 ${logoHtml(data.companyA, 20)}
                 ${data.companyA}
               </div>
-              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.a_status)}; color: ${getStatusColor(c.a_status)}; border: 1px solid ${getStatusBorder(c.a_status)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
-                ${getStatusIcon(c.a_status)} ${getStatusLabel(c.a_status)}
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.status_a)}; color: ${getStatusColor(c.status_a)}; border: 1px solid ${getStatusBorder(c.status_a)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                ${getStatusIcon(c.status_a)} ${getStatusLabel(c.status_a)}
               </div>
               <div style="position: relative;">
-                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.a_detail || 'Ingen detaljer'}</p>
-                ${(c.a_detail && c.a_detail.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_a || 'Ingen detaljer'}</p>
+                ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
               </div>
               
               ${(c.sales_tip && isWinner) ? `
@@ -2322,12 +2322,12 @@ function generateCoverageHTML(data) {
                 ${logoHtml(data.companyB, 20)}
                 ${data.companyB}
               </div>
-              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.b_status)}; color: ${getStatusColor(c.b_status)}; border: 1px solid ${getStatusBorder(c.b_status)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
-                ${getStatusIcon(c.b_status)} ${getStatusLabel(c.b_status)}
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.status_b)}; color: ${getStatusColor(c.status_b)}; border: 1px solid ${getStatusBorder(c.status_b)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                ${getStatusIcon(c.status_b)} ${getStatusLabel(c.status_b)}
               </div>
               <div style="position: relative;">
-                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.b_detail || 'Ingen detaljer'}</p>
-                ${(c.b_detail && c.b_detail.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_b || 'Ingen detaljer'}</p>
+                ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
               </div>
               
               ${(c.objection_tip && isLoser) ? `
@@ -2548,11 +2548,11 @@ function generateCoverageHTML(data) {
                 ${logoHtml(data.companyA, 20)}
                 ${data.companyA}
               </div>
-              <div class="coverage-status status-${c.a_status}">
-                ${getStatusIcon(c.a_status)} ${getStatusLabel(c.a_status)}
+              <div class="coverage-status status-${c.status_a}">
+                ${getStatusIcon(c.status_a)} ${getStatusLabel(c.status_a)}
               </div>
-              <p id="${textAId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.a_detail || 'Ingen detaljer'}</p>
-              ${(c.a_detail && c.a_detail.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+              <p id="${textAId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_a || 'Ingen detaljer'}</p>
+              ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
             </div>
             
             <!-- Company B -->
@@ -2561,11 +2561,11 @@ function generateCoverageHTML(data) {
                 ${logoHtml(data.companyB, 20)}
                 ${data.companyB}
               </div>
-              <div class="coverage-status status-${c.b_status}">
-                ${getStatusIcon(c.b_status)} ${getStatusLabel(c.b_status)}
+              <div class="coverage-status status-${c.status_b}">
+                ${getStatusIcon(c.status_b)} ${getStatusLabel(c.status_b)}
               </div>
-              <p id="${textBId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.b_detail || 'Ingen detaljer'}</p>
-              ${(c.b_detail && c.b_detail.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+              <p id="${textBId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_b || 'Ingen detaljer'}</p>
+              ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
             </div>
             
           </div>
@@ -2657,8 +2657,8 @@ function buildResultHtml(d,prefs){
   const bW=d.coverage.filter(c=>c.winner==='b').length;
   const eq=d.coverage.filter(c=>c.winner==='equal').length;
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
-  const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
-  const topRank=c=>{if(c.b_status==='no'||c.b_status==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));return r!==-1?r+1:null;};
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  const topRank=c=>{if(c.status_b==='no'||c.status_b==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));return r!==-1?r+1:null;};
 
   // Apply saved sort order and favorites
   let coverage=[...d.coverage];
@@ -2680,11 +2680,11 @@ function buildResultHtml(d,prefs){
 
   const rows=coverage.map((c,rowIdx)=>{
     const isTop=isTopA(c);const rank=topRank(c);
-    const aCls=dotCls(c.a_status);const aTop=isTop?' is-top':'';
+    const aCls=dotCls(c.status_a);const aTop=isTop?' is-top':'';
     let aBadges=`<div class="cv-badges">`;
-    if(c.a_status==='inib'||c.a_status==='no')aBadges+=inibBadge(c.a_status);
-    if(isTop&&c.a_status!=='inib'&&c.a_status!=='no'){aBadges+=`<div class="badge-tip"><span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span><div class="tip-box">Dette er en af de vigtigste fordele ${d.companyA} har over ${d.companyB} på ${d.type}. ${c.a_detail.substring(0,200)}${c.a_detail.length>100?'...':''}</div></div>`;}
-    else if(c.winner==='a'&&!isTop)aBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyA} er bedre: ${c.a_detail.substring(0,200)}${c.a_detail.length>120?'...':''}</div></div>`;
+    if(c.status_a==='inib'||c.status_a==='no')aBadges+=inibBadge(c.status_a);
+    if(isTop&&c.status_a!=='inib'&&c.status_a!=='no'){aBadges+=`<div class="badge-tip"><span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span><div class="tip-box">Dette er en af de vigtigste fordele ${d.companyA} har over ${d.companyB} på ${d.type}. ${c.amount_a.substring(0,200)}${c.amount_a.length>100?'...':''}</div></div>`;}
+    else if(c.winner==='a'&&!isTop)aBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyA} er bedre: ${c.amount_a.substring(0,200)}${c.amount_a.length>120?'...':''}</div></div>`;
     aBadges+=`</div>`;
     const aSalesTip=c.sales_tip&&(isTop||c.winner==='a')?`<div class="sales-hint"><span class="sales-hint-icon">→</span><p>${c.sales_tip}</p></div>`:'';
     const confBadge=window._isAdmin&&c.confidence&&c.confidence!=='high'?`<span class="conf-badge conf-${c.confidence}">${c.confidence==='medium'?'⚠ Middel':'⚠ Lav'}</span>`:'';
@@ -2695,14 +2695,14 @@ function buildResultHtml(d,prefs){
     const isFav=window._prefs&&window._prefs.favorites&&window._prefs.favorites.includes(c.category);
     const favBtn=`<button class="fav-btn${isFav?' active':''}" onclick="toggleFav('${cat}','${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" title="${isFav?'Fjern favorit':'Tilføj favorit'}">★</button>`;
     const dragHandle=`<span class="drag-handle" draggable="true" ondragstart="rowDragStart(event,${rowIdx})" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" ondragend="rowDragEnd(event)">⋮⋮</span>`;
-    const bCls=dotCls(c.b_status);const bWeak=c.winner==='a'?' is-yours-weak':'';
+    const bCls=dotCls(c.status_b);const bWeak=c.winner==='a'?' is-yours-weak':'';
     let bBadges=`<div class="cv-badges">`;
-    if(c.b_status==='inib'||c.b_status==='no')bBadges+=inibBadge(c.b_status);
-    else if(c.winner==='b')bBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyB} er bedre: ${c.b_detail.substring(0,200)}${c.b_detail.length>120?'...':''}</div></div>`;
-    else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.b_detail.substring(0,200)}${c.b_detail.length>120?'...':''}</div></div>`;
+    if(c.status_b==='inib'||c.status_b==='no')bBadges+=inibBadge(c.status_b);
+    else if(c.winner==='b')bBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyB} er bedre: ${c.amount_b.substring(0,200)}${c.amount_b.length>120?'...':''}</div></div>`;
+    else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.amount_b.substring(0,200)}${c.amount_b.length>120?'...':''}</div></div>`;
     bBadges+=`</div>`;
     const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
-    return`<tr class="${isFav?'fav-row':''}" data-category="${cat}" data-row="${rowIdx}" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')"><td><div class="cv-cell${aTop}"><div class="cv-cat">${dragHandle}${favBtn}<div class="dot ${aCls}">${ico(c.a_status)}</div>${c.category}${confBadge}</div><div class="cv-det">${c.a_detail}</div>${confTip}${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.b_status)}</div>${c.category}</div><div class="cv-det">${c.b_detail}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
+    return`<tr class="${isFav?'fav-row':''}" data-category="${cat}" data-row="${rowIdx}" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')"><td><div class="cv-cell${aTop}"><div class="cv-cat">${dragHandle}${favBtn}<div class="dot ${aCls}">${ico(c.status_a)}</div>${c.category}${confBadge}</div><div class="cv-det">${c.amount_a}</div>${confTip}${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.status_b)}</div>${c.category}</div><div class="cv-det">${c.amount_b}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
   }).join('');
   const p=d.pitch;
   return`<div class="tabs"><button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button><button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button><button class="tab" id="t3" onclick="sw('send')">Send til kunde</button></div>
@@ -2732,22 +2732,22 @@ function renderResult(d){window._d=d;document.getElementById('result').innerHTML
 
 function buildSelector(d){
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
-  const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
   const grid=document.getElementById('sel-grid');
   if(!grid)return;
-  grid.innerHTML=d.coverage.map((c,i)=>{const isTop=isTopA(c);return`<label class="sel-item${isTop?' selected':''}" id="sel-${i}" onclick="toggleSel(${i})"><input type="checkbox" id="chk-${i}"${isTop?' checked':''} onclick="event.stopPropagation();toggleSel(${i})"><div class="sel-item-text"><div class="sel-item-cat">${c.category}${isTop?` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">Top</span>`:''}</div><div class="sel-item-det">${c.a_detail.substring(0,60)}${c.a_detail.length>60?'...':''}</div></div></label>`;}).join('');
+  grid.innerHTML=d.coverage.map((c,i)=>{const isTop=isTopA(c);return`<label class="sel-item${isTop?' selected':''}" id="sel-${i}" onclick="toggleSel(${i})"><input type="checkbox" id="chk-${i}"${isTop?' checked':''} onclick="event.stopPropagation();toggleSel(${i})"><div class="sel-item-text"><div class="sel-item-cat">${c.category}${isTop?` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">Top</span>`:''}</div><div class="sel-item-det">${c.amount_a.substring(0,60)}${c.amount_a.length>60?'...':''}</div></div></label>`;}).join('');
   updateCustomerPreview();
 }
 
 function toggleSel(i){const chk=document.getElementById('chk-'+i);const lbl=document.getElementById('sel-'+i);chk.checked=!chk.checked;lbl.classList.toggle('selected',chk.checked);updateCustomerPreview();}
 function selAll(v){const d=window._d;d.coverage.forEach((_,i)=>{document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
-function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.b_status==='no'||c.b_status==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
+function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.status_b==='no'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
 
 function updateCustomerPreview(){
   const d=window._d;if(!d)return;
   const selected=d.coverage.filter((_,i)=>document.getElementById('chk-'+i)?.checked);
   if(!selected.length){document.getElementById('customer-preview').innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px">Vælg mindst én dækning ovenfor</div>';return;}
-  const rows=selected.map(c=>{const aIcon=ico(c.a_status),bIcon=ico(c.b_status);const aCls=dotCls(c.a_status),bCls=dotCls(c.b_status);const isBetter=c.winner==='a';return`<div class="pdf-row"><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${aCls}" style="width:14px;height:14px">${aIcon}</span>${c.category}${isBetter?` <span class="pdf-better">Bedre hos os</span>`:''}</div><div class="pdf-det">${c.a_detail}</div>${c.customer_explanation?`<div class="pdf-exp">${c.customer_explanation}</div>`:''}</div><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${bCls}" style="width:14px;height:14px">${bIcon}</span>${c.category}</div><div class="pdf-det">${c.b_detail}</div></div></div>`;}).join('');
+  const rows=selected.map(c=>{const aIcon=ico(c.status_a),bIcon=ico(c.status_b);const aCls=dotCls(c.status_a),bCls=dotCls(c.status_b);const isBetter=c.winner==='a';return`<div class="pdf-row"><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${aCls}" style="width:14px;height:14px">${aIcon}</span>${c.category}${isBetter?` <span class="pdf-better">Bedre hos os</span>`:''}</div><div class="pdf-det">${c.amount_a}</div>${c.customer_explanation?`<div class="pdf-exp">${c.customer_explanation}</div>`:''}</div><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${bCls}" style="width:14px;height:14px">${bIcon}</span>${c.category}</div><div class="pdf-det">${c.amount_b}</div></div></div>`;}).join('');
   document.getElementById('customer-preview').innerHTML=`<div class="customer-pdf-preview" id="pdf-content"><div class="pdf-header"><div class="pdf-title">Forsikringssammenligning</div><div class="pdf-sub">${d.companyA} vs. ${d.companyB} · ${d.type} · ${new Date().toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'})}</div></div><div class="pdf-body" style="padding:0"><div class="pdf-row-header"><div class="pdf-col-head">${d.companyA}</div><div class="pdf-col-head">${d.companyB}</div></div>${rows}</div><div class="pdf-footer">${d.disclaimer}</div></div>`;
 }
 
