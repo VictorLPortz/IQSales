@@ -2130,14 +2130,17 @@ function showProgressModal(types) {
     types: types,
     completed: 0,
     total: types.length,
-    items: {}
+    items: {},
+    startTime: Date.now(),  // ✨ TILFØJET: Track total start tid
+    avgTimePerType: 25000   // ✨ TILFØJET: Gennemsnitlig tid per analyse (25 sek)
   };
   
   types.forEach(type => {
     progressState.items[type] = {
       status: 'waiting', // waiting, reading, analyzing, complete, error
       progress: 0,
-      error: null
+      error: null,
+      startTime: null  // ✨ TILFØJET: Track individuel start tid
     };
   });
   
@@ -2152,6 +2155,7 @@ function showProgressModal(types) {
           <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
         </div>
         <div class="progress-percentage" id="progress-percentage">0%</div>
+        <div class="progress-time-left" id="time-left-text" style="font-size: 13px; color: var(--muted); margin-top: 6px; text-align: center;">Beregner...</div>
         
         <div class="progress-items" id="progress-items">
           ${types.map(type => `
@@ -2235,9 +2239,27 @@ function updateOverallProgress() {
   const percentage = Math.round(totalProgress / progressState.total);
   const bar = document.getElementById('progress-bar-fill');
   const percentText = document.getElementById('progress-percentage');
+  const timeLeftEl = document.getElementById('time-left-text');  // ✨ NY
   
   if (bar) bar.style.width = percentage + '%';
   if (percentText) percentText.textContent = percentage + '%';
+  
+  // ✨ TILFØJET: Beregn estimeret tid tilbage
+  if (timeLeftEl && percentage > 0 && percentage < 100) {
+    const elapsed = Date.now() - progressState.startTime;
+    const estimatedTotal = (elapsed / percentage) * 100;
+    const timeLeft = Math.max(0, Math.round((estimatedTotal - elapsed) / 1000));
+    
+    if (timeLeft > 60) {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      timeLeftEl.textContent = `Ca. ${mins} min ${secs} sek tilbage`;
+    } else {
+      timeLeftEl.textContent = `Ca. ${timeLeft} sekunder tilbage`;
+    }
+  } else if (timeLeftEl && percentage >= 100) {
+    timeLeftEl.textContent = 'Færdig!';
+  }
 }
 
 function showProgressError(type, errorMessage, errorType = 'generic') {
@@ -2480,6 +2502,9 @@ async function analyzeType(type, nameA, nameB) {
   // =================================================================
 
   try {
+    // ✨ TILFØJET: Track start tid for denne specifikke analyse
+    progressState.items[type].startTime = Date.now();
+    
     updateProgressItem(type, 'analyzing', 'IQSales analyserer betingelser...');
     
     // Start simulated progress updates
@@ -2523,7 +2548,21 @@ async function analyzeType(type, nameA, nameB) {
     // Stop progress simulation
     clearInterval(progressInterval);
     
-    const data = await res.json();
+    // ✨ FORBEDRET: Check response status før JSON parsing
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Server fejl (${res.status}): ${errorText || 'Ingen detaljer'}`);
+    }
+    
+    // ✨ FORBEDRET: Try/catch omkring JSON parsing
+    let data;
+    try {
+      data = await res.json();
+    } catch (jsonError) {
+      console.error('❌ JSON parse error:', jsonError);
+      throw new Error('Serveren returnerede ugyldig data. Prøv igen om lidt.');
+    }
+    
     console.log('✅ API response received');
     
     if (data.error) throw new Error(data.error);
