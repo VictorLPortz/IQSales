@@ -590,7 +590,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
 .company-column {
   background: #FAFAF9;
-  border: 1px solid #E3E1D9;
+  border: 1px solid #FDE047;
   border-radius: 8px;
   padding: 1rem;
 }
@@ -637,7 +637,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .coverage-detail {
   font-size: 13px;
   line-height: 1.5;
-  color: #5F5E5A;
+  color: #854D0E;
   margin: 0;
 }
  /* TOOLTIP STYLING - NYT */
@@ -689,7 +689,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   font-size: 11px;
   color: #7A7870;
   background: transparent;
-  border: 1px solid #E3E1D9;
+  border: 1px solid #FDE047;
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
@@ -706,7 +706,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 /* BADGE LEGEND - NYT */
 .badge-legend {
   background: #F4F3EF;
-  border: 1px solid #E3E1D9;
+  border: 1px solid #FDE047;
   border-radius: 8px;
   padding: 1rem;
   margin-top: 1.5rem;
@@ -720,7 +720,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #5F5E5A;
+  color: #854D0E;
 }
  
 .badge-legend-icon {
@@ -1938,29 +1938,115 @@ async function analyzeType(type, nameA, nameB) {
     return;
   }
  
-  console.log('🔴 No cache found - calling API for fresh analysis');
-
+  console.log('🔴 No cache found - proceeding with PDF extraction');
+ 
   // =================================================================
-  // API CALL - API handles PDF extraction and feedback
+  // PDF EXTRACTION - KUN HVIS INGEN CACHE
   // =================================================================
-
+  let textA = '', textB = '';
+  try {
+    console.log('🔴 Extracting PDF A...');
+    textA = await extractPdfText(docsA[type].data);
+    console.log('✅ PDF A extracted, length:', textA.length);
+    
+    console.log('🔴 Extracting PDF B...');
+    textB = await extractPdfText(docsB[type].data);
+    console.log('✅ PDF B extracted, length:', textB.length);
+  } catch (e) {
+    console.error('❌ PDF EXTRACTION FAILED:', e);
+    console.error('❌ Error details:', e.message, e.stack);
+    if (statusEl) {
+      statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
+      statusEl.style.color = 'var(--danger)';
+    }
+    return;
+  }
+ 
+  // Truncate if too long
+  const MAX_CHARS = 100000;
+  if (textA.length > MAX_CHARS) textA = textA.substring(0, MAX_CHARS) + '\n[afkortet]';
+  if (textB.length > MAX_CHARS) textB = textB.substring(0, MAX_CHARS) + '\n[afkortet]';
+ 
+  console.log('🔴 Building analysis prompt...');
+ 
+  // =================================================================
+  // FETCH APPROVED FEEDBACK
+  // =================================================================
+  const approvedFeedback = await fetchApprovedFeedback(type, nameA, nameB);
+  
+  let feedbackSection = '';
+  if (approvedFeedback.length > 0) {
+    console.log('✅ Fandt ' + approvedFeedback.length + ' godkendt feedback for ' + type);
+    
+    feedbackSection = '\n\n=== VERIFICERET FEEDBACK FRA TIDLIGERE ANALYSER ===\n' +
+      'Følgende information er blevet verificeret af eksperter og SKAL respekteres i din analyse:\n\n' +
+      approvedFeedback.map(function(f) {
+        return '📌 Dækning: ' + f.category + '\n' +
+               '   Problem identificeret: ' + f.issue_type + '\n' +
+               '   Korrekt information: ' + f.comment + '\n' +
+               '   → Sørg for at din analyse reflekterer denne korrekte information!\n';
+      }).join('\n') + '\n';
+    
+    // Vis badge i UI
+    showFeedbackBadge(type, approvedFeedback.length);
+  }
+ 
+  // =================================================================
+  // API CALL
+  // =================================================================
+  const analysisPrompt = feedbackSection + `Du er ekspert i dansk forsikring. Nedenfor er tekst fra to sæt ${type}-betingelser.
+ 
+=== BETINGELSER FRA ${nameA} ===
+${textA}
+ 
+=== BETINGELSER FRA ${nameB} ===
+${textB}
+ 
+Returner KUN et JSON-objekt uden markdown:
+{
+  "companyA": "${nameA}",
+  "companyB": "${nameB}",
+  "type": "${type}",
+  "top3_a": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
+  "top3_b": ["Kategorinavn1","Kategorinavn2","Kategorinavn3"],
+  "coverage": [
+    {
+      "category": "Dækningskategori",
+      "status_a": "yes|no|inib",
+      "amount_a": "Præcis dækning fra ${nameA} med beløb og vilkår.",
+      "status_b": "yes|no|inib",
+      "amount_b": "Præcis dækning fra ${nameB} med beløb og vilkår.",
+      "winner": "a|b|equal",
+      "sales_tip": "Max 1 sætning. Kun hvis winner=a. Ellers tom streng.",
+      "objection_tip": "Max 1 sætning. Kun hvis winner=b. Ellers tom streng.",
+      "customer_explanation": "Max 1 sætning i enkelt dansk med hverdagseksempel."
+    }
+  ],
+  "pitch": {
+    "advantages_a": ["Fordel 1 med konkrete tal","Fordel 2","Fordel 3"],
+    "advantages_b": ["Konkurrentens fordel 1","Fordel 2","Fordel 3"],
+    "remotivering": ["Spørgsmål 1","Spørgsmål 2","Spørgsmål 3","Spørgsmål 4","Spørgsmål 5"],
+    "enliner": "Én sætning der opsummerer den vigtigste forskel"
+  },
+  "disclaimer": "Baseret på uploadede betingelser. Verificer altid med nyeste officielle dokumenter."
+}
+ 
+Regler:
+- yes = Dækkes eksplicit med konkrete vilkår. no = Eksplicit undtaget eller udelukket. inib = INIB (Ikke Nævnt I Betingelserne) - dækningen nævnes slet ikke i betingelserne.
+- VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger, brug "yes" og beskriv begrænsningen i detail-feltet.
+- top3_a = 3 kategorinavne hvor ${nameA} har størst fordel
+- top3_b = 3 kategorinavne hvor ${nameB} har størst fordel
+- winner=a automatisk hvis status_b=no eller inib
+- Sæt ALDRIG winner=b hvis ${nameB}s dækning indeholder uspecificerede beløb som "fremgår af police", "ifølge police" eller "beløb angivet i police" — det er ikke muligt at vurdere om det er bedre. Sæt i stedet winner=equal
+- Sæt ALDRIG winner=a eller winner=b hvis begge selskabers beløb ikke fremgår eksplicit af betingelserne
+- Find 8-10 vigtige dækningspunkter. Brug konkrete beløb fra teksten.`;
+ 
   try {
     console.log('🔴 Calling API...');
-    
-    // Get auth token
-    const { data: { session } } = await _sb.auth.getSession();
-    
     const res = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token || ''}`
-      },
-      body: JSON.stringify({ 
-        companyA: nameA,
-        companyB: nameB,
-        type: type
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: analysisPrompt })
     });
     
     const data = await res.json();
@@ -1968,8 +2054,21 @@ async function analyzeType(type, nameA, nameB) {
     
     if (data.error) throw new Error(data.error);
     
-    // Data is already parsed JSON from API
-    const parsed = data;
+    const txt = data.content.map(i => i.type === 'text' ? i.text : '').join('\n');
+    const m = txt.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Parse fejl');
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(m[0]);
+    } catch (e) {
+      let fixed = m[0].replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/,\s*([}\]])/g, '$1');
+      try {
+        parsed = JSON.parse(fixed);
+      } catch (e2) {
+        throw new Error('JSON fejl');
+      }
+    }
     
     console.log('✅ Parsed data successfully');
     console.log('🔴 BEFORE assignment - allResults:', allResults);
@@ -2099,7 +2198,7 @@ function enableTypeTab(type){
     const btnAId = 'btn-' + idx + '-a';
     const btnBId = 'btn-' + idx + '-b';
     
-    return '<div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
+    return '<div style="background: white; border: 1px solid #FDE047; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
       '<div style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">' +
         '<h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">' + c.category + '</h3>' +
         (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
@@ -2116,7 +2215,7 @@ function enableTypeTab(type){
               getStatusIcon(c.status_a) + ' ' + getStatusLabel(c.status_a) +
             '</div>' +
             '<div style="position: relative;">' +
-              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_a || 'Ingen detaljer') + '</p>' +
+              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #854D0E; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_a || 'Ingen detaljer') + '</p>' +
               ((c.amount_a && c.amount_a.length > 150) ? '<button onclick="toggleText(\'' + textAId + '\', \'' + btnAId + '\')" id="' + btnAId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
             '</div>' +
             ((c.sales_tip && isWinner) ? 
@@ -2136,7 +2235,7 @@ function enableTypeTab(type){
               getStatusIcon(c.status_b) + ' ' + getStatusLabel(c.status_b) +
             '</div>' +
             '<div style="position: relative;">' +
-              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_b || 'Ingen detaljer') + '</p>' +
+              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #854D0E; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_b || 'Ingen detaljer') + '</p>' +
               ((c.amount_b && c.amount_b.length > 150) ? '<button onclick="toggleText(\'' + textBId + '\', \'' + btnBId + '\')" id="' + btnBId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
             '</div>' +
             ((c.objection_tip && isLoser) ? 
@@ -2280,7 +2379,7 @@ function generateCoverageHTML(data) {
     const btnBId = `btn-${idx}-b`;
     
     return `
-      <div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <div style="background: white; border: 1px solid #FDE047; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         
         <div style="background: ${headerBg}; border: 2px solid ${headerBorder}; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
           <h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">${c.category}</h3>
@@ -2299,7 +2398,7 @@ function generateCoverageHTML(data) {
                 ${getStatusIcon(c.status_a)} ${getStatusLabel(c.status_a)}
               </div>
               <div style="position: relative;">
-                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_a || 'Ingen detaljer'}</p>
+                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #854D0E; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_a || 'Ingen detaljer'}</p>
                 ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
               </div>
               
@@ -2326,7 +2425,7 @@ function generateCoverageHTML(data) {
                 ${getStatusIcon(c.status_b)} ${getStatusLabel(c.status_b)}
               </div>
               <div style="position: relative;">
-                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_b || 'Ingen detaljer'}</p>
+                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #854D0E; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_b || 'Ingen detaljer'}</p>
                 ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
               </div>
               
@@ -2431,7 +2530,7 @@ function getStatusBg(status) {
   if (status === 'no') return '#FCEBEB';
   // partial removed
   if (status === 'inib') return '#FEF9C3';
-  return '#FEF9C3';
+  return '#F1EFE8';
 }
 
 function getStatusColor(status) {
@@ -2439,7 +2538,7 @@ function getStatusColor(status) {
   if (status === 'no') return '#791F1F';
   // partial removed
   if (status === 'inib') return '#854D0E';
-  return '#854D0E';
+  return '#5F5E5A';
 }
  
   function getStatusBorder(status) {
