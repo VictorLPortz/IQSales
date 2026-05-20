@@ -2155,7 +2155,7 @@ function showProgressModal(types) {
           <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
         </div>
         <div class="progress-percentage" id="progress-percentage">0%</div>
-        <div class="progress-time-left" id="time-left-text" style="font-size: 13px; color: var(--muted); margin-top: 6px; text-align: center;">Beregner...</div>
+        <div class="progress-time-left" id="time-left-text" style="font-size: 13px; color: var(--muted); margin-top: 6px; text-align: center;">Starter analyse...</div>
         
         <div class="progress-items" id="progress-items">
           ${types.map(type => `
@@ -2239,26 +2239,46 @@ function updateOverallProgress() {
   const percentage = Math.round(totalProgress / progressState.total);
   const bar = document.getElementById('progress-bar-fill');
   const percentText = document.getElementById('progress-percentage');
-  const timeLeftEl = document.getElementById('time-left-text');  // ✨ NY
+  const timeLeftEl = document.getElementById('time-left-text');
   
   if (bar) bar.style.width = percentage + '%';
   if (percentText) percentText.textContent = percentage + '%';
   
-  // ✨ TILFØJET: Beregn estimeret tid tilbage
-  if (timeLeftEl && percentage > 0 && percentage < 100) {
+  if (!timeLeftEl) return;
+  
+  // ✅ FORBEDRET: Håndter forskellige tilstande
+  if (percentage >= 100) {
+    // Alle analyser færdige - vis total tid
+    const totalTime = Math.round((Date.now() - progressState.startTime) / 1000);
+    if (totalTime > 60) {
+      const mins = Math.floor(totalTime / 60);
+      const secs = totalTime % 60;
+      timeLeftEl.textContent = `✓ Færdig på ${mins} min ${secs} sek`;
+    } else {
+      timeLeftEl.textContent = `✓ Færdig på ${totalTime} sekunder`;
+    }
+    timeLeftEl.style.color = 'var(--accent2)';
+    timeLeftEl.style.fontWeight = '500';
+  } else if (percentage > 0) {
+    // I gang med analyse - beregn estimeret tid
     const elapsed = Date.now() - progressState.startTime;
     const estimatedTotal = (elapsed / percentage) * 100;
     const timeLeft = Math.max(0, Math.round((estimatedTotal - elapsed) / 1000));
     
+    // Hvis flere forsikringer, vis samlet estimeret tid
+    const typesText = progressState.total > 1 ? ` (${progressState.total} forsikringer)` : '';
+    
     if (timeLeft > 60) {
       const mins = Math.floor(timeLeft / 60);
       const secs = timeLeft % 60;
-      timeLeftEl.textContent = `Ca. ${mins} min ${secs} sek tilbage`;
+      timeLeftEl.textContent = `Ca. ${mins} min ${secs} sek tilbage${typesText}`;
+    } else if (timeLeft > 0) {
+      timeLeftEl.textContent = `Ca. ${timeLeft} sekunder tilbage${typesText}`;
     } else {
-      timeLeftEl.textContent = `Ca. ${timeLeft} sekunder tilbage`;
+      timeLeftEl.textContent = `Afslutter...`;
     }
-  } else if (timeLeftEl && percentage >= 100) {
-    timeLeftEl.textContent = 'Færdig!';
+    timeLeftEl.style.color = 'var(--muted)';
+    timeLeftEl.style.fontWeight = '400';
   }
 }
 
@@ -2462,7 +2482,8 @@ async function analyzeType(type, nameA, nameB) {
   // =================================================================
   // CHECK SUPABASE CACHE FØRST
   // =================================================================
-  updateProgressItem(type, 'reading', 'Tjekker cache...');
+  // ✨ FORBEDRET: Vis "Henter cache..." kortvarigt
+  updateProgressItem(type, 'reading', 'Henter cache...');
   
   const cacheResult = await loadSupabaseCache(nameA, nameB, type);
   const cached = cacheResult ? cacheResult.data : null;
@@ -2483,6 +2504,7 @@ async function analyzeType(type, nameA, nameB) {
       response_time_ms: responseTime
     });
     
+    // ✨ FORBEDRET: Hop direkte til complete (ingen "Beregner...")
     updateProgressItem(type, 'complete');
     
     if (statusEl) {
@@ -2551,16 +2573,33 @@ async function analyzeType(type, nameA, nameB) {
     // ✨ FORBEDRET: Check response status før JSON parsing
     if (!res.ok) {
       const errorText = await res.text();
-      throw new Error(`Server fejl (${res.status}): ${errorText || 'Ingen detaljer'}`);
+      console.error('❌ API returned non-OK status:', res.status, errorText);
+      
+      // Parse error message hvis det er JSON
+      let errorMessage = 'Server fejl';
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error || errorJson.message || errorText;
+      } catch {
+        errorMessage = errorText;
+      }
+      
+      throw new Error(`${errorMessage}`);
     }
     
     // ✨ FORBEDRET: Try/catch omkring JSON parsing
     let data;
     try {
-      data = await res.json();
+      const responseText = await res.text();
+      console.log('📄 Raw response length:', responseText.length, 'chars');
+      
+      data = JSON.parse(responseText);
     } catch (jsonError) {
       console.error('❌ JSON parse error:', jsonError);
-      throw new Error('Serveren returnerede ugyldig data. Prøv igen om lidt.');
+      console.error('❌ This usually means Claude API returned malformed JSON');
+      
+      // Brugervenlig besked
+      throw new Error('Claude API returnerede ugyldig data. Dette kan skyldes: 1) Meget komplekse betingelser, 2) Uventet format i PDF, eller 3) Midlertidig serverfejl. Prøv igen.');
     }
     
     console.log('✅ API response received');
