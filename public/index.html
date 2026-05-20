@@ -1905,12 +1905,10 @@ async function analyzeType(type, nameA, nameB) {
   if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
  
   // =================================================================
-  // CHECK CACHE FØRST - FØR PDF EXTRACTION
+  // CHECK SUPABASE CACHE FØRST
   // =================================================================
-  // Vi bruger en simpel cache key baseret på navne og type
-  // Dette er OK fordi vi tjekker om PDF'erne har ændret sig senere
-  const simpleCacheKey = `cache_${nameA}_${nameB}_${type}`;
-  const cached = loadCache(simpleCacheKey);
+  const cacheResult = await loadSupabaseCache(nameA, nameB, type);
+  const cached = cacheResult ? cacheResult.data : null;
   
   console.log('🔍 Cache check for', type, '- cached:', cached ? 'FOUND' : 'null');
   
@@ -1981,8 +1979,7 @@ async function analyzeType(type, nameA, nameB) {
     console.log('✅ AFTER assignment - allResults:', allResults);
     console.log('✅ AFTER assignment - allResults[shortName]:', allResults[shortName]);
     
-    // Save to cache
-    saveCache(simpleCacheKey, parsed);
+    // Cache is saved by API to Supabase analysis_cache table
     console.log('✅ Saved to cache');
     
     // Log analysis
