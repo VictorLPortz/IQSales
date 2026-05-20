@@ -2194,16 +2194,21 @@ function updateProgressItem(type, status, message) {
       item.classList.add('active');
       icon.innerHTML = '📄';
       statusEl.innerHTML = message || 'Læser PDFer...';
+      progressState.items[type].progress = 10;
+      updateOverallProgress();
       break;
     case 'analyzing':
       item.classList.add('active');
       icon.innerHTML = '🤖';
-      statusEl.innerHTML = message || 'Claude analyserer...';
+      statusEl.innerHTML = message || 'IQSales analyserer...';
+      // Progress is set by simulated updates
+      updateOverallProgress();
       break;
     case 'complete':
       item.classList.add('complete');
       icon.innerHTML = '✅';
       statusEl.innerHTML = 'Færdig!';
+      progressState.items[type].progress = 100;
       progressState.completed++;
       updateOverallProgress();
       break;
@@ -2216,11 +2221,18 @@ function updateProgressItem(type, status, message) {
     default:
       icon.innerHTML = '⏳';
       statusEl.innerHTML = 'Venter...';
+      progressState.items[type].progress = 0;
   }
 }
 
 function updateOverallProgress() {
-  const percentage = Math.round((progressState.completed / progressState.total) * 100);
+  // Calculate average progress across all items
+  let totalProgress = 0;
+  Object.keys(progressState.items).forEach(type => {
+    totalProgress += progressState.items[type].progress || 0;
+  });
+  
+  const percentage = Math.round(totalProgress / progressState.total);
   const bar = document.getElementById('progress-bar-fill');
   const percentText = document.getElementById('progress-percentage');
   
@@ -2468,7 +2480,27 @@ async function analyzeType(type, nameA, nameB) {
   // =================================================================
 
   try {
-    updateProgressItem(type, 'analyzing', 'Claude analyserer betingelser...');
+    updateProgressItem(type, 'analyzing', 'IQSales analyserer betingelser...');
+    
+    // Start simulated progress updates
+    let currentProgress = 10;
+    const progressInterval = setInterval(() => {
+      currentProgress += Math.random() * 15; // Increment by 5-15%
+      if (currentProgress > 90) currentProgress = 90; // Cap at 90%
+      
+      // Update progress in state
+      progressState.items[type].progress = currentProgress;
+      
+      // Update status message based on progress
+      let statusMessage = 'IQSales analyserer betingelser...';
+      if (currentProgress > 70) {
+        statusMessage = 'Næsten færdig...';
+      } else if (currentProgress > 40) {
+        statusMessage = 'IQSales analyserer betingelser...';
+      }
+      
+      updateProgressItem(type, 'analyzing', statusMessage);
+    }, 2000); // Update every 2 seconds
     
     console.log('🔴 Calling API...');
     
@@ -2487,6 +2519,9 @@ async function analyzeType(type, nameA, nameB) {
         type: type
       })
     });
+    
+    // Stop progress simulation
+    clearInterval(progressInterval);
     
     const data = await res.json();
     console.log('✅ API response received');
