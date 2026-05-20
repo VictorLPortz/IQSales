@@ -2221,6 +2221,7 @@ function updateProgressItem(type, status, message) {
       progressState.items[type].progress = 100;
       progressState.completed++;
       updateOverallProgress();
+      checkIfAllComplete(); // ✨ Vis success box når første er klar
       break;
     case 'error':
       item.classList.add('error');
@@ -2332,15 +2333,19 @@ function showProgressSuccess() {
   const container = document.getElementById('progress-success-container');
   if (!container) return;
   
+  const allDone = Object.values(progressState.items).every(item => 
+    item.status === 'complete' || item.status === 'error'
+  );
+  
   container.innerHTML = `
     <div class="progress-success-box">
       <div class="progress-success-icon">🎉</div>
-      <div class="progress-success-title">Analyse færdig!</div>
+      <div class="progress-success-title">Analyse ${allDone ? 'færdig' : 'klar'}!</div>
       <div class="progress-success-subtitle">
-        ${progressState.completed} ${progressState.completed === 1 ? 'forsikring' : 'forsikringer'} analyseret
+        ${progressState.completed} ${allDone ? '' : `af ${progressState.total}`} ${progressState.completed === 1 ? 'forsikring' : 'forsikringer'} ${allDone ? 'analyseret' : 'klar - resten loader'}
       </div>
       <button class="progress-success-button" onclick="closeProgressModal()">
-        Se resultater →
+        ${allDone ? 'Se resultater' : 'Se hvad der er klar'} →
       </button>
     </div>
   `;
@@ -2391,8 +2396,24 @@ function checkIfAllComplete() {
     item.status === 'complete' || item.status === 'error'
   );
   
-  if (allDone && progressState.completed > 0) {
+  // Show success box when FIRST analysis is ready (not wait for all)
+  if (progressState.completed >= 1 && !document.querySelector('.progress-success-box')) {
     showProgressSuccess();
+  }
+  
+  // Update success box text as more complete
+  if (progressState.completed > 0) {
+    const successBox = document.querySelector('.progress-success-box');
+    if (successBox) {
+      const subtitle = successBox.querySelector('.progress-success-subtitle');
+      if (subtitle) {
+        if (allDone) {
+          subtitle.textContent = `${progressState.completed} ${progressState.completed === 1 ? 'forsikring' : 'forsikringer'} analyseret`;
+        } else {
+          subtitle.textContent = `${progressState.completed} af ${progressState.total} klar - resten loader`;
+        }
+      }
+    }
   }
 }
 
@@ -2437,7 +2458,10 @@ async function analyze() {
   // Init result area with tabs upfront
   const tabsInitHtml = `
     <button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button>
-    ${typesToAnalyze.map(t => {const shortName = t.replace('forsikring','').toLowerCase(); return `<button class="tab" id="mtab-${shortName}" onclick="switchMultiTab('${shortName}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_LABELS[t]} ⏳</button>`;}).join('')}`;
+    ${typesToAnalyze.map(t => {
+      const shortName = t.replace('forsikring','').toLowerCase(); 
+      return `<button class="tab" id="mtab-${shortName}" onclick="switchMultiTab('${shortName}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_EMOJI[t]} ${TYPE_LABELS[t]} <span style="color:var(--muted);font-size:11px">⏳</span></button>`;
+    }).join('')}`;
 
   resultDiv.innerHTML = `
     <div class="result-section">
@@ -2529,20 +2553,31 @@ async function analyzeType(type, nameA, nameB) {
   // API CALL - API handles PDF extraction and feedback
   // =================================================================
 
+  let progressInterval; // ⚡ Definer uden for try/catch så vi kan clear den i error handler
+
   try {
     // ✨ TILFØJET: Track start tid for denne specifikke analyse
     progressState.items[type].startTime = Date.now();
     
     updateProgressItem(type, 'analyzing', 'IQSales analyserer betingelser...');
+    updateTypeTabStatus(type, 'analyzing', 25); // ⚡ Estimeret 25 sekunder
     
     // Start simulated progress updates
     let currentProgress = 10;
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       currentProgress += Math.random() * 15; // Increment by 5-15%
       if (currentProgress > 90) currentProgress = 90; // Cap at 90%
       
       // Update progress in state
       progressState.items[type].progress = currentProgress;
+      
+      // Beregn estimeret tid tilbage baseret på faktisk elapsed tid
+      const elapsed = (Date.now() - progressState.items[type].startTime) / 1000; // i sekunder
+      const estimatedTotal = (elapsed / currentProgress) * 100;
+      const timeLeft = Math.max(0, Math.ceil(estimatedTotal - elapsed));
+      
+      // Update tab med estimeret tid
+      updateTypeTabStatus(type, 'analyzing', timeLeft);
       
       // Update status message based on progress
       let statusMessage = 'IQSales analyserer betingelser...';
@@ -2667,6 +2702,9 @@ async function analyzeType(type, nameA, nameB) {
   } catch (err) {
     console.error('❌ Analysis error:', err);
     
+    // Stop progress simulation hvis den kører
+    if (progressInterval) clearInterval(progressInterval);
+    
     // Determine error type
     let errorType = 'generic';
     let errorMessage = err.message;
@@ -2683,6 +2721,7 @@ async function analyzeType(type, nameA, nameB) {
     
     // Update progress with error
     updateProgressItem(type, 'error', errorMessage);
+    updateTypeTabStatus(type, 'error'); // ⚡ Opdater tab til error state
     showProgressError(type, errorMessage, errorType);
     
     // Track failed analysis
@@ -2710,9 +2749,99 @@ function enableTypeTab(type){
     tabBtn.disabled = false;
     tabBtn.style.opacity = '1';
     tabBtn.style.cursor = 'pointer';
-    tabBtn.innerHTML = TYPE_LABELS[type] + ' ✓';  // Bruger GLOBAL TYPE_LABELS
+    tabBtn.innerHTML = `${TYPE_EMOJI[type]} ${TYPE_LABELS[type]} <span style="color:var(--accent2)">✓</span>`;
   }
   renderTypeInTab(type);
+}
+
+// NY: Opdater tab med loading status + estimeret tid
+function updateTypeTabStatus(type, status, estimatedSeconds) {
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  const tabBtn = document.getElementById('mtab-' + shortName);
+  if (!tabBtn) return;
+  
+  const emoji = TYPE_EMOJI[type];
+  const label = TYPE_LABELS[type];
+  
+  switch(status) {
+    case 'waiting':
+      tabBtn.innerHTML = `${emoji} ${label} <span style="color:var(--muted);font-size:11px">⏳</span>`;
+      tabBtn.disabled = true;
+      tabBtn.style.opacity = '0.5';
+      tabBtn.style.cursor = 'not-allowed';
+      break;
+      
+    case 'analyzing':
+      const timeText = estimatedSeconds > 60 
+        ? `~${Math.ceil(estimatedSeconds/60)} min`
+        : `~${Math.ceil(estimatedSeconds)} sek`;
+      tabBtn.innerHTML = `${emoji} ${label} <span style="color:var(--muted);font-size:11px">⏳ ${timeText}</span>`;
+      tabBtn.disabled = true;
+      tabBtn.style.opacity = '0.7';
+      tabBtn.style.cursor = 'wait';
+      break;
+      
+    case 'complete':
+      tabBtn.innerHTML = `${emoji} ${label} <span style="color:var(--accent2)">✓</span>`;
+      tabBtn.disabled = false;
+      tabBtn.style.opacity = '1';
+      tabBtn.style.cursor = 'pointer';
+      break;
+      
+    case 'error':
+      tabBtn.innerHTML = `${emoji} ${label} <span style="color:var(--danger)">✗</span>`;
+      tabBtn.disabled = false; // Lad brugeren klikke for at retry
+      tabBtn.style.opacity = '1';
+      tabBtn.style.cursor = 'pointer';
+      
+      // Show error content in tab
+      const tabContent = document.getElementById(`tab-${type}`);
+      if (tabContent) {
+        tabContent.innerHTML = `
+          <div style="padding:2rem;text-align:center;background:var(--danger-light);border:1px solid var(--danger);border-radius:8px">
+            <div style="font-size:3rem;margin-bottom:1rem">❌</div>
+            <div style="font-size:18px;font-weight:600;margin-bottom:0.5rem;color:var(--danger)">
+              Analyse fejlede
+            </div>
+            <div style="font-size:14px;color:var(--muted);margin-bottom:1.5rem">
+              ${TYPE_LABELS[type]} kunne ikke analyseres
+            </div>
+            <button class="btn-primary" onclick="retryType('${type}')" style="background:var(--accent2);border-color:var(--accent2)">
+              🔄 Prøv igen
+            </button>
+          </div>
+        `;
+      }
+      break;
+  }
+}
+
+// NY: Retry en specifik forsikringstype
+async function retryType(type) {
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  // Reset tab status
+  updateTypeTabStatus(type, 'analyzing', 25);
+  
+  // Show analyzing message in tab content
+  const tabContent = document.getElementById(`tab-${type}`);
+  if (tabContent) {
+    tabContent.innerHTML = `
+      <div class="status-box">
+        Analyserer ${TYPE_LABELS[type]}...
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+    `;
+  }
+  
+  // Re-run analysis
+  try {
+    await analyzeType(type, nameA, nameB);
+  } catch (err) {
+    console.error('Retry failed:', err);
+    updateTypeTabStatus(type, 'error');
+  }
 }
 
 
