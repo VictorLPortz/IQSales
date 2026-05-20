@@ -629,9 +629,9 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 }
 
 .status-inib {
-  background: #F1EFE8;
-  color: #5F5E5A;
-  border: 1px solid #E3E1D9;
+  background: #FEF9C3;
+  color: #854D0E;
+  border: 1px solid #FDE047;
 }
 
 .coverage-detail {
@@ -1948,7 +1948,7 @@ async function analyzeType(type, nameA, nameB) {
     console.log('🔴 Calling API...');
     
     // Get auth token
-    const { data: { session } } = await sb.auth.getSession();
+    const { data: { session } } = await _sb.auth.getSession();
     
     const res = await fetch('/api/analyze', {
       method: 'POST',
@@ -2188,7 +2188,7 @@ function enableTypeTab(type){
             <span>Undtaget</span>
           </div>
           <div class="badge-legend-item">
-            <div class="badge-legend-icon" style="background: #F1EFE8; color: #5F5E5A; border: 1px solid #E3E1D9;">?</div>
+            <div class="badge-legend-icon" style="background: #FEF9C3; color: #854D0E; border: 1px solid #FDE047;">?</div>
             <span>INIB</span>
           </div>
         </div>
@@ -2361,7 +2361,7 @@ function generateCoverageHTML(data) {
         <span>Undtaget</span>
       </div>
       <div class="badge-legend-item">
-        <div class="badge-legend-icon" style="background: #F1EFE8; color: #5F5E5A; border: 1px solid #E3E1D9;">?</div>
+        <div class="badge-legend-icon" style="background: #FEF9C3; color: #854D0E; border: 1px solid #FDE047;">?</div>
         <span>INIB</span>
       </div>
     </div>
@@ -2390,7 +2390,7 @@ function getStatusBg(status) {
   if (status === 'yes') return '#EAF3DE';
   if (status === 'no') return '#FCEBEB';
   // partial removed
-  if (status === 'inib') return '#F1EFE8';
+  if (status === 'inib') return '#FEF9C3';
   return '#F8F9FA';
 }
 
@@ -2398,7 +2398,7 @@ function getStatusColor(status) {
   if (status === 'yes') return '#3B6D11';
   if (status === 'no') return '#791F1F';
   // partial removed
-  if (status === 'inib') return '#5F5E5A';
+  if (status === 'inib') return '#854D0E';
   return '#6C757D';
 }
 
@@ -2406,7 +2406,7 @@ function getStatusBorder(status) {
   if (status === 'yes') return '#C6E5B3';
   if (status === 'no') return '#F5C6CB';
   // partial removed
-  if (status === 'inib') return '#E3E1D9';
+  if (status === 'inib') return '#FDE047';
   return '#DEE2E6';
 }
 
@@ -2430,23 +2430,23 @@ function getStatusBg(status) {
   if (status === 'yes') return '#EAF3DE';
   if (status === 'no') return '#FCEBEB';
   // partial removed
-  if (status === 'inib') return '#F1EFE8';
-  return '#F1EFE8';
+  if (status === 'inib') return '#FEF9C3';
+  return '#FEF9C3';
 }
 
 function getStatusColor(status) {
   if (status === 'yes') return '#3B6D11';
   if (status === 'no') return '#791F1F';
   // partial removed
-  if (status === 'inib') return '#5F5E5A';
-  return '#5F5E5A';
+  if (status === 'inib') return '#854D0E';
+  return '#854D0E';
 }
  
   function getStatusBorder(status) {
   if (status === 'yes') return '#C6E5B3';
   if (status === 'no') return '#F5C6CB';
   // partial removed
-  if (status === 'inib') return '#E3E1D9';
+  if (status === 'inib') return '#FDE047';
   return '#DEE2E6';
 }
   
