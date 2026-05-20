@@ -354,7 +354,10 @@ Returner KUN valid JSON uden markdown backticks:
       "amount_a": "Beløb eller vilkår",
       "amount_b": "Beløb eller vilkår",
       "winner": "a/b/equal",
-      "reason": "Forklaring på hvorfor"
+      "reason": "Forklaring på hvorfor",
+      "sales_tip": "Max 1 sætning salgstip hvis winner=a, ellers tom streng",
+      "objection_tip": "Max 1 sætning håndtering af indsigelse hvis winner=b, ellers tom streng",
+      "customer_explanation": "Max 1 sætning i simpelt dansk"
     }
   ],
   "pitch": {
