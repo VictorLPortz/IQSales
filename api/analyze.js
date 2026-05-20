@@ -7,6 +7,57 @@ const anthropic = new Anthropic({
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// ═══════════════════════════════════════════════════════════════
+// JSON SANITIZATION FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Basic JSON sanitization - fixes common issues
+ */
+function sanitizeJSON(jsonStr) {
+  return jsonStr
+    .replace(/,(\s*[}\]])/g, '$1')      // Remove trailing commas
+    .replace(/\n/g, ' ')                 // Remove newlines
+    .replace(/\r/g, '')                  // Remove carriage returns
+    .replace(/\t/g, ' ')                 // Replace tabs with spaces
+    .replace(/  +/g, ' ')                // Collapse multiple spaces
+    .trim();
+}
+
+/**
+ * Aggressive JSON cleaning - last resort fallback
+ * Fixes unescaped quotes and other critical issues
+ */
+function aggressiveJSONClean(jsonStr) {
+  let cleaned = jsonStr;
+  
+  // Step 1: Remove trailing commas (again, to be safe)
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+  
+  // Step 2: Fix unescaped quotes inside string values
+  // Match "key": "value with "quotes" inside"
+  // This is VERY aggressive - only use as fallback
+  cleaned = cleaned.replace(
+    /"([^"]+)":\s*"([^"]*)"/g,
+    function(match, key, value) {
+      // Escape internal quotes in the value
+      const escapedValue = value
+        .replace(/\\"/g, 'TEMP_ESCAPED_QUOTE')  // Protect already escaped
+        .replace(/"/g, '\\"')                    // Escape unescaped quotes
+        .replace(/TEMP_ESCAPED_QUOTE/g, '\\"'); // Restore
+      return `"${key}": "${escapedValue}"`;
+    }
+  );
+  
+  // Step 3: Remove control characters
+  cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, ' ');
+  
+  // Step 4: Normalize whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  return cleaned;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -170,20 +221,48 @@ ${pdfB.full_text.substring(0, 100000)}
     const match = cleanedText.match(/\{[\s\S]*\}/);
     
     if (!match) {
-      throw new Error('Failed to parse analysis result');
+      console.error('❌ No JSON object found in response');
+      console.error('Response text:', txt.substring(0, 500));
+      throw new Error('Claude returnerede ikke valid JSON format');
     }
 
     let jsonStr = match[0];
     
-    // Clean common JSON issues
-    jsonStr = jsonStr
-      .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
-      .replace(/\n/g, ' ')             // Remove newlines
-      .replace(/\r/g, '')              // Remove carriage returns
-      .replace(/\t/g, ' ')             // Replace tabs with spaces
-      .replace(/  +/g, ' ');           // Collapse multiple spaces
+    // ✨ ROBUST JSON SANITIZATION
+    jsonStr = sanitizeJSON(jsonStr);
+    
+    // ✨ FORBEDRET: Try/catch med detaljeret error logging
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('❌ JSON Parse Error:', parseError.message);
+      console.error('❌ Error position:', parseError.message.match(/position (\d+)/)?.[1]);
+      console.error('❌ JSON length:', jsonStr.length);
+      
+      // Log context around error position
+      const posMatch = parseError.message.match(/position (\d+)/);
+      if (posMatch) {
+        const pos = parseInt(posMatch[1]);
+        const start = Math.max(0, pos - 100);
+        const end = Math.min(jsonStr.length, pos + 100);
+        console.error('❌ Context around error:');
+        console.error(jsonStr.substring(start, end));
+      }
+      
+      // ✨ FALLBACK: Try aggressive cleaning
+      console.log('🔄 Attempting aggressive JSON cleaning...');
+      try {
+        jsonStr = aggressiveJSONClean(jsonStr);
+        parsed = JSON.parse(jsonStr);
+        console.log('✅ Aggressive cleaning succeeded!');
+      } catch (secondError) {
+        console.error('❌ Aggressive cleaning also failed:', secondError.message);
+        throw new Error('Claude returnerede ugyldig JSON. Prøv igen eller kontakt support.');
+      }
+    }
 
-    const parsed = JSON.parse(jsonStr);
+    console.log('✅ JSON parsed successfully');
 
     // Cache the result
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_cache`, {
@@ -263,6 +342,32 @@ ${pdfB.full_text.substring(0, 100000)}
 
 function getSystemPrompt() {
   return `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
+
+# ⚠️ CRITICAL: JSON FORMATTING RULES (FØLG DISSE STRENGT!)
+
+Du SKAL returnere 100% VALID JSON. Følg disse regler NØJE:
+
+1. **ESCAPE ALL QUOTES I STRINGS:**
+   ✅ KORREKT: "amount_a": "Dækker \\"stormskader\\" op til 50.000 kr"
+   ❌ FORKERT: "amount_a": "Dækker "stormskader" op til 50.000 kr"
+
+2. **INGEN LINE BREAKS I JSON STRINGS:**
+   ✅ KORREKT: "reason": "Linje 1. Linje 2."
+   ❌ FORKERT: "reason": "Linje 1
+                           Linje 2"
+
+3. **ESCAPE SPECIAL CHARS:**
+   - Backslash: \\\\ → \\\\\\\\
+   - Quote: " → \\"
+   - Newline: Brug mellemrum eller . i stedet
+
+4. **HVIS I TVIVL - UNDLAD QUOTES:**
+   ✅ SIKKERT: "amount_a": "Dækker stormskader op til 50000 kr"
+   ❌ RISIKABELT: "amount_a": "Dækker "stormskader" op til 50.000"
+
+5. **TEST MENTALT:**
+   Før du returnerer JSON, spørg dig selv: "Ville JSON.parse() acceptere dette?"
+   Hvis nej → ret det!
 
 # DIN OPGAVE
 Analyser de to sæt forsikringsbetingelser MEGET nøje og identificer præcist hvad hvert selskab dækker og IKKE dækker.
