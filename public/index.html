@@ -2096,6 +2096,14 @@ function enableTypeTab(type){
     const btnAId = 'btn-' + idx + '-a';
     const btnBId = 'btn-' + idx + '-b';
     
+    // Helper function to get detail text with INIB explanation
+    function getDetailText(amount, status) {
+      if (status === 'inib') {
+        return 'Ikke nævnt i betingelserne. Selskabet kan vælge at dække eller afvise i tilfælde af skade – en gråzone du bør få afklaret med kunden, så kunden forstår risici.';
+      }
+      return amount || 'Ingen detaljer';
+    }
+    
     return '<div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
       '<div style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">' +
         '<h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">' + c.category + '</h3>' +
@@ -2113,7 +2121,7 @@ function enableTypeTab(type){
               getStatusIcon(c.status_a) + ' ' + getStatusLabel(c.status_a) +
             '</div>' +
             '<div style="position: relative;">' +
-              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_a || 'Ingen detaljer') + '</p>' +
+              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + getDetailText(c.amount_a, c.status_a) + '</p>' +
               ((c.amount_a && c.amount_a.length > 150) ? '<button onclick="toggleText(\'' + textAId + '\', \'' + btnAId + '\')" id="' + btnAId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
             '</div>' +
             ((c.sales_tip && isWinner) ? 
@@ -2133,7 +2141,7 @@ function enableTypeTab(type){
               getStatusIcon(c.status_b) + ' ' + getStatusLabel(c.status_b) +
             '</div>' +
             '<div style="position: relative;">' +
-              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + (c.amount_b || 'Ingen detaljer') + '</p>' +
+              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + getDetailText(c.amount_b, c.status_b) + '</p>' +
               ((c.amount_b && c.amount_b.length > 150) ? '<button onclick="toggleText(\'' + textBId + '\', \'' + btnBId + '\')" id="' + btnBId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
             '</div>' +
             ((c.objection_tip && isLoser) ? 
@@ -2276,6 +2284,14 @@ function generateCoverageHTML(data) {
     const btnAId = `btn-${idx}-a`;
     const btnBId = `btn-${idx}-b`;
     
+    // Helper function to get detail text with INIB explanation
+    const getDetailText = (amount, status) => {
+      if (status === 'inib') {
+        return 'Ikke nævnt i betingelserne. Selskabet kan vælge at dække eller afvise i tilfælde af skade – en gråzone du bør få afklaret med kunden, så kunden forstår risici.';
+      }
+      return amount || 'Ingen detaljer';
+    };
+    
     return `
       <div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         
@@ -2296,7 +2312,7 @@ function generateCoverageHTML(data) {
                 ${getStatusIcon(c.status_a)} ${getStatusLabel(c.status_a)}
               </div>
               <div style="position: relative;">
-                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_a || 'Ingen detaljer'}</p>
+                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_a, c.status_a)}</p>
                 ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
               </div>
               
@@ -2323,7 +2339,7 @@ function generateCoverageHTML(data) {
                 ${getStatusIcon(c.status_b)} ${getStatusLabel(c.status_b)}
               </div>
               <div style="position: relative;">
-                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_b || 'Ingen detaljer'}</p>
+                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_b, c.status_b)}</p>
                 ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
               </div>
               
@@ -2529,6 +2545,14 @@ function generateCoverageHTML(data) {
     const btnAId = `btn-${idx}-a`;
     const btnBId = `btn-${idx}-b`;
     
+    // Helper function to get detail text with INIB explanation
+    const getDetailText = (amount, status) => {
+      if (status === 'inib') {
+        return 'Ikke nævnt i betingelserne. Selskabet kan vælge at dække eller afvise i tilfælde af skade – en gråzone du bør få afklaret med kunden, så kunden forstår risici.';
+      }
+      return amount || 'Ingen detaljer';
+    };
+    
     return `
       <div class="${cardClass}">
         <div class="card-header" style="background: ${isTie ? '#FFFFFF' : (isWinner ? '#E1F5EE' : '#FAEEDA')};">
@@ -2548,7 +2572,7 @@ function generateCoverageHTML(data) {
               <div class="coverage-status status-${c.status_a}">
                 ${getStatusIcon(c.status_a)} ${getStatusLabel(c.status_a)}
               </div>
-              <p id="${textAId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_a || 'Ingen detaljer'}</p>
+              <p id="${textAId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_a, c.status_a)}</p>
               ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
             </div>
             
@@ -2561,7 +2585,7 @@ function generateCoverageHTML(data) {
               <div class="coverage-status status-${c.status_b}">
                 ${getStatusIcon(c.status_b)} ${getStatusLabel(c.status_b)}
               </div>
-              <p id="${textBId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${c.amount_b || 'Ingen detaljer'}</p>
+              <p id="${textBId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_b, c.status_b)}</p>
               ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
             </div>
             
