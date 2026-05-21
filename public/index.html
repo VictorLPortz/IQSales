@@ -24,7 +24,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F4F3EF;--surface:#fff;--border:#E3E1D9;--text:#141412;--muted:#7A7870;--accent:#3D5548;--accent2:#3D5548;--accent-light:#E6F2EC;--danger:#B91C1C;--danger-light:#FEF2F2;--warn:#92400E;--warn-light:#FFFBEB;--green:#15803D;--green-light:#F0FDF4;--r:14px;--rs:8px}
+:root{--bg:#F4F3EF;--surface:#fff;--border:#E3E1D9;--text:#141412;--muted:#7A7870;--accent:#75A48E;--accent2:#75A48E;--accent-light:#E8F5EF;--danger:#B91C1C;--danger-light:#FEF2F2;--warn:#92400E;--warn-light:#FFFBEB;--green:#15803D;--green-light:#F0FDF4;--r:14px;--rs:8px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 header{background:var(--accent);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
@@ -94,6 +94,30 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 @keyframes dt{0%,80%,100%{opacity:.2}40%{opacity:1}}
 .result-section{animation:fadeIn .4s ease;margin-top:1.5rem}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* TOAST NOTIFICATIONS */
+.toast-container{position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:12px;max-width:400px}
+.toast{background:white;border-radius:12px;padding:1rem 1.25rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);border:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.3s;transform:translateX(450px);opacity:0}
+.toast.show{transform:translateX(0);opacity:1}
+.toast.hide{transform:translateX(450px);opacity:0}
+.toast:hover{transform:translateX(-4px);box-shadow:0 12px 32px rgba(0,0,0,0.2)}
+.toast-icon{font-size:24px;flex-shrink:0}
+.toast-content{flex:1}
+.toast-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.toast-message{font-size:12px;color:var(--muted)}
+.toast-close{font-size:18px;color:var(--muted);cursor:pointer;opacity:0.5;transition:opacity 0.15s}
+.toast-close:hover{opacity:1}
+.toast.success{border-left:4px solid var(--green)}
+.toast.error{border-left:4px solid var(--danger)}
+.toast.celebration{border-left:4px solid #F59E0B;background:linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)}
+
+/* PAUSE/RESUME CONTROLS */
+.progress-controls{display:flex;gap:8px;margin-top:1rem;justify-content:center}
+.progress-control-btn{padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);background:white;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s}
+.progress-control-btn:hover{background:var(--bg);border-color:var(--accent2)}
+.progress-control-btn:disabled{opacity:0.5;cursor:not-allowed}
+.progress-control-btn.danger:hover{background:#FEF2F2;border-color:var(--danger);color:var(--danger)}
+
 .tabs{display:inline-flex;gap:4px;margin-bottom:1.25rem;background:var(--bg);border-radius:var(--rs);padding:4px;border:1px solid var(--border)}
 .filter-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;border-bottom:2px solid var(--border);padding-bottom:0}
 .filter-tab{padding:0.75rem 1.25rem;background:none;border:none;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;position:relative;transition:all .15s;border-radius:8px 8px 0 0;font-family:inherit}
@@ -1558,6 +1582,179 @@ function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(t
 
 const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
 
+  // ==================== BONUS FEATURES: TOAST + SOUND + PAUSE ====================
+  
+  // Toast container
+  let toastContainer = null;
+  function getToastContainer() {
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+  }
+  
+  // Show toast notification
+  function showToast(type, title, message, onClick) {
+    const container = getToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+      success: '✅',
+      error: '❌',
+      celebration: '🎉'
+    };
+    
+    toast.innerHTML = `
+      <div class="toast-icon">${icons[type] || '💡'}</div>
+      <div class="toast-content">
+        <div class="toast-title">${title}</div>
+        ${message ? `<div class="toast-message">${message}</div>` : ''}
+      </div>
+      <div class="toast-close">×</div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Show animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Click handler
+    if (onClick) {
+      toast.style.cursor = 'pointer';
+      toast.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('toast-close')) {
+          onClick();
+        }
+      });
+    }
+    
+    // Close button
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.classList.add('hide');
+      setTimeout(() => toast.remove(), 300);
+    });
+    
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      toast.classList.add('hide');
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+    
+    return toast;
+  }
+  
+  // Sound Effects using Web Audio API
+  const audioContext = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
+  let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false'; // Default true
+  
+  function playSound(type) {
+    if (!soundsEnabled || !audioContext) return;
+    
+    try {
+      if (type === 'success') {
+        // Pleasant chime
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.setValueAtTime(800, audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 0.5);
+      } else if (type === 'celebration') {
+        // Ta-da with notes
+        const notes = [
+          { freq: 523.25, time: 0, duration: 0.15 },
+          { freq: 659.25, time: 0.15, duration: 0.15 },
+          { freq: 783.99, time: 0.3, duration: 0.3 },
+          { freq: 1046.50, time: 0.6, duration: 0.4 }
+        ];
+        notes.forEach(note => {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          osc.frequency.setValueAtTime(note.freq, audioContext.currentTime + note.time);
+          gain.gain.setValueAtTime(0.25, audioContext.currentTime + note.time);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.time + note.duration);
+          osc.start(audioContext.currentTime + note.time);
+          osc.stop(audioContext.currentTime + note.time + note.duration);
+        });
+      } else if (type === 'error') {
+        // Soft bonk
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.setValueAtTime(150, audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 0.2);
+      }
+    } catch (err) {
+      console.error('Sound play failed:', err);
+    }
+  }
+  
+  function toggleSounds() {
+    soundsEnabled = !soundsEnabled;
+    localStorage.setItem('soundsEnabled', soundsEnabled);
+    
+    // Update button text
+    const btn = document.getElementById('sound-toggle-btn');
+    if (btn) {
+      btn.innerHTML = `🔊 Lyd ${soundsEnabled ? 'til' : 'fra'}`;
+    }
+    
+    // Show feedback
+    showToast('success', soundsEnabled ? '🔊 Lyde aktiveret' : '🔇 Lyde deaktiveret', '');
+    
+    return soundsEnabled;
+  }
+  
+  // Pause/Resume Analysis
+  let analysisPaused = false;
+  let pausedTypes = [];
+  
+  function pauseAnalysis() {
+    analysisPaused = true;
+    // Update UI
+    const pauseBtn = document.getElementById('pause-analysis-btn');
+    if (pauseBtn) {
+      pauseBtn.innerHTML = '▶️ Fortsæt';
+      pauseBtn.onclick = resumeAnalysis;
+    }
+    showToast('success', '⏸️ Analyse sat på pause', 'Klik "Fortsæt" for at genoptage');
+  }
+  
+  function resumeAnalysis() {
+    analysisPaused = false;
+    const pauseBtn = document.getElementById('pause-analysis-btn');
+    if (pauseBtn) {
+      pauseBtn.innerHTML = '⏸️ Pause';
+      pauseBtn.onclick = pauseAnalysis;
+    }
+    showToast('success', '▶️ Analyse genoptaget', 'Fortsætter hvor vi slap...');
+  }
+  
+  function stopAnalysis() {
+    if (confirm('Er du sikker på du vil stoppe analysen? Dette kan ikke fortrydes.')) {
+      analysisPaused = true;
+      if (progressModal) {
+        closeProgressModal();
+      }
+      showToast('error', '⏹️ Analyse stoppet', 'Du kan starte forfra når du er klar');
+    }
+  }
+
   // ==================== CACHE STATUS FUNCTIONS ====================
 
 let cacheStatusData = {};
@@ -2175,6 +2372,18 @@ function showProgressModal(types) {
           `).join('')}
         </div>
         
+        <div class="progress-controls">
+          <button class="progress-control-btn" id="pause-analysis-btn" onclick="pauseAnalysis()">
+            ⏸️ Pause
+          </button>
+          <button class="progress-control-btn danger" onclick="stopAnalysis()">
+            ⏹️ Stop
+          </button>
+          <button class="progress-control-btn" onclick="toggleSounds()" id="sound-toggle-btn">
+            🔊 Lyd ${soundsEnabled ? 'til' : 'fra'}
+          </button>
+        </div>
+        
         <div id="progress-error-container"></div>
         <div id="progress-success-container"></div>
       </div>
@@ -2414,6 +2623,14 @@ function checkIfAllComplete() {
         }
       }
     }
+  }
+  
+  // 🎉 CELEBRATION når ALLE er færdige
+  if (allDone && progressState.completed > 1 && progressState.completed === progressState.total) {
+    playSound('celebration');
+    showToast('celebration', '🎉 Alle analyser færdige!', `${progressState.completed} forsikringer klar til brug`, () => {
+      closeProgressModal();
+    });
   }
 }
 
@@ -2752,6 +2969,13 @@ function enableTypeTab(type){
     tabBtn.innerHTML = `${TYPE_EMOJI[type]} ${TYPE_LABELS[type]} <span style="color:var(--accent2)">✓</span>`;
   }
   renderTypeInTab(type);
+  
+  // 🎉 TOAST + SOUND når færdig
+  playSound('success');
+  showToast('success', `${TYPE_LABELS[type]} klar!`, 'Klik for at se analysen', () => {
+    switchMultiTab(shortName);
+    closeProgressModal();
+  });
 }
 
 // NY: Opdater tab med loading status + estimeret tid
@@ -2812,6 +3036,12 @@ function updateTypeTabStatus(type, status, estimatedSeconds) {
           </div>
         `;
       }
+      
+      // 🎯 TOAST + SOUND ved fejl
+      playSound('error');
+      showToast('error', `${TYPE_LABELS[type]} fejlede`, 'Klik for at prøve igen', () => {
+        retryType(type);
+      });
       break;
   }
 }
