@@ -73,7 +73,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .cache-missing .cache-status-badge{background:#DC2626;color:#fff}
 .cache-actions{display:flex;gap:6px;margin-top:8px;justify-content:center}
 .cache-btn{padding:6px 12px;font-size:11px;font-weight:500;border:1.5px solid;border-radius:var(--rs);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
-.cache-btn-use{background:#fff;border-color:#10B981;color:#059669}
+.cache-btn-use{background:var(--surface);border-color:#10B981;color:#059669}
 .cache-btn-use:hover{background:#D1FAE5}
 .cache-btn-upload{background:#D97706;border-color:#D97706;color:#fff}
 .cache-btn-upload:hover{background:#B45309;border-color:#B45309}
@@ -97,7 +97,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
 /* TOAST NOTIFICATIONS */
 .toast-container{position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:12px;max-width:400px}
-.toast{background:white;border-radius:12px;padding:1rem 1.25rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);border:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.3s;transform:translateX(450px);opacity:0}
+.toast{background:var(--surface);border-radius:12px;padding:1rem 1.25rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);border:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.3s;transform:translateX(450px);opacity:0}
 .toast.show{transform:translateX(0);opacity:1}
 .toast.hide{transform:translateX(450px);opacity:0}
 .toast:hover{transform:translateX(-4px);box-shadow:0 12px 32px rgba(0,0,0,0.2)}
@@ -113,7 +113,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
 /* PAUSE/RESUME CONTROLS */
 .progress-controls{display:flex;gap:8px;margin-top:1rem;justify-content:center}
-.progress-control-btn{padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);background:white;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s}
+.progress-control-btn{padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s}
 .progress-control-btn:hover{background:var(--bg);border-color:var(--accent2)}
 .progress-control-btn:disabled{opacity:0.5;cursor:not-allowed}
 .progress-control-btn.danger:hover{background:#FEF2F2;border-color:var(--danger);color:var(--danger)}
@@ -421,7 +421,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 }
 
 .coverage-card {
-  background: white;
+  background: var(--surface);
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   padding: 20px;
@@ -794,7 +794,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 }
 
 .progress-modal {
-  background: white;
+  background: var(--surface);
   border-radius: 16px;
   padding: 2rem;
   width: 90%;
@@ -994,7 +994,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 }
 
 .progress-error-actions button.secondary {
-  background: white;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
 }
@@ -1179,7 +1179,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 <section style="background:var(--bg);border-top:1px solid #E3E1D9;padding:3rem 1.5rem;margin-top:2rem">
   <div style="max-width:960px;margin:0 auto">
 
-    <div style="background:#fff;border:1px solid #E3E1D9;border-radius:14px;padding:1.5rem;margin-bottom:2rem">
+    <div style="background:var(--surface);border:1px solid #E3E1D9;border-radius:14px;padding:1.5rem;margin-bottom:2rem">
       <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:#0A2540;margin-bottom:4px">💬 Giv os generel feedback</div>
       <div style="font-size:13px;color:#7A7870;margin-bottom:1rem;line-height:1.6">Har du idéer til forbedringer, oplevet noget der ikke virker, eller vil du rose noget? Skriv det her — vi læser alt og bruger det til at gøre IQSales bedre.</div>
       <textarea id="general-fb-text" placeholder="Skriv din feedback her..." style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid #E3E1D9;border-radius:8px;resize:vertical;min-height:80px;margin-bottom:10px;color:#141412;background:var(--surface);outline:none" onfocus="this.style.borderColor='#1A3C2E'" onblur="this.style.borderColor='#E3E1D9'"></textarea>
@@ -1205,7 +1205,7 @@ const FAQS=[
 ];
 FAQS.forEach((faq,i)=>{
   const el=document.createElement('div');
-  el.style.cssText='background:#fff;border:1px solid #E3E1D9;border-radius:10px;overflow:hidden';
+  el.style.cssText='background:var(--surface);border:1px solid #E3E1D9;border-radius:10px;overflow:hidden';
   el.innerHTML=`<button onclick="toggleFaq(${i})" style="width:100%;text-align:left;padding:1rem 1.25rem;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:DM Sans,sans-serif"><span style="font-size:14px;font-weight:500;color:#141412">${faq.q}</span><svg id="faq-arrow-${i}" viewBox="0 0 12 8" fill="none" style="width:12px;height:8px;flex-shrink:0;transition:transform .2s"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></button><div id="faq-body-${i}" style="display:none;padding:0 1.25rem 1rem;font-size:13px;color:#7A7870;line-height:1.7;border-top:1px solid #E3E1D9">${faq.a}</div>`;
   document.getElementById('faq-list').appendChild(el);
 });
@@ -3131,7 +3131,7 @@ async function retryType(type) {
       return amount || 'Ingen detaljer';
     }
     
-    return '<div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
+    return '<div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
       '<div style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">' +
         '<h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">' + c.category + '</h3>' +
         (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
@@ -3320,7 +3320,7 @@ function generateCoverageHTML(data) {
     };
     
     return `
-      <div style="background: white; border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         
         <div style="background: ${headerBg}; border: 2px solid ${headerBorder}; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
           <h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">${c.category}</h3>
