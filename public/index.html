@@ -1176,13 +1176,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   <div id="result"></div>
 </main>
 
-<section style="background:#F4F3EF;border-top:1px solid #E3E1D9;padding:3rem 1.5rem;margin-top:2rem">
+<section style="background:var(--bg);border-top:1px solid #E3E1D9;padding:3rem 1.5rem;margin-top:2rem">
   <div style="max-width:960px;margin:0 auto">
 
     <div style="background:#fff;border:1px solid #E3E1D9;border-radius:14px;padding:1.5rem;margin-bottom:2rem">
       <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:#0A2540;margin-bottom:4px">💬 Giv os generel feedback</div>
       <div style="font-size:13px;color:#7A7870;margin-bottom:1rem;line-height:1.6">Har du idéer til forbedringer, oplevet noget der ikke virker, eller vil du rose noget? Skriv det her — vi læser alt og bruger det til at gøre IQSales bedre.</div>
-      <textarea id="general-fb-text" placeholder="Skriv din feedback her..." style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid #E3E1D9;border-radius:8px;resize:vertical;min-height:80px;margin-bottom:10px;color:#141412;background:#F4F3EF;outline:none" onfocus="this.style.borderColor='#1B7F4F';this.style.background='#fff'" onblur="this.style.borderColor='#E3E1D9';this.style.background='#F4F3EF'"></textarea>
+      <textarea id="general-fb-text" placeholder="Skriv din feedback her..." style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid #E3E1D9;border-radius:8px;resize:vertical;min-height:80px;margin-bottom:10px;color:#141412;background:var(--surface);outline:none" onfocus="this.style.borderColor='#1A3C2E'" onblur="this.style.borderColor='#E3E1D9'"></textarea>
       <div style="display:flex;gap:10px;align-items:center">
         <button onclick="sendGeneralFb(this)" style="padding:9px 20px;font-size:13px;font-weight:500;border:none;border-radius:8px;cursor:pointer;background:var(--accent2);color:#fff;font-family:'DM Sans',sans-serif">Send feedback</button>
         <div id="general-fb-success" style="display:none;font-size:13px;color:#1B7F4F;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,8 6,12 14,4" stroke="#1B7F4F" stroke-width="2" stroke-linecap="round" fill="none"/></svg> Tak! Vi læser din feedback.</div>
