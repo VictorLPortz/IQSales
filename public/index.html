@@ -1793,13 +1793,15 @@ async function checkCacheStatus() {
     cacheStatusData = {};
     data.forEach(row => {
       const key = `${row.selskab}:${row.produkt_type}`;
-      const ageDays = Math.floor((Date.now() - new Date(row.parsed_at).getTime()) / (1000 * 60 * 60 * 24));
+      // Use created_at since parsed_at may be null for manual uploads
+      const uploadDate = row.created_at || row.parsed_at || row.updated_at;
+      const ageDays = uploadDate ? Math.floor((Date.now() - new Date(uploadDate).getTime()) / (1000 * 60 * 60 * 24)) : 999;
       
       cacheStatusData[key] = {
         status: ageDays <= 7 ? 'fresh' : ageDays <= 14 ? 'stale' : 'old',
-        ageDays,
+        ageInDays: ageDays,
         fullText: row.full_text,
-        parsedAt: row.parsed_at
+        parsedAt: uploadDate
       };
     });
     
