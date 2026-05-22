@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Betingelser - IQSales</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #FFFFFF;
+      --surface: #F8F6F1;
+      --accent: #1A3C2E;
+      --border: #E3E1D9;
+      --text: #141412;
+      --muted: #7A7870;
+      --danger: #B91C1C;
+      --r: 14px;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .top-bar {
+      background: var(--accent);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    .back-link {
+      color: rgba(255,255,255,0.9);
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .back-link:hover {
+      color: #fff;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+    
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 3rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    
+    .last-updated {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    p {
+      margin-bottom: 1rem;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    
+    ul {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+    
+    li {
+      margin-bottom: 0.5rem;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    
+    .highlight {
+      background: #FEF9E7;
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 4px;
+    }
+    
+    .warning {
+      background: #FEE2E2;
+      border-left: 3px solid var(--danger);
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 4px;
+    }
+    
+    .contact-box {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .contact-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 0.75rem;
+    }
+    
+    .contact-info {
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    
+    @media (max-width: 640px) {
+      .container {
+        margin: 1.5rem auto;
+      }
+      
+      .card {
+        padding: 1.5rem;
+      }
+      
+      h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/" class="logo">IQSales</a>
+    <a href="/signup.html" class="back-link">← Tilbage til oprettelse</a>
+  </div>
+  
+  <div class="container">
+    <div class="card">
+      <h1>Brugerbetingelser</h1>
+      <p class="last-updated">Sidst opdateret: 23. maj 2026</p>
+      
+      <div class="highlight">
+        <strong>Kort fortalt:</strong> Brug IQSales ansvarligt til forsikringssammenligninger. Del ikke dit login. Vi forbeholder os retten til at lukke konti ved misbrug.
+      </div>
+      
+      <h2>1. Accept af betingelser</h2>
+      <p>Ved at oprette en konto på IQSales accepterer du disse brugerbetingelser. Hvis du ikke accepterer betingelserne, må du ikke bruge platformen.</p>
+      
+      <h2>2. Hvad er IQSales?</h2>
+      <p>IQSales er en platform til forsikringsmæglere og sælgere, der hjælper med at:</p>
+      <ul>
+        <li>Sammenligne forsikringsbetingelser mellem forskellige selskaber</li>
+        <li>Generere salgspitch baseret på konkrete forskelle</li>
+        <li>Analysere dækninger og identificere fordele</li>
+        <li>Forberede kundemøder med præcise sammenligninger</li>
+      </ul>
+      
+      <h2>3. Krav til brugere</h2>
+      <p>For at bruge IQSales skal du:</p>
+      <ul>
+        <li>Være minimum 18 år</li>
+        <li>Arbejde professionelt med forsikring (mægler, sælger, rådgiver)</li>
+        <li>Have tilladelse fra din arbejdsgiver til at bruge platformen</li>
+        <li>Angive korrekte oplysninger ved oprettelse</li>
+      </ul>
+      
+      <h2>4. Din brugerkonto</h2>
+      
+      <h3>4.1 Ansvar for login</h3>
+      <p>Du er ansvarlig for:</p>
+      <ul>
+        <li>At holde dit password sikkert og hemmeligt</li>
+        <li>Alle aktiviteter der sker via din konto</li>
+        <li>At logge ud når du forlader arbejdspladsen</li>
+        <li>Straks at informere os hvis din konto er kompromitteret</li>
+      </ul>
+      
+      <div class="warning">
+        <strong>⚠️ VIGTIGT:</strong> Del aldrig dit login med andre. Hver medarbejder skal have sin egen konto. Brud på denne regel kan føre til øjeblikkelig lukning af kontoen.
+      </div>
+      
+      <h3>4.2 Opdatering af oplysninger</h3>
+      <p>Du skal holde dine kontaktoplysninger opdaterede. Hvis du skifter email eller job, skal du opdatere eller slette din konto.</p>
+      
+      <h2>5. Tilladt brug</h2>
+      <p>Du må bruge IQSales til:</p>
+      <ul>
+        <li>✅ Sammenligne forsikringsbetingelser for dine kunder</li>
+        <li>✅ Generere salgsmateriale og argumenter</li>
+        <li>✅ Forberede kundemøder og præsentationer</li>
+        <li>✅ Analysere forskelle mellem forsikringsselskaber</li>
+        <li>✅ Dele resultater med dine kunder (via platformens funktioner)</li>
+      </ul>
+      
+      <h2>6. Forbudt brug</h2>
+      <p>Du må <strong>IKKE</strong> bruge IQSales til:</p>
+      <ul>
+        <li>❌ At dele dit login med kolleger eller andre</li>
+        <li>❌ At videresælge adgang til platformen</li>
+        <li>❌ At scrape, kopiere eller downloade data systematisk</li>
+        <li>❌ At reverse-engineere eller modificere platformen</li>
+        <li>❌ At bruge platformen til ulovlige formål</li>
+        <li>❌ At overbelaste systemet med automatiserede requests</li>
+        <li>❌ At uploade malware, virus eller skadelig kode</li>
+        <li>❌ At chikanere, misbruge eller bedrage andre brugere</li>
+      </ul>
+      
+      <h2>7. Intellektuel ejendomsret</h2>
+      <p>IQSales platformen, inklusiv kode, design, analyser og AI-modeller, ejes af IQSales og er beskyttet af ophavsret.</p>
+      
+      <h3>Hvad du ejer:</h3>
+      <ul>
+        <li>De PDF'er du uploader forbliver din ejendom</li>
+        <li>Analyserne du genererer kan du frit bruge i dit arbejde</li>
+      </ul>
+      
+      <h3>Hvad du ikke må:</h3>
+      <ul>
+        <li>Kopiere platformens design eller funktionalitet</li>
+        <li>Systematisk downloade alle analyser til egen database</li>
+        <li>Sælge eller videredistribuere analyser som dit eget produkt</li>
+      </ul>
+      
+      <h2>8. Indhold og nøjagtighed</h2>
+      
+      <div class="warning">
+        <strong>⚠️ VIGTIGT JURIDISK ANSVARSFRASKRIVELSE:</strong><br>
+        IQSales er et <strong>hjælpeværktøj</strong>. Du er selv ansvarlig for at verificere alle informationer før du bruger dem overfor kunder.
+      </div>
+      
+      <p>Vi bestræber os på at levere præcise analyser, men:</p>
+      <ul>
+        <li>AI kan begå fejl - tjek altid vigtige punkter manuelt</li>
+        <li>Forsikringsbetingelser kan ændre sig - brug altid nyeste version</li>
+        <li>Platformen erstatter ikke professionel forsikringsviden</li>
+        <li>Du er ansvarlig for at give korrekte råd til dine kunder</li>
+      </ul>
+      
+      <h2>9. Priser og betaling</h2>
+      <p>Adgang til IQSales kan være:</p>
+      <ul>
+        <li><strong>Gratis for medarbejdere:</strong> Hvis din arbejdsgiver har en firmakonto</li>
+        <li><strong>Betalt abonnement:</strong> Hvis du er selvstændig eller freelance</li>
+      </ul>
+      
+      <p>Priser og betalingsbetingelser fremgår af din specifikke aftale. Ved forsinket betaling kan adgangen suspenderes.</p>
+      
+      <h2>10. Opsigelse og lukning</h2>
+      
+      <h3>10.1 Du kan opsige</h3>
+      <p>Du kan til enhver tid slette din konto under "Indstillinger". Alle dine data slettes indenfor 30 dage.</p>
+      
+      <h3>10.2 Vi kan lukke din konto</h3>
+      <p>Vi forbeholder os retten til at lukke din konto uden varsel hvis:</p>
+      <ul>
+        <li>Du bryder disse betingelser</li>
+        <li>Du misbruger platformen</li>
+        <li>Du deler dit login med andre</li>
+        <li>Du ikke betaler for dit abonnement</li>
+        <li>Din arbejdsgiver opsiger firmaaftalen</li>
+      </ul>
+      
+      <h2>11. Ansvarsbegrænsning</h2>
+      <p>IQSales leveres "som den er" uden garantier af nogen art.</p>
+      
+      <p><strong>Vi er ikke ansvarlige for:</strong></p>
+      <ul>
+        <li>Tab af data eller indtægter</li>
+        <li>Fejl i analyser eller sammenligninger</li>
+        <li>Nedetid eller tekniske problemer</li>
+        <li>Beslutninger du træffer baseret på platformens output</li>
+        <li>Tredjepartstjenester (Anthropic AI, Supabase osv.)</li>
+      </ul>
+      
+      <p><strong>Vores maksimale ansvar</strong> er begrænset til det beløb du har betalt for platformen de seneste 12 måneder.</p>
+      
+      <h2>12. Force majeure</h2>
+      <p>Vi er ikke ansvarlige for manglende opfyldelse af disse betingelser, hvis det skyldes omstændigheder uden for vores kontrol (naturkatastrofer, krig, cyberangreb, lovændringer osv.).</p>
+      
+      <h2>13. Ændringer til betingelser</h2>
+      <p>Vi kan opdatere disse betingelser fra tid til anden. Væsentlige ændringer vil blive kommunikeret via email minimum 30 dage før de træder i kraft.</p>
+      
+      <p>Hvis du ikke accepterer de nye betingelser, kan du slette din konto før de træder i kraft.</p>
+      
+      <h2>14. Lovvalg og værneting</h2>
+      <p>Disse betingelser er underlagt dansk ret. Eventuelle tvister skal løses ved de danske domstole.</p>
+      
+      <h2>15. Kontakt</h2>
+      <p>Har du spørgsmål til disse betingelser?</p>
+      
+      <div class="contact-box">
+        <div class="contact-title">Kontakt information:</div>
+        <div class="contact-info">
+          <strong>IQSales</strong><br>
+          <strong>Email:</strong> support@iqsales.dk<br>
+          <strong>Telefon:</strong> [Dit telefonnummer]<br>
+          <strong>Adresse:</strong> [Din virksomhedsadresse]<br>
+          <strong>CVR:</strong> [Dit CVR-nummer]
+        </div>
+      </div>
+      
+      <div class="highlight" style="margin-top: 2rem;">
+        <strong>Tak fordi du bruger IQSales!</strong><br>
+        Ved at acceptere disse betingelser hjælper du os med at opretholde en professionel og sikker platform for alle brugere.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
