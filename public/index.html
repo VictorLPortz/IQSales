@@ -2076,31 +2076,50 @@ function handleFileMulti(input){
       const companyName = getName(side);
       const fullText = await extractPdfText(base64);
       
-     const response = await fetch(`${SUPABASE_URL}/rest/v1/insurance_terms`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
- 'Prefer': 'resolution=merge-duplicates,return=minimal'
-  },
- body: JSON.stringify({
-  selskab: companyName,
-  produkt_type: type,
-  full_text: fullText,
-  parsed_at: new Date().toISOString(),
-  pdf_url: 'manual-upload',
-  parsed_data: {}
-})
-});
+      // Check if entry already exists
+      const checkResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/insurance_terms?select=id&selskab=eq.${encodeURIComponent(companyName)}&produkt_type=eq.${encodeURIComponent(type)}`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
+      
+      const existing = await checkResponse.json();
+      const exists = existing && existing.length > 0;
+      
+      // UPDATE if exists, INSERT if new
+      const url = exists 
+        ? `${SUPABASE_URL}/rest/v1/insurance_terms?selskab=eq.${encodeURIComponent(companyName)}&produkt_type=eq.${encodeURIComponent(type)}`
+        : `${SUPABASE_URL}/rest/v1/insurance_terms`;
+      
+      const response = await fetch(url, {
+        method: exists ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          selskab: companyName,
+          produkt_type: type,
+          full_text: fullText,
+          parsed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          pdf_url: 'manual-upload',
+          parsed_data: {}
+        })
+      });
 
-if (!response.ok) {
-  const error = await response.text();
-  console.error('Supabase error:', error);
-} else {
-  console.log('✓ Saved to Supabase:', companyName, type);
-}
-      console.log('Saved to Supabase:', companyName, type);
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Supabase error:', error);
+      } else {
+        console.log('✓ Saved to Supabase:', companyName, type, exists ? '(updated)' : '(new)');
+      }
     } catch(err) {
       console.error('Failed to save to Supabase:', err);
     }
