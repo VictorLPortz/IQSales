@@ -217,16 +217,32 @@ ${pdfB.full_text.substring(0, 100000)}
     const txt = message.content.map(function(i) { return i.type === 'text' ? i.text : ''; }).join('\n');
     let cleanedText = txt.replace(/```json|```/g, '').trim();
     
-    // Extract JSON object
-    const match = cleanedText.match(/\{[\s\S]*\}/);
+    // ✨ FORBEDRET: Extract first complete JSON object using bracket matching
+    let jsonStr = null;
+    let depth = 0;
+    let startIndex = -1;
     
-    if (!match) {
-      console.error('❌ No JSON object found in response');
+    for (let i = 0; i < cleanedText.length; i++) {
+      const char = cleanedText[i];
+      
+      if (char === '{') {
+        if (depth === 0) startIndex = i;
+        depth++;
+      } else if (char === '}') {
+        depth--;
+        if (depth === 0 && startIndex !== -1) {
+          // Found complete JSON object!
+          jsonStr = cleanedText.substring(startIndex, i + 1);
+          break;
+        }
+      }
+    }
+    
+    if (!jsonStr) {
+      console.error('❌ No complete JSON object found in response');
       console.error('Response text:', txt.substring(0, 500));
       throw new Error('Claude returnerede ikke valid JSON format');
     }
-
-    let jsonStr = match[0];
     
     // ✨ ROBUST JSON SANITIZATION
     jsonStr = sanitizeJSON(jsonStr);
