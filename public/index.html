@@ -3676,7 +3676,11 @@ function renderTypeInTab(type){
   const shortName = type.replace('forsikring', '').toLowerCase();
   if(!container||!allResults[shortName])return;
   
-  const html = renderIndividualTab(type, allResults[shortName]);
+  // Load user favorites
+  const userId=getUserId();
+  const prefs={favorites:userId?loadFavorites(userId,type):[]};
+  
+  const html = renderIndividualTab(type, allResults[shortName], prefs);
 container.innerHTML = html;
   
   const subTabs = container.querySelectorAll('.sub-tab');
@@ -3763,6 +3767,7 @@ function buildResultHtml(d,prefs){
   <button class="filter-tab" onclick="filterCoverage('theirs')">⚠️ Deres fordele (${bW})</button>
   <button class="filter-tab" onclick="filterCoverage('equal')">⚖️ Ens niveau (${eq})</button>
 </div>
+<div style="margin:1rem;padding:0 1rem"><div style="position:relative"><input type="text" id="coverage-search-${type}" placeholder="🔍 Søg i dækninger... (fx 'ferieudlejning', 'skybrud', 'beløb')" style="width:100%;padding:0.75rem 1rem 0.75rem 2.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);transition:border-color 0.15s" onkeyup="searchCoverages('${type}')" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"><span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none">🔍</span></div><div id="search-results-count-${type}" style="font-size:12px;color:var(--muted);margin-top:0.5rem;padding-left:0.25rem"></div></div>
 <table class="sync-table"><thead><tr><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyA)}</div><div><div class="co-nm">${d.companyA}<span class="yours-tag">Dit selskab</span></div><div class="co-sub">Hold musen over rækker for salgstips</div></div></div></th><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyB)}</div><div><div class="co-nm">${d.companyB}</div><div class="co-sub">Kundens nuværende selskab</div></div></div></th></tr></thead><tbody>${rows}</tbody></table>
 <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center"><span style="display:flex;align-items:center;gap:4px"><span class="dot dy" style="width:14px;height:14px">✓</span>Dækket</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dn" style="width:14px;height:14px">✗</span>Undtaget</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">?</span>INIB (Ikke nævnt i betingelserne)</span></div>
 <div class="disclaimer" style="margin-top:10px">${d.disclaimer}</div>
@@ -3829,6 +3834,35 @@ function filterCoverage(filter){
     }
   });
 }
+
+// Live Search Function
+function searchCoverages(type){
+  const query=document.getElementById('coverage-search-'+type).value.toLowerCase().trim();
+  const rows=document.querySelectorAll('.sync-table tbody tr');
+  const counter=document.getElementById('search-results-count-'+type);
+  if(!query){rows.forEach(row=>row.style.display='');counter.textContent='';return;}
+  let visibleCount=0;
+  rows.forEach(row=>{const text=row.textContent.toLowerCase();const matches=text.includes(query);row.style.display=matches?'':'none';if(matches)visibleCount++;});
+  counter.textContent=`Viser ${visibleCount} af ${rows.length} dækninger`;
+  if(visibleCount===0){counter.innerHTML='<span style="color:var(--danger)">⚠️ Ingen dækninger matcher din søgning</span>';}
+}
+
+// Favoritter Toggle Function
+async function toggleFav(category,companyA,companyB,type){
+  const userId=getUserId();
+  if(!userId){showToast('error','Log ind først','Du skal være logget ind for at bruge favoritter');return;}
+  const key=`${userId}-${type}-favorites`;
+  let favorites=JSON.parse(localStorage.getItem(key)||'[]');
+  const index=favorites.indexOf(category);
+  const wasAdded=index===-1;
+  if(index>-1){favorites.splice(index,1);}else{favorites.push(category);}
+  localStorage.setItem(key,JSON.stringify(favorites));
+  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/user_preferences',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({user_id:userId,insurance_type:type,favorites:favorites})});}catch(e){console.error('Failed to sync favorites:',e);}
+  showToast('success',wasAdded?'⭐ Tilføjet til favoritter':'☆ Fjernet fra favoritter',category);
+  renderTypeInTab(type);
+}
+
+function loadFavorites(userId,type){const key=`${userId}-${type}-favorites`;return JSON.parse(localStorage.getItem(key)||'[]');}
 
 function copyP(){const d=window._d;if(!d)return;const p=d.pitch;let t=`SALGSPITCH – ${d.companyA} til kunde hos ${d.companyB} (${d.type})\n\nTOP 3 FORDELE ${d.companyA.toUpperCase()}\n${(p.advantages_a||p.advantages||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nTOP 3 FORDELE ${d.companyB.toUpperCase()}\n${(p.advantages_b||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nREMOTIVERING\n${(p.remotivering||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nEN-LINER\n${p.enliner||''}\n\n---\n${d.disclaimer}`;navigator.clipboard.writeText(t).then(()=>{const btn=document.getElementById('cp-btn');btn.textContent='Kopieret!';setTimeout(()=>btn.textContent='Kopiér pitch',2000);});}
 
