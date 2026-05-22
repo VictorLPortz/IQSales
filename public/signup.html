@@ -474,7 +474,7 @@
   
   <script>
     const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1NTk5MTgsImV4cCI6MjA1MzEzNTkxOH0.mTmZXW3Uuv4bLvd5Q-fI6VvOq1HQBpmrqHnZkMcB6cQ';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
     
     // ========================================
     // EMAIL WHITELIST - Kun medarbejdere med disse email domæner kan oprette sig
@@ -598,7 +598,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY
+            'apikey': SUPABASE_ANON_KEY
           },
           body: JSON.stringify({
             email: email,
@@ -625,8 +625,8 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': SUPABASE_KEY,
-              'Authorization': 'Bearer ' + SUPABASE_KEY,
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
               'Prefer': 'resolution=merge-duplicates'
             },
             body: JSON.stringify({
