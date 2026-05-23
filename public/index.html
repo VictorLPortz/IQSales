@@ -1550,6 +1550,26 @@ async function buildMenus(){
   updateCddDisplay('b');
 }
 
+// Filter company dropdown options based on search
+function filterCdd(side, query) {
+  const menu = document.getElementById('cdd-' + side + '-menu');
+  if (!menu) return;
+  
+  const lowerQuery = query.toLowerCase().trim();
+  const options = menu.querySelectorAll('.cdd-option');
+  
+  options.forEach(opt => {
+    const name = opt.dataset.name;
+    if (!name) return;
+    
+    if (name === 'andet' || name.toLowerCase().includes(lowerQuery)) {
+      opt.style.display = '';
+    } else {
+      opt.style.display = 'none';
+    }
+  });
+}
+
 function buildMenusWithRanks(companyRanks){
   const sorted=[...COMPANIES].sort((a,b)=>{const diff=(companyRanks[b]||0)-(companyRanks[a]||0);return diff!==0?diff:a.localeCompare(b,'da');});
   const popular=sorted.filter(n=>companyRanks[n]>0);
@@ -2071,37 +2091,20 @@ function handleFileMulti(input){
     const store=side==='a'?docsA:docsB;
     store[type]={name:file.name,data:base64};
     
-    // Save to Supabase insurance_terms table
+    // Save to Supabase insurance_terms table with proper UPSERT
     try {
       const companyName = getName(side);
       const fullText = await extractPdfText(base64);
       
-      // Check if entry already exists
-      const checkResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/insurance_terms?select=id&selskab=eq.${encodeURIComponent(companyName)}&produkt_type=eq.${encodeURIComponent(type)}`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`
-          }
-        }
-      );
-      
-      const existing = await checkResponse.json();
-      const exists = existing && existing.length > 0;
-      
-      // UPDATE if exists, INSERT if new
-      const url = exists 
-        ? `${SUPABASE_URL}/rest/v1/insurance_terms?selskab=eq.${encodeURIComponent(companyName)}&produkt_type=eq.${encodeURIComponent(type)}`
-        : `${SUPABASE_URL}/rest/v1/insurance_terms`;
-      
-      const response = await fetch(url, {
-        method: exists ? 'PATCH' : 'POST',
+      // Use Supabase UPSERT: will INSERT if new, UPDATE if exists
+      // The unique constraint on (selskab, produkt_type) handles conflict resolution
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/insurance_terms`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Prefer': 'return=minimal'
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify({
           selskab: companyName,
@@ -2109,6 +2112,7 @@ function handleFileMulti(input){
           full_text: fullText,
           parsed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
           pdf_url: 'manual-upload',
           parsed_data: {}
         })
@@ -2116,9 +2120,9 @@ function handleFileMulti(input){
 
       if (!response.ok) {
         const error = await response.text();
-        console.error('Supabase error:', error);
+        console.error('❌ Supabase save failed:', error);
       } else {
-        console.log('✓ Saved to Supabase:', companyName, type, exists ? '(updated)' : '(new)');
+        console.log('✓ Saved to Supabase:', companyName, type);
       }
     } catch(err) {
       console.error('Failed to save to Supabase:', err);
