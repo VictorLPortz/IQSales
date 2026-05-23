@@ -202,16 +202,40 @@ ${pdfB.full_text.substring(0, 100000)}
 
     prompt += `\n\nReturner JSON med: type, companyA, companyB, coverage (array af dækningspunkter), pitch (salgsargumenter), top3_a, top3_b.`;
 
-    // Call Claude API
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
-      system: getSystemPrompt(),
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
-    });
+    // Call Claude API with retry logic
+    let message;
+    let attempt = 0;
+    const maxAttempts = 2;
+    
+    while (attempt < maxAttempts) {
+      attempt++;
+      
+      try {
+        console.log(`🔄 API attempt ${attempt}/${maxAttempts}`);
+        
+        message = await anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8000,
+          system: getSystemPrompt(attempt > 1), // Use stricter prompt on retry
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        });
+        
+        break; // Success - exit retry loop
+        
+      } catch (apiError) {
+        console.error(`❌ API attempt ${attempt} failed:`, apiError.message);
+        
+        if (attempt >= maxAttempts) {
+          throw new Error(`Claude API fejlede efter ${maxAttempts} forsøg: ${apiError.message}`);
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
 
     // Parse response
     const txt = message.content.map(function(i) { return i.type === 'text' ? i.text : ''; }).join('\n');
@@ -356,8 +380,8 @@ ${pdfB.full_text.substring(0, 100000)}
   }
 }
 
-function getSystemPrompt() {
-  return `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
+function getSystemPrompt(isRetry = false) {
+  let prompt = `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
 
 # ⚠️ CRITICAL: JSON FORMATTING RULES (FØLG DISSE STRENGT!)
 
@@ -383,7 +407,30 @@ Du SKAL returnere 100% VALID JSON. Følg disse regler NØJE:
 
 5. **TEST MENTALT:**
    Før du returnerer JSON, spørg dig selv: "Ville JSON.parse() acceptere dette?"
-   Hvis nej → ret det!
+   Hvis nej → ret det!`;
+
+  // Add EXTRA STRICT rules on retry
+  if (isRetry) {
+    prompt += `
+
+# 🚨 EXTRA STRENGE REGLER (DETTE ER ET RETRY!)
+
+Dit forrige forsøg fejlede JSON parsing. Følg disse EKSTRA regler:
+
+1. **BRUG ALDRIG QUOTES I VÆRDIER:**
+   - Skriv IKKE: "Dækker "Zone 1" og "Zone 2""
+   - Skriv I STEDET: "Dækker Zone 1 og Zone 2"
+   
+2. **SIMPLIFICER AL TEKST:**
+   - Hold reason felter under 80 tegn
+   - Brug simple ord uden anførselstegn
+   
+3. **DOUBLE-CHECK HVER LINJE:**
+   - Læs JSON en ekstra gang før du sender
+   - Hvis du ser " inde i en string → FJERN DET!`;
+  }
+
+  prompt += `
 
 # DIN OPGAVE
 Analyser de to sæt forsikringsbetingelser MEGET nøje og identificer præcist hvad hvert selskab dækker og IKKE dækker.
