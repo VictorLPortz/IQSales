@@ -619,9 +619,13 @@
           throw new Error(data.error_description || data.msg || 'Kunne ikke oprette bruger');
         }
         
+        console.log('✅ User created in auth.users:', data.user?.id);
+        
         // ✅ OGSÅ opret bruger i profiles tabel (samme som admin gør)
         if (data.user) {
-          await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+          console.log('🔵 Attempting to create profile for:', data.user.id);
+          
+          const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -633,10 +637,19 @@
               id: data.user.id,
               email: email,
               full_name: name,
-              department: department,  // Nu udfyldt fra dropdown
+              department: department,
               role: 'seller'
             })
           });
+          
+          if (!profileResponse.ok) {
+            const profileError = await profileResponse.text();
+            console.error('❌ Profile creation failed:', profileError);
+          } else {
+            console.log('✅ Profile created successfully');
+          }
+        } else {
+          console.error('❌ No user object in response');
         }
         
         // Success!
