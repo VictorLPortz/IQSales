@@ -522,6 +522,8 @@ VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger
 }
 
 # OUTPUT FORMAT
+⚠️ KRITISK: Hver coverage entry SKAL have PRÆCIS disse felter - ikke andre!
+
 Returner KUN valid JSON uden markdown backticks:
 {
   "type": "Husforsikring",
@@ -530,12 +532,12 @@ Returner KUN valid JSON uden markdown backticks:
   "coverage": [
     {
       "category": "Navn på dækning",
-      "status_a": "yes/no/inib",
-      "status_b": "yes/no/inib",
-      "amount_a": "Beløb eller vilkår",
-      "amount_b": "Beløb eller vilkår",
+      "status_a": "yes/no/inib",       ← VIGTIGT: status_a (ikke bare "a")
+      "status_b": "yes/no/inib",       ← VIGTIGT: status_b (ikke bare "b")
+      "amount_a": "Beløb eller vilkår", ← VIGTIGT: amount_a
+      "amount_b": "Beløb eller vilkår", ← VIGTIGT: amount_b
       "winner": "a/b/equal",
-      "reason": "Forklaring på hvorfor",
+      "reason": "Forklaring på hvorfor", ← VIGTIGT: reason (ikke "note")
       "sales_tip": "Max 1 sætning salgstip hvis winner=a, ellers tom streng",
       "objection_tip": "Max 1 sætning håndtering af indsigelse hvis winner=b, ellers tom streng",
       "customer_explanation": "Max 1 sætning i simpelt dansk"
@@ -547,5 +549,7 @@ Returner KUN valid JSON uden markdown backticks:
   },
   "top3_a": ["Fordel 1", "Fordel 2", "Fordel 3"],
   "top3_b": ["Fordel 1", "Fordel 2", "Fordel 3"]
-}`;
+}
+
+⚠️ HUSK: Brug status_a, status_b, amount_a, amount_b, reason - IKKE a, b, note!`;
 }
