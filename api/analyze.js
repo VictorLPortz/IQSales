@@ -204,6 +204,12 @@ ${pdfB.full_text.substring(0, 100000)}
     if (type === 'Rejseforsikring') {
       prompt += `\n\n🚨 EKSTRA VIGTIGT FOR REJSEFORSIKRING:
 
+⚠️ HUSK CATEGORY FELTET - det er OBLIGATORISK!
+- HVER coverage item SKAL have et konkret "category" navn
+- Eksempler: "Sygdom og tilskadekomst", "Tandlæge", "Hjemtransport", "Bagage forsinkelse"
+- ALDRIG lad category være tom eller undefined
+- ALDRIG send bare punkt, a, b uden category
+
 JSON REGLER (for at undgå parse fejl):
 - UNDGÅ ALLE QUOTES i amount_a og amount_b felter
 - Skriv Zone 1 UDEN quotes (ikke "Zone 1")
