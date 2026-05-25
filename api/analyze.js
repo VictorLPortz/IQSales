@@ -304,6 +304,27 @@ ${pdfB.full_text.substring(0, 100000)}
 
     console.log('✅ JSON parsed successfully');
 
+    // ✨ NORMALIZE DATA: Fix incorrect field names from Claude
+    if (parsed.coverage && Array.isArray(parsed.coverage)) {
+      parsed.coverage = parsed.coverage.map(item => {
+        // Create normalized item
+        const normalized = {
+          category: item.category || item.punkt || 'Ukendt dækning',
+          status_a: item.status_a || (item.a ? 'yes' : 'inib'),
+          status_b: item.status_b || (item.b ? 'yes' : 'inib'),
+          amount_a: item.amount_a || item.a || null,
+          amount_b: item.amount_b || item.b || null,
+          winner: item.winner === 'tie' ? 'equal' : (item.winner || 'equal'),
+          reason: item.reason || item.note || 'Ingen detaljer',
+          sales_tip: item.sales_tip || '',
+          objection_tip: item.objection_tip || '',
+          customer_explanation: item.customer_explanation || ''
+        };
+        return normalized;
+      });
+      console.log('✅ Normalized', parsed.coverage.length, 'coverage items');
+    }
+
     // Cache the result
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_cache`, {
       method: 'POST',
