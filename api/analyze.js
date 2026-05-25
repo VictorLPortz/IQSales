@@ -200,6 +200,16 @@ ${pdfB.full_text.substring(0, 100000)}
       });
     }
 
+    // Special instructions for Rejseforsikring to avoid JSON errors
+    if (type === 'Rejseforsikring') {
+      prompt += `\n\n🚨 EKSTRA VIGTIGT FOR REJSEFORSIKRING:
+- UNDGÅ ALLE QUOTES i amount_a og amount_b felter
+- Skriv "Zone 1" UDEN quotes som: Zone 1
+- Skriv tallene uden punktum-tusind-separatorer: 50000 (ikke 50.000)
+- Hold alle reason felter under 60 tegn
+- Brug simple ord uden special chars`;
+    }
+
     prompt += `\n\nReturner JSON med: type, companyA, companyB, coverage (array af dækningspunkter), pitch (salgsargumenter), top3_a, top3_b.`;
 
     // Call Claude API with retry logic
