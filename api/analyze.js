@@ -204,18 +204,33 @@ ${pdfB.full_text.substring(0, 100000)}
     if (type === 'Rejseforsikring') {
       prompt += `\n\n🚨 EKSTRA VIGTIGT FOR REJSEFORSIKRING:
 
-⚠️ RETURNER MAX 15 COVERAGE ITEMS - ikke flere!
-- Vælg kun de 15 VIGTIGSTE forskelle
-- Prioriter store beløbsforskelle og kritiske dækninger
-- Spring mindre forskelle over
-
-JSON REGLER:
+JSON REGLER (for at undgå parse fejl):
 - UNDGÅ ALLE QUOTES i amount_a og amount_b felter
 - Skriv Zone 1 UDEN quotes (ikke "Zone 1")
 - Skriv tallene uden punktum: 50000 (ikke 50.000)
 - Hold alle reason felter under 60 tegn
 - Brug simple ord uden special chars`;
     }
+    
+    // Add max items limit for all types with prioritization rules
+    const maxItems = 20; // Standard max for all types
+    
+    prompt += `\n\n⚠️ VIGTIGT: Returner MAX ${maxItems} coverage items for ${type}.
+
+PRIORITÉR I DENNE RÆKKEFØLGE:
+1. Store beløbsforskelle (f.eks. 50.000 kr vs 100.000 kr)
+2. Dækninger hvor kun ÉT selskab dækker (status: yes vs no/inib)
+3. Markant bedre vilkår (f.eks. selvrisiko 2.500 kr vs 5.000 kr)
+4. Kritiske dækninger som kunden ofte spørger om
+5. Unikke fordele ved dit selskab (winner=a)
+
+SPRING OVER:
+- Mindre forskelle under 5.000 kr
+- Dækninger hvor begge selskaber er næsten ens
+- Tekniske detaljer uden praktisk betydning
+- Ansvarsforsikring (medmindre stor forskel)
+
+Vælg de ${maxItems} dækninger der giver STØRST værdi i salgssituationen!`;
 
     prompt += `\n\nReturner JSON med: type, companyA, companyB, coverage (array af dækningspunkter), pitch (salgsargumenter), top3_a, top3_b.`;
 
