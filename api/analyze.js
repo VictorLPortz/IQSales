@@ -307,6 +307,13 @@ ${pdfB.full_text.substring(0, 100000)}
     // ✨ NORMALIZE DATA: Fix incorrect field names from Claude
     if (parsed.coverage && Array.isArray(parsed.coverage)) {
       parsed.coverage = parsed.coverage.map(item => {
+        // Generate reason if missing
+        let autoReason = item.reason || item.note || null;
+        if (!autoReason && item.winner && item.winner !== 'equal' && item.winner !== 'tie') {
+          const winnerName = item.winner === 'a' ? companyA : companyB;
+          autoReason = `${winnerName} har bedre dækning`;
+        }
+        
         // Create normalized item
         const normalized = {
           category: item.category || item.punkt || 'Ukendt dækning',
@@ -315,7 +322,7 @@ ${pdfB.full_text.substring(0, 100000)}
           amount_a: item.amount_a || item.a || null,
           amount_b: item.amount_b || item.b || null,
           winner: item.winner === 'tie' ? 'equal' : (item.winner || 'equal'),
-          reason: item.reason || item.note || 'Ingen detaljer',
+          reason: autoReason || 'Ingen yderligere detaljer',
           sales_tip: item.sales_tip || '',
           objection_tip: item.objection_tip || '',
           customer_explanation: item.customer_explanation || ''
