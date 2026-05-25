@@ -203,9 +203,16 @@ ${pdfB.full_text.substring(0, 100000)}
     // Special instructions for Rejseforsikring to avoid JSON errors
     if (type === 'Rejseforsikring') {
       prompt += `\n\n🚨 EKSTRA VIGTIGT FOR REJSEFORSIKRING:
+
+⚠️ RETURNER MAX 15 COVERAGE ITEMS - ikke flere!
+- Vælg kun de 15 VIGTIGSTE forskelle
+- Prioriter store beløbsforskelle og kritiske dækninger
+- Spring mindre forskelle over
+
+JSON REGLER:
 - UNDGÅ ALLE QUOTES i amount_a og amount_b felter
-- Skriv "Zone 1" UDEN quotes som: Zone 1
-- Skriv tallene uden punktum-tusind-separatorer: 50000 (ikke 50.000)
+- Skriv Zone 1 UDEN quotes (ikke "Zone 1")
+- Skriv tallene uden punktum: 50000 (ikke 50.000)
 - Hold alle reason felter under 60 tegn
 - Brug simple ord uden special chars`;
     }
