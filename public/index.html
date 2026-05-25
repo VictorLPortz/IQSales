@@ -1348,6 +1348,111 @@ async function sendFb(){
   setTimeout(()=>closeFb(),1500);
 }
 
+// Quick feedback with thumbs up/down
+async function quickFeedback(category, type, sentiment) {
+  const btn = event.target.closest('button');
+  const originalHTML = btn.innerHTML;
+  
+  // Visual feedback on button
+  if (sentiment === 'important') {
+    btn.innerHTML = '✓ Tak!';
+    btn.style.borderColor = '#1D9E75';
+    btn.style.color = '#1D9E75';
+    btn.style.background = '#F0FDF4';
+  } else {
+    btn.innerHTML = '✓ Noteret';
+    btn.style.borderColor = '#DC2626';
+    btn.style.color = '#DC2626';
+    btn.style.background = '#FEF2F2';
+  }
+  
+  // Send to Supabase
+  try {
+    await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        insurance_type: type,
+        category: category,
+        issue_type: sentiment === 'important' ? 'priority_high' : 'priority_low',
+        comment: sentiment === 'important' ? 'Vigtig dækning - skal med' : 'Ligegyldig dækning - kan udelades',
+        user_id: getUserId(),
+        status: 'pending',
+        scope_type: 'general'
+      })
+    });
+    
+    // Show success toast
+    showFeedbackToast();
+    
+  } catch(e) {
+    console.error('Quick feedback failed:', e);
+  }
+  
+  // Reset button after 2 seconds
+  setTimeout(() => {
+    btn.innerHTML = originalHTML;
+    btn.style.borderColor = '#E3E1D9';
+    btn.style.color = '#5F5E5A';
+    btn.style.background = 'white';
+  }, 2000);
+}
+
+// Show success toast notification
+function showFeedbackToast() {
+  // Create toast if it doesn't exist
+  let toast = document.getElementById('feedback-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'feedback-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, #1D9E75 0%, #16875F 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(29, 158, 117, 0.3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+    `;
+    toast.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="9" stroke="white" stroke-width="1.5" fill="none"/>
+        <polyline points="6,10 9,13 14,7" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span>Tak for din feedback - det hjælper os med at gøre analyserne bedre for dig som bruger</span>
+    `;
+    document.body.appendChild(toast);
+  }
+  
+  // Show toast with animation
+  setTimeout(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  }, 10);
+  
+  // Hide after 4 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+  }, 4000);
+}
+
 // Fetch approved feedback for use in analysis
 async function fetchApprovedFeedback(type, companyA, companyB) {
   try {
@@ -3183,7 +3288,10 @@ async function retryType(type) {
                 '<div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #1D9E75; cursor: help; padding: 4px 8px; background: #E8F5F0; border-radius: 6px; border: 1px solid #1D9E75;">💡 Salgstip</div>' +
                 '<div class="tooltip-content">' + c.sales_tip + '</div>' +
               '</div>' : '') +
-            '<button onclick="openFb(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.companyA.replace(/'/g, "\\'") + '\',\'' + data.companyB.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'a\')" class="card-feedback-btn">⚑ Giv feedback</button>' +
+            '<div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #F5F4F1;">' +
+              '<button onclick="quickFeedback(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'important\')" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A; transition: all 0.2s;" onmouseover="this.style.borderColor=\'#1D9E75\'; this.style.color=\'#1D9E75\'; this.style.background=\'#F0FDF4\';" onmouseout="this.style.borderColor=\'#E3E1D9\'; this.style.color=\'#5F5E5A\'; this.style.background=\'white\';">👍 Vigtig</button>' +
+              '<button onclick="quickFeedback(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'irrelevant\')" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A; transition: all 0.2s;" onmouseover="this.style.borderColor=\'#DC2626\'; this.style.color=\'#DC2626\'; this.style.background=\'#FEF2F2\';" onmouseout="this.style.borderColor=\'#E3E1D9\'; this.style.color=\'#5F5E5A\'; this.style.background=\'white\';">👎 Ligegyldig</button>' +
+            '</div>' +
           '</div>' +
           
           '<div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">' +
@@ -3203,7 +3311,10 @@ async function retryType(type) {
                 '<div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #BA7517; cursor: help; padding: 4px 8px; background: #FFF4E6; border-radius: 6px; border: 1px solid #BA7517;">⚠️ Indsigelse</div>' +
                 '<div class="tooltip-content">' + c.objection_tip + '</div>' +
               '</div>' : '') +
-            '<button onclick="openFb(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.companyA.replace(/'/g, "\\'") + '\',\'' + data.companyB.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'b\')" class="card-feedback-btn">⚑ Giv feedback</button>' +
+            '<div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #F5F4F1;">' +
+              '<button onclick="quickFeedback(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'important\')" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A; transition: all 0.2s;" onmouseover="this.style.borderColor=\'#1D9E75\'; this.style.color=\'#1D9E75\'; this.style.background=\'#F0FDF4\';" onmouseout="this.style.borderColor=\'#E3E1D9\'; this.style.color=\'#5F5E5A\'; this.style.background=\'white\';">👍 Vigtig</button>' +
+              '<button onclick="quickFeedback(\'' + c.category.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'irrelevant\')" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A; transition: all 0.2s;" onmouseover="this.style.borderColor=\'#DC2626\'; this.style.color=\'#DC2626\'; this.style.background=\'#FEF2F2\';" onmouseout="this.style.borderColor=\'#E3E1D9\'; this.style.color=\'#5F5E5A\'; this.style.background=\'white\';">👎 Ligegyldig</button>' +
+            '</div>' +
           '</div>' +
           
         '</div>' +
