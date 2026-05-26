@@ -358,23 +358,29 @@ Vælg de ${maxItems} dækninger der giver STØRST værdi i salgssituationen!`;
         
         // If amount_a is an object, extract the details string
         if (normalizedAmountA && typeof normalizedAmountA === 'object') {
+          // Handle both "details" and "detail" keys
+          const detailText = normalizedAmountA.details || normalizedAmountA.detail;
+          
           if (normalizedAmountA.covered === false) {
-            normalizedAmountA = normalizedAmountA.details || 'Ikke dækket';
+            normalizedAmountA = detailText || 'Ikke dækket';
           } else if (normalizedAmountA.covered === true) {
-            normalizedAmountA = normalizedAmountA.details || 'Dækket';
+            normalizedAmountA = detailText || 'Dækket';
           } else {
-            normalizedAmountA = normalizedAmountA.details || JSON.stringify(normalizedAmountA);
+            normalizedAmountA = detailText || JSON.stringify(normalizedAmountA);
           }
         }
         
         // If amount_b is an object, extract the details string
         if (normalizedAmountB && typeof normalizedAmountB === 'object') {
+          // Handle both "details" and "detail" keys
+          const detailText = normalizedAmountB.details || normalizedAmountB.detail;
+          
           if (normalizedAmountB.covered === false) {
-            normalizedAmountB = normalizedAmountB.details || 'Ikke dækket';
+            normalizedAmountB = detailText || 'Ikke dækket';
           } else if (normalizedAmountB.covered === true) {
-            normalizedAmountB = normalizedAmountB.details || 'Dækket';
+            normalizedAmountB = detailText || 'Dækket';
           } else {
-            normalizedAmountB = normalizedAmountB.details || JSON.stringify(normalizedAmountB);
+            normalizedAmountB = detailText || JSON.stringify(normalizedAmountB);
           }
         }
         
