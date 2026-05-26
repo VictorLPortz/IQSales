@@ -200,80 +200,18 @@ ${pdfB.full_text.substring(0, 100000)}
       });
     }
 
-    // Special instructions for Rejseforsikring to avoid JSON errors
-    if (type === 'Rejseforsikring') {
-      prompt += `\n\n🚨 EKSTRA VIGTIGT FOR REJSEFORSIKRING:
-
-⚠️ HUSK CATEGORY FELTET - det er OBLIGATORISK!
-- HVER coverage item SKAL have et konkret "category" navn
-- Eksempler: "Sygdom og tilskadekomst", "Tandlæge", "Hjemtransport", "Bagage forsinkelse"
-- ALDRIG lad category være tom eller undefined
-- ALDRIG send bare punkt, a, b uden category
-
-JSON REGLER (for at undgå parse fejl):
-- UNDGÅ ALLE QUOTES i amount_a og amount_b felter
-- Skriv Zone 1 UDEN quotes (ikke "Zone 1")
-- Skriv tallene uden punktum: 50000 (ikke 50.000)
-- Hold alle reason felter under 60 tegn
-- Brug simple ord uden special chars`;
-    }
-    
-    // Add max items limit for all types with prioritization rules
-    const maxItems = 20; // Standard max for all types
-    
-    prompt += `\n\n⚠️ VIGTIGT: Returner MAX ${maxItems} coverage items for ${type}.
-
-PRIORITÉR I DENNE RÆKKEFØLGE:
-1. Store beløbsforskelle (f.eks. 50.000 kr vs 100.000 kr)
-2. Dækninger hvor kun ÉT selskab dækker (status: yes vs no)
-3. Markant bedre vilkår (f.eks. selvrisiko 2.500 kr vs 5.000 kr)
-4. Kritiske dækninger som kunden ofte spørger om
-5. Unikke fordele ved dit selskab (winner=a)
-
-SPRING OVER:
-- Mindre forskelle under 5.000 kr
-- Dækninger hvor begge selskaber er næsten ens
-- Tekniske detaljer uden praktisk betydning
-- Ansvarsforsikring (medmindre stor forskel)
-
-Vælg de ${maxItems} dækninger der giver STØRST værdi i salgssituationen!`;
-
     prompt += `\n\nReturner JSON med: type, companyA, companyB, coverage (array af dækningspunkter), pitch (salgsargumenter), top3_a, top3_b.`;
 
-    // Call Claude API with retry logic
-    let message;
-    let attempt = 0;
-    const maxAttempts = 2;
-    
-    while (attempt < maxAttempts) {
-      attempt++;
-      
-      try {
-        console.log(`🔄 API attempt ${attempt}/${maxAttempts}`);
-        
-        message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 8000,
-          system: getSystemPrompt(attempt > 1), // Use stricter prompt on retry
-          messages: [{
-            role: 'user',
-            content: prompt
-          }]
-        });
-        
-        break; // Success - exit retry loop
-        
-      } catch (apiError) {
-        console.error(`❌ API attempt ${attempt} failed:`, apiError.message);
-        
-        if (attempt >= maxAttempts) {
-          throw new Error(`Claude API fejlede efter ${maxAttempts} forsøg: ${apiError.message}`);
-        }
-        
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
+    // Call Claude API
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8000,
+      system: getSystemPrompt(),
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    });
 
     // Parse response
     const txt = message.content.map(function(i) { return i.type === 'text' ? i.text : ''; }).join('\n');
@@ -341,66 +279,6 @@ Vælg de ${maxItems} dækninger der giver STØRST værdi i salgssituationen!`;
     }
 
     console.log('✅ JSON parsed successfully');
-
-    // ✨ NORMALIZE DATA: Fix incorrect field names from Claude
-    if (parsed.coverage && Array.isArray(parsed.coverage)) {
-      parsed.coverage = parsed.coverage.map(item => {
-        // Generate reason if missing
-        let autoReason = item.reason || item.note || null;
-        if (!autoReason && item.winner && item.winner !== 'equal' && item.winner !== 'tie') {
-          const winnerName = item.winner === 'a' ? companyA : companyB;
-          autoReason = `${winnerName} har bedre dækning`;
-        }
-        
-        // NORMALIZE AMOUNT FIELDS - convert objects to strings
-        let normalizedAmountA = item.amount_a;
-        let normalizedAmountB = item.amount_b;
-        
-        // If amount_a is an object, extract the details string
-        if (normalizedAmountA && typeof normalizedAmountA === 'object') {
-          // Handle both "details" and "detail" keys
-          const detailText = normalizedAmountA.details || normalizedAmountA.detail;
-          
-          if (normalizedAmountA.covered === false) {
-            normalizedAmountA = detailText || 'Ikke dækket';
-          } else if (normalizedAmountA.covered === true) {
-            normalizedAmountA = detailText || 'Dækket';
-          } else {
-            normalizedAmountA = detailText || JSON.stringify(normalizedAmountA);
-          }
-        }
-        
-        // If amount_b is an object, extract the details string
-        if (normalizedAmountB && typeof normalizedAmountB === 'object') {
-          // Handle both "details" and "detail" keys
-          const detailText = normalizedAmountB.details || normalizedAmountB.detail;
-          
-          if (normalizedAmountB.covered === false) {
-            normalizedAmountB = detailText || 'Ikke dækket';
-          } else if (normalizedAmountB.covered === true) {
-            normalizedAmountB = detailText || 'Dækket';
-          } else {
-            normalizedAmountB = detailText || JSON.stringify(normalizedAmountB);
-          }
-        }
-        
-        // Create normalized item
-        const normalized = {
-          category: item.category || item.punkt || 'Ukendt dækning',
-          status_a: item.status_a || (item.a ? 'yes' : 'inib'),
-          status_b: item.status_b || (item.b ? 'yes' : 'inib'),
-          amount_a: normalizedAmountA || item.a || null,
-          amount_b: normalizedAmountB || item.b || null,
-          winner: item.winner === 'tie' ? 'equal' : (item.winner || 'equal'),
-          reason: autoReason || 'Ingen yderligere detaljer',
-          sales_tip: item.sales_tip || '',
-          objection_tip: item.objection_tip || '',
-          customer_explanation: item.customer_explanation || ''
-        };
-        return normalized;
-      });
-      console.log('✅ Normalized', parsed.coverage.length, 'coverage items');
-    }
 
     // Cache the result
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_cache`, {
@@ -478,8 +356,8 @@ Vælg de ${maxItems} dækninger der giver STØRST værdi i salgssituationen!`;
   }
 }
 
-function getSystemPrompt(isRetry = false) {
-  let prompt = `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
+function getSystemPrompt() {
+  return `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
 
 # ⚠️ CRITICAL: JSON FORMATTING RULES (FØLG DISSE STRENGT!)
 
@@ -505,30 +383,7 @@ Du SKAL returnere 100% VALID JSON. Følg disse regler NØJE:
 
 5. **TEST MENTALT:**
    Før du returnerer JSON, spørg dig selv: "Ville JSON.parse() acceptere dette?"
-   Hvis nej → ret det!`;
-
-  // Add EXTRA STRICT rules on retry
-  if (isRetry) {
-    prompt += `
-
-# 🚨 EXTRA STRENGE REGLER (DETTE ER ET RETRY!)
-
-Dit forrige forsøg fejlede JSON parsing. Følg disse EKSTRA regler:
-
-1. **BRUG ALDRIG QUOTES I VÆRDIER:**
-   - Skriv IKKE: "Dækker "Zone 1" og "Zone 2""
-   - Skriv I STEDET: "Dækker Zone 1 og Zone 2"
-   
-2. **SIMPLIFICER AL TEKST:**
-   - Hold reason felter under 80 tegn
-   - Brug simple ord uden anførselstegn
-   
-3. **DOUBLE-CHECK HVER LINJE:**
-   - Læs JSON en ekstra gang før du sender
-   - Hvis du ser " inde i en string → FJERN DET!`;
-  }
-
-  prompt += `
+   Hvis nej → ret det!
 
 # DIN OPGAVE
 Analyser de to sæt forsikringsbetingelser MEGET nøje og identificer præcist hvad hvert selskab dækker og IKKE dækker.
@@ -620,25 +475,6 @@ VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger
 }
 
 # OUTPUT FORMAT
-⚠️ KRITISK: Hver coverage entry SKAL have PRÆCIS disse felter - ikke andre!
-
-🔥 EKSTRA VIGTIGT - CATEGORY FELT:
-- HVER coverage item SKAL have et konkret "category" navn
-- Eksempler: "Stormskade", "Selvrisiko brand", "Hundesygdom", "Vognmandskørsel"  
-- ALDRIG lad category være tom, undefined, eller generisk som "Ukendt dækning" eller "Ekstra dækning" eller bare "Bygning"
-- ALDRIG send bare punkt, a, b uden category
-- Brug konkrete, specifikke navne for hver dækning
-- Hvis du finder flere forskelle inden for samme kategori, DIFFERENTIER dem: "Bygning - Solceller", "Bygning - Stormskade", etc.
-
-🔥 EKSTRA VIGTIGT - AMOUNT FELTER SKAL VÆRE STRINGS:
-- amount_a og amount_b SKAL ALTID være TEXT STRINGS - ALDRIG objects!
-- ✅ KORREKT: "amount_a": "Ingen nyværdierstatning"
-- ✅ KORREKT: "amount_a": "Nyværdierstatning første år hvis fabriksny"
-- ❌ FORKERT: "amount_a": {"covered": false, "details": "..."}
-- ❌ FORKERT: "amount_a": {covered: true, details: "..."}
-- Hvis status er "inib" eller "no", sæt amount til null
-- Hvis status er "yes", skriv dækningen som EN TEXT STRING
-
 Returner KUN valid JSON uden markdown backticks:
 {
   "type": "Husforsikring",
@@ -647,12 +483,12 @@ Returner KUN valid JSON uden markdown backticks:
   "coverage": [
     {
       "category": "Navn på dækning",
-      "status_a": "yes/no/inib",       ← VIGTIGT: status_a (ikke bare "a")
-      "status_b": "yes/no/inib",       ← VIGTIGT: status_b (ikke bare "b")
-      "amount_a": "Beløb eller vilkår", ← VIGTIGT: amount_a MÅ KUN VÆRE STRING!
-      "amount_b": "Beløb eller vilkår", ← VIGTIGT: amount_b MÅ KUN VÆRE STRING!
+      "status_a": "yes/no/inib",
+      "status_b": "yes/no/inib",
+      "amount_a": "Beløb eller vilkår",
+      "amount_b": "Beløb eller vilkår",
       "winner": "a/b/equal",
-      "reason": "Forklaring på hvorfor", ← VIGTIGT: reason (ikke "note")
+      "reason": "Forklaring på hvorfor",
       "sales_tip": "Max 1 sætning salgstip hvis winner=a, ellers tom streng",
       "objection_tip": "Max 1 sætning håndtering af indsigelse hvis winner=b, ellers tom streng",
       "customer_explanation": "Max 1 sætning i simpelt dansk"
@@ -664,8 +500,5 @@ Returner KUN valid JSON uden markdown backticks:
   },
   "top3_a": ["Fordel 1", "Fordel 2", "Fordel 3"],
   "top3_b": ["Fordel 1", "Fordel 2", "Fordel 3"]
-}
-
-⚠️ HUSK: Brug status_a, status_b, amount_a, amount_b, reason - IKKE a, b, note!
-⚠️ HUSK: amount_a og amount_b må KUN være strings eller null - ALDRIG objects!`;
+}`;
 }
