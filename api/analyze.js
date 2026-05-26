@@ -158,38 +158,58 @@ export default async function handler(req, res) {
 
     const parsed = JSON.parse(match[0]);
 
-    // ✨ MINIMAL POST-PROCESSING: Fix critical bugs only
+    // ✨ POST-PROCESSING: Fix critical bugs
     if (parsed.coverage && Array.isArray(parsed.coverage)) {
-      parsed.coverage = parsed.coverage.map(item => {
-        // Fix status when amount text contradicts it
-        let status_a = item.status_a;
-        let status_b = item.status_b;
-        
-        if (item.amount_a && typeof item.amount_a === 'string') {
-          const lower = item.amount_a.toLowerCase();
-          if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning')) {
-            status_a = 'no';
+      const beforeCount = parsed.coverage.length;
+
+      parsed.coverage = parsed.coverage
+        .map(item => {
+          let status_a = item.status_a;
+          let status_b = item.status_b;
+          let winner = item.winner;
+
+          // FIX 1: Fix status when amount text contradicts it
+          if (item.amount_a && typeof item.amount_a === 'string') {
+            const lower = item.amount_a.toLowerCase();
+            if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning') || lower.includes('undtaget')) {
+              status_a = 'no';
+            }
           }
-        }
-        
-        if (item.amount_b && typeof item.amount_b === 'string') {
-          const lower = item.amount_b.toLowerCase();
-          if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning')) {
-            status_b = 'no';
+          if (item.amount_b && typeof item.amount_b === 'string') {
+            const lower = item.amount_b.toLowerCase();
+            if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning') || lower.includes('undtaget')) {
+              status_b = 'no';
+            }
           }
-        }
-        
-        return {
-          ...item,
-          status_a: status_a,
-          status_b: status_b,
-          sales_tip: item.sales_tip || '',
-          objection_tip: item.objection_tip || '',
-          customer_explanation: item.customer_explanation || ''
-        };
-      });
-      
-      console.log(`✅ Processed ${parsed.coverage.length} coverage items`);
+
+          // FIX 2: Fix winner when A covers and B explicitly excludes (or vice versa)
+          if (status_a === 'yes' && status_b === 'no') winner = 'a';
+          if (status_a === 'no' && status_b === 'yes') winner = 'b';
+
+          return {
+            ...item,
+            status_a,
+            status_b,
+            winner,
+            sales_tip: item.sales_tip || '',
+            objection_tip: item.objection_tip || '',
+            customer_explanation: item.customer_explanation || ''
+          };
+        })
+        // FIX 3: Remove items where both explicitly exclude (no vs no) - no difference to show
+        .filter(item => {
+          if (item.status_a === 'no' && item.status_b === 'no') {
+            console.log(`❌ Filtered: Both exclude "${item.category}"`);
+            return false;
+          }
+          if (item.status_a === 'inib' && item.status_b === 'inib') {
+            console.log(`❌ Filtered: Both INIB "${item.category}"`);
+            return false;
+          }
+          return true;
+        });
+
+      console.log(`✅ Processed: ${beforeCount} → ${parsed.coverage.length} items (removed ${beforeCount - parsed.coverage.length})`);
     }
 
     // Cache the result
@@ -367,9 +387,17 @@ Lavere selvrisiko, længere periode, bredere geografi = Fordel
 ## ⚖️ REGEL 4: Vage beløb = Equal
 "50.000 kr" vs "fremgår af police" → winner=equal
 
-## 🚫 REGEL 5: Spring over "inib vs inib"
-Hvis BEGGE selskaber ikke nævner en dækning (status_a=inib OG status_b=inib) → medtag IKKE dette punkt!
-Vi vil kun se dækninger hvor mindst ÉT selskab nævner det.
+## 🚫 REGEL 5: Spring over når begge er ens negative
+Hvis BEGGE ikke nævner det (inib+inib) → SKIP!
+Hvis BEGGE eksplicit undtager (no+no) → SKIP!
+Vi vil KUN se dækninger hvor der er en REEL FORSKEL!
+
+## ✅ REGEL 6: Dækket med begrænsninger > Undtaget
+Hvis A dækker (selv med begrænsninger) OG B eksplicit undtager → winner=a
+Eksempel:
+- A: "Dækket op til 10% - dog ikke fra ubeboet bolig" → status_a=yes
+- B: "Ikke dækket - huset anses ubeboet ved weekendophold" → status_b=no
+→ winner=a ← A dækker, B undtager!
 
 ## 📊 Status-definitioner (brug KUN disse 3):
 - **yes**: Dækkes eksplicit med konkrete vilkår
@@ -399,6 +427,26 @@ Når du skriver status og amount, skal de MATCHE:
 - ✅ GODT: "Stormskade", "Nyværdierstatning første år", "Veterinærbehandling"
 - ❌ DÅRLIGT: "Ukendt dækning", "Ekstra dækning", "Bygning" (uden specifikation)
 - Hvis du finder flere ting i samme kategori → differentier: "Bygning - Stormskade", "Bygning - Solceller"
+
+# EKSEMPEL 0a: SKIP - Begge undtager (no+no)
+❌ MEDTAG IKKE:
+{
+  "category": "Oversvømmelse fra hav",
+  "status_a": "no",
+  "status_b": "no"
+  → SKIP! Ingen forskel - begge undtager det
+}
+
+# EKSEMPEL 0b: REGEL 6 - Dækket > Undtaget
+✅ MEDTAG:
+{
+  "category": "Simpelt tyveri - ubeboet",
+  "status_a": "yes",
+  "status_b": "no",
+  "amount_a": "Dækket op til 10% af forsikringssummen",
+  "amount_b": "Ikke dækket - huset anses ubeboet ved weekendophold",
+  "winner": "a"
+}
 
 # EKSEMPEL 1: Højere beløb
 {
