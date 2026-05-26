@@ -225,7 +225,7 @@ JSON REGLER (for at undgå parse fejl):
 
 PRIORITÉR I DENNE RÆKKEFØLGE:
 1. Store beløbsforskelle (f.eks. 50.000 kr vs 100.000 kr)
-2. Dækninger hvor kun ÉT selskab dækker (status: yes vs no/inib)
+2. Dækninger hvor kun ÉT selskab dækker (status: yes vs no)
 3. Markant bedre vilkår (f.eks. selvrisiko 2.500 kr vs 5.000 kr)
 4. Kritiske dækninger som kunden ofte spørger om
 5. Unikke fordele ved dit selskab (winner=a)
@@ -589,6 +589,13 @@ VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger
 
 # OUTPUT FORMAT
 ⚠️ KRITISK: Hver coverage entry SKAL have PRÆCIS disse felter - ikke andre!
+
+🔥 EKSTRA VIGTIGT - CATEGORY FELT:
+- HVER coverage item SKAL have et konkret "category" navn
+- Eksempler: "Stormskade", "Selvrisiko brand", "Hundesygdom", "Vognmandskørsel"  
+- ALDRIG lad category være tom, undefined, eller generisk som "Ukendt dækning" eller "Ekstra dækning"
+- ALDRIG send bare punkt, a, b uden category
+- Brug konkrete, specifikke navne for hver dækning
 
 Returner KUN valid JSON uden markdown backticks:
 {
