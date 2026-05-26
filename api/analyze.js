@@ -335,6 +335,11 @@ Returner JSON med: type, companyA, companyB, coverage (array), pitch, top3_a, to
 
 function getTypeSpecificGuide(type) {
   const guides = {
+    'Sundhedsforsikring': `
+🔍 SPECIFIKT FOR SUNDHEDSFORSIKRING:
+Find konkrete dækninger: Behandlingsgaranti (ventetid), Speciallæge, Fysioterapi, Psykolog, Kiropraktor, Scanning/MR, Kræftbehandling, Operationer, Tandbehandling, Medicin.
+Vær specifik om ventetider og maksimumsbeløb!`,
+
     'Lystfartøj': `
 🔍 SPECIFIKT FOR LYSTFARTØJ:
 Find konkrete dækninger som: Kaskoforsikring, Maskinskade, Trailer, Bjærgning, Sejlområde, Udstyr om bord.
