@@ -593,9 +593,19 @@ VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger
 🔥 EKSTRA VIGTIGT - CATEGORY FELT:
 - HVER coverage item SKAL have et konkret "category" navn
 - Eksempler: "Stormskade", "Selvrisiko brand", "Hundesygdom", "Vognmandskørsel"  
-- ALDRIG lad category være tom, undefined, eller generisk som "Ukendt dækning" eller "Ekstra dækning"
+- ALDRIG lad category være tom, undefined, eller generisk som "Ukendt dækning" eller "Ekstra dækning" eller bare "Bygning"
 - ALDRIG send bare punkt, a, b uden category
 - Brug konkrete, specifikke navne for hver dækning
+- Hvis du finder flere forskelle inden for samme kategori, DIFFERENTIER dem: "Bygning - Solceller", "Bygning - Stormskade", etc.
+
+🔥 EKSTRA VIGTIGT - AMOUNT FELTER SKAL VÆRE STRINGS:
+- amount_a og amount_b SKAL ALTID være TEXT STRINGS - ALDRIG objects!
+- ✅ KORREKT: "amount_a": "Ingen nyværdierstatning"
+- ✅ KORREKT: "amount_a": "Nyværdierstatning første år hvis fabriksny"
+- ❌ FORKERT: "amount_a": {"covered": false, "details": "..."}
+- ❌ FORKERT: "amount_a": {covered: true, details: "..."}
+- Hvis status er "inib" eller "no", sæt amount til null
+- Hvis status er "yes", skriv dækningen som EN TEXT STRING
 
 Returner KUN valid JSON uden markdown backticks:
 {
@@ -607,8 +617,8 @@ Returner KUN valid JSON uden markdown backticks:
       "category": "Navn på dækning",
       "status_a": "yes/no/inib",       ← VIGTIGT: status_a (ikke bare "a")
       "status_b": "yes/no/inib",       ← VIGTIGT: status_b (ikke bare "b")
-      "amount_a": "Beløb eller vilkår", ← VIGTIGT: amount_a
-      "amount_b": "Beløb eller vilkår", ← VIGTIGT: amount_b
+      "amount_a": "Beløb eller vilkår", ← VIGTIGT: amount_a MÅ KUN VÆRE STRING!
+      "amount_b": "Beløb eller vilkår", ← VIGTIGT: amount_b MÅ KUN VÆRE STRING!
       "winner": "a/b/equal",
       "reason": "Forklaring på hvorfor", ← VIGTIGT: reason (ikke "note")
       "sales_tip": "Max 1 sætning salgstip hvis winner=a, ellers tom streng",
@@ -624,6 +634,6 @@ Returner KUN valid JSON uden markdown backticks:
   "top3_b": ["Fordel 1", "Fordel 2", "Fordel 3"]
 }
 
-⚠️ HUSK: Brug status_a, status_b, amount_a, amount_b, reason - IKKE a, b, note!`;
+⚠️ HUSK: Brug status_a, status_b, amount_a, amount_b, reason - IKKE a, b, note!
+⚠️ HUSK: amount_a og amount_b må KUN være strings eller null - ALDRIG objects!`;
 }
- 
