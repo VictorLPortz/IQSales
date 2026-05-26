@@ -352,13 +352,39 @@ Vælg de ${maxItems} dækninger der giver STØRST værdi i salgssituationen!`;
           autoReason = `${winnerName} har bedre dækning`;
         }
         
+        // NORMALIZE AMOUNT FIELDS - convert objects to strings
+        let normalizedAmountA = item.amount_a;
+        let normalizedAmountB = item.amount_b;
+        
+        // If amount_a is an object, extract the details string
+        if (normalizedAmountA && typeof normalizedAmountA === 'object') {
+          if (normalizedAmountA.covered === false) {
+            normalizedAmountA = normalizedAmountA.details || 'Ikke dækket';
+          } else if (normalizedAmountA.covered === true) {
+            normalizedAmountA = normalizedAmountA.details || 'Dækket';
+          } else {
+            normalizedAmountA = normalizedAmountA.details || JSON.stringify(normalizedAmountA);
+          }
+        }
+        
+        // If amount_b is an object, extract the details string
+        if (normalizedAmountB && typeof normalizedAmountB === 'object') {
+          if (normalizedAmountB.covered === false) {
+            normalizedAmountB = normalizedAmountB.details || 'Ikke dækket';
+          } else if (normalizedAmountB.covered === true) {
+            normalizedAmountB = normalizedAmountB.details || 'Dækket';
+          } else {
+            normalizedAmountB = normalizedAmountB.details || JSON.stringify(normalizedAmountB);
+          }
+        }
+        
         // Create normalized item
         const normalized = {
           category: item.category || item.punkt || 'Ukendt dækning',
           status_a: item.status_a || (item.a ? 'yes' : 'inib'),
           status_b: item.status_b || (item.b ? 'yes' : 'inib'),
-          amount_a: item.amount_a || item.a || null,
-          amount_b: item.amount_b || item.b || null,
+          amount_a: normalizedAmountA || item.a || null,
+          amount_b: normalizedAmountB || item.b || null,
           winner: item.winner === 'tie' ? 'equal' : (item.winner || 'equal'),
           reason: autoReason || 'Ingen yderligere detaljer',
           sales_tip: item.sales_tip || '',
