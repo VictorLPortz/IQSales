@@ -1108,7 +1108,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     <div class="card">
       <div class="section-lbl">1. Forsikringstyper <span style="font-weight:400;color:var(--muted)">(vælg op til 8)</span></div>
       <div class="type-grid" style="grid-template-columns:repeat(6,1fr)">
-        <button class="type-btn" data-type="Husforsikring" onclick="toggleType(this)"><span class="type-icon">🏡</span>Hus</button>
+        <button class="type-btn selected" data-type="Husforsikring" onclick="toggleType(this)"><span class="type-icon">🏡</span>Hus</button>
         <button class="type-btn" data-type="Bilforsikring" onclick="toggleType(this)"><span class="type-icon">🚗</span>Bil</button>
         <button class="type-btn" data-type="Indboforsikring" onclick="toggleType(this)"><span class="type-icon">🏠</span>Indbo</button>
         <button class="type-btn" data-type="Ulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">🩹</span>Ulykke</button>
@@ -1118,7 +1118,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         <button class="type-btn" data-type="Motorcykelforsikring" onclick="toggleType(this)"><span class="type-icon">🏍️</span>Motorcykel</button>
         <button class="type-btn" data-type="Lystfartøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🚤</span>Lystfartøj</button>
         <button class="type-btn" data-type="Campingvognsforsikring" onclick="toggleType(this)"><span class="type-icon">🚐</span>Campingvogn</button>
-        <button class="type-btn" data-type="Sundhedsforsikring" onclick="toggleType(this)"><span class="type-icon">🏥</span>Sundhed</button>
+        <button class="type-btn" data-type="Børneulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">👶</span>Børneulykke</button>
         <button class="type-btn" data-type="Veterankøretøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🏎️</span>Veterankøretøj</button>
       </div>
       <div class="type-max-note" id="type-max-note">Du kan max vælge 8 forsikringstyper ad gangen</div>
@@ -1143,7 +1143,9 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
             <div class="cdd-menu" id="cdd-a-menu"></div>
           </div>
           <input type="text" id="custom-a" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('a')" onchange="onCustomInput('a')">
-          <div id="upload-zones-a"></div>
+          <div id="upload-zones-a-wrapper">
+            <div id="upload-zones-a"></div>
+          </div>
         </div>
         <div>
           <div class="col-label-row">
@@ -1162,7 +1164,9 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
             <div class="cdd-menu" id="cdd-b-menu"></div>
           </div>
           <input type="text" id="custom-b" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('b')" onchange="onCustomInput('b')">
-          <div id="upload-zones-b"></div>
+          <div id="upload-zones-b-wrapper">
+            <div id="upload-zones-b"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1562,7 +1566,7 @@ const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://
 
 function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[side];const link=document.getElementById('link-'+side);if(!link)return;const url=BETINGELSER_LINKS[name];if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}else{link.href='#';link.style.display='none';}});}
 
-function resetAnalysis(){selectedTypes=[];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
+function resetAnalysis(){selectedTypes=[];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';const wA=document.getElementById('upload-zones-a-wrapper');const wB=document.getElementById('upload-zones-b-wrapper');if(wA)wA.innerHTML='<div id="upload-zones-a"></div>';if(wB)wB.innerHTML='<div id="upload-zones-b"></div>';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
 
 // ============================================================
 // USER PREFERENCES (Favoritter + Sortering)
@@ -1703,11 +1707,11 @@ function onCustomInput(side){const val=document.getElementById('custom-'+side).v
 function getName(side){if(cddState[side]==='andet')return document.getElementById('custom-'+side).value.trim()||'Selskab '+side.toUpperCase();return cddState[side];}
 document.addEventListener('click',e=>{if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));}});
 
-function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(type)){selectedTypes=selectedTypes.filter(t=>t!==type);btn.classList.remove('selected');delete docsA[type];delete docsB[type];}else{if(selectedTypes.length>=8){document.getElementById('type-max-note').classList.add('show');setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);return;}selectedTypes.push(type);btn.classList.add('selected');}renderUploadZones();}
+function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(type)){if(selectedTypes.length===1){return;}selectedTypes=selectedTypes.filter(t=>t!==type);btn.classList.remove('selected');delete docsA[type];delete docsB[type];}else{if(selectedTypes.length>=8){document.getElementById('type-max-note').classList.add('show');setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);return;}selectedTypes.push(type);btn.classList.add('selected');}renderUploadZones();}
 
-const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Sundhedsforsikring':'🏥 Sundhed','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
+const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
 
-const TYPE_EMOJI={'Husforsikring':'🏡','Bilforsikring':'🚗','Indboforsikring':'🏠','Ulykkesforsikring':'🩹','Rejseforsikring':'✈️','Hundeforsikring':'🐶','Fritidshusforsikring':'🏕️','Motorcykelforsikring':'🏍️','Lystfartøjsforsikring':'🚤','Campingvognsforsikring':'🚐','Sundhedsforsikring':'🏥','Veterankøretøjsforsikring':'🏎️'};
+const TYPE_EMOJI={'Husforsikring':'🏡','Bilforsikring':'🚗','Indboforsikring':'🏠','Ulykkesforsikring':'🩹','Rejseforsikring':'✈️','Hundeforsikring':'🐶','Fritidshusforsikring':'🏕️','Motorcykelforsikring':'🏍️','Lystfartøjsforsikring':'🚤','Campingvognsforsikring':'🚐','Børneulykkesforsikring':'👶','Veterankøretøjsforsikring':'🏎️'};
 
   // ==================== BONUS FEATURES: TOAST + SOUND + PAUSE ====================
   
@@ -2776,6 +2780,7 @@ style.textContent = `
 document.head.appendChild(style);
 
 async function analyze() {
+  // Fold upload zones sammen og vis kompakt opsummering
   const nameA = getName('a'), nameB = getName('b');
   if (nameA === nameB) {
     alert('Vælg to forskellige selskaber.');
@@ -2791,6 +2796,18 @@ async function analyze() {
 
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
+
+  // Fold upload zones sammen automatisk
+  const wrapperA = document.getElementById('upload-zones-a-wrapper');
+  const wrapperB = document.getElementById('upload-zones-b-wrapper');
+  if (wrapperA) {
+    const count = typesToAnalyze.length;
+    wrapperA.innerHTML = `<div style="font-size:13px;color:#1D9E75;padding:6px 0;">✓ ${nameA} — ${count} forsikring${count !== 1 ? 'er' : ''} klar</div>`;
+  }
+  if (wrapperB) {
+    const count = typesToAnalyze.length;
+    wrapperB.innerHTML = `<div style="font-size:13px;color:#1D9E75;padding:6px 0;">✓ ${nameB} — ${count} forsikring${count !== 1 ? 'er' : ''} klar</div>`;
+  }
 
   console.log('🚀 Types to analyze:', typesToAnalyze);
 
@@ -3263,12 +3280,16 @@ async function retryType(type) {
       return amount || 'Ingen detaljer';
     }
     
-    return '<div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
-      '<div style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">' +
-        '<h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">' + c.category + '</h3>' +
-        (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
+    const cardId = 'card-body-' + shortName + '-' + idx;
+    return '<div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
+      '<div onclick="toggleCard(\'' + cardId + '\', this)" style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 10px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none;">' +
+        '<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">' +
+          '<h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">' + c.category + '</h3>' +
+          (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
+        '</div>' +
+        '<span style="font-size: 12px; color: #9CA3AF; transition: transform 0.2s; flex-shrink: 0; transform: rotate(0deg);">▼</span>' +
       '</div>' +
-      '<div style="padding: 0 12px 16px 12px;">' +
+      '<div id="' + cardId + '" style="display: none; padding: 0 12px 16px 12px;">' +
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">' +
           
           '<div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">' +
@@ -3346,6 +3367,11 @@ async function retryType(type) {
             <span style="color: #378ADD;">${equal}</span>
             <span>Ens niveau</span>
           </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 0.75rem;">
+          <button onclick="expandAll('${shortName}')" style="padding: 5px 12px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A;">▼ Udvid alle</button>
+          <button onclick="collapseAll('${shortName}')" style="padding: 5px 12px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A;">▲ Fold alle</button>
         </div>
         
         ${coverageCardsHtml}
@@ -3630,6 +3656,30 @@ function getStatusColor(status) {
   return '#DEE2E6';
 }
   
+function toggleCard(id, header) {
+  const body = document.getElementById(id);
+  const chevron = header.querySelector('span:last-child');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function expandAll(shortName) {
+  document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
+    el.style.display = 'block';
+    const chevron = el.previousElementSibling?.querySelector('span:last-child');
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
+  });
+}
+
+function collapseAll(shortName) {
+  document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
+    el.style.display = 'none';
+    const chevron = el.previousElementSibling?.querySelector('span:last-child');
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+  });
+}
+
 function toggleText(textId, btnId) {
   const text = document.getElementById(textId);
   const btn = document.getElementById(btnId);
