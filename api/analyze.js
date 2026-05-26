@@ -626,3 +626,4 @@ Returner KUN valid JSON uden markdown backticks:
 
 ⚠️ HUSK: Brug status_a, status_b, amount_a, amount_b, reason - IKKE a, b, note!`;
 }
+ 
