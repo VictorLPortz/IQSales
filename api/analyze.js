@@ -7,57 +7,6 @@ const anthropic = new Anthropic({
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// ═══════════════════════════════════════════════════════════════
-// JSON SANITIZATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Basic JSON sanitization - fixes common issues
- */
-function sanitizeJSON(jsonStr) {
-  return jsonStr
-    .replace(/,(\s*[}\]])/g, '$1')      // Remove trailing commas
-    .replace(/\n/g, ' ')                 // Remove newlines
-    .replace(/\r/g, '')                  // Remove carriage returns
-    .replace(/\t/g, ' ')                 // Replace tabs with spaces
-    .replace(/  +/g, ' ')                // Collapse multiple spaces
-    .trim();
-}
-
-/**
- * Aggressive JSON cleaning - last resort fallback
- * Fixes unescaped quotes and other critical issues
- */
-function aggressiveJSONClean(jsonStr) {
-  let cleaned = jsonStr;
-  
-  // Step 1: Remove trailing commas (again, to be safe)
-  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
-  
-  // Step 2: Fix unescaped quotes inside string values
-  // Match "key": "value with "quotes" inside"
-  // This is VERY aggressive - only use as fallback
-  cleaned = cleaned.replace(
-    /"([^"]+)":\s*"([^"]*)"/g,
-    function(match, key, value) {
-      // Escape internal quotes in the value
-      const escapedValue = value
-        .replace(/\\"/g, 'TEMP_ESCAPED_QUOTE')  // Protect already escaped
-        .replace(/"/g, '\\"')                    // Escape unescaped quotes
-        .replace(/TEMP_ESCAPED_QUOTE/g, '\\"'); // Restore
-      return `"${key}": "${escapedValue}"`;
-    }
-  );
-  
-  // Step 3: Remove control characters
-  cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, ' ');
-  
-  // Step 4: Normalize whitespace
-  cleaned = cleaned.replace(/\s+/g, ' ').trim();
-  
-  return cleaned;
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -215,70 +164,13 @@ ${pdfB.full_text.substring(0, 100000)}
 
     // Parse response
     const txt = message.content.map(function(i) { return i.type === 'text' ? i.text : ''; }).join('\n');
-    let cleanedText = txt.replace(/```json|```/g, '').trim();
+    const match = txt.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
     
-    // ✨ FORBEDRET: Extract first complete JSON object using bracket matching
-    let jsonStr = null;
-    let depth = 0;
-    let startIndex = -1;
-    
-    for (let i = 0; i < cleanedText.length; i++) {
-      const char = cleanedText[i];
-      
-      if (char === '{') {
-        if (depth === 0) startIndex = i;
-        depth++;
-      } else if (char === '}') {
-        depth--;
-        if (depth === 0 && startIndex !== -1) {
-          // Found complete JSON object!
-          jsonStr = cleanedText.substring(startIndex, i + 1);
-          break;
-        }
-      }
-    }
-    
-    if (!jsonStr) {
-      console.error('❌ No complete JSON object found in response');
-      console.error('Response text:', txt.substring(0, 500));
-      throw new Error('Claude returnerede ikke valid JSON format');
-    }
-    
-    // ✨ ROBUST JSON SANITIZATION
-    jsonStr = sanitizeJSON(jsonStr);
-    
-    // ✨ FORBEDRET: Try/catch med detaljeret error logging
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch (parseError) {
-      console.error('❌ JSON Parse Error:', parseError.message);
-      console.error('❌ Error position:', parseError.message.match(/position (\d+)/)?.[1]);
-      console.error('❌ JSON length:', jsonStr.length);
-      
-      // Log context around error position
-      const posMatch = parseError.message.match(/position (\d+)/);
-      if (posMatch) {
-        const pos = parseInt(posMatch[1]);
-        const start = Math.max(0, pos - 100);
-        const end = Math.min(jsonStr.length, pos + 100);
-        console.error('❌ Context around error:');
-        console.error(jsonStr.substring(start, end));
-      }
-      
-      // ✨ FALLBACK: Try aggressive cleaning
-      console.log('🔄 Attempting aggressive JSON cleaning...');
-      try {
-        jsonStr = aggressiveJSONClean(jsonStr);
-        parsed = JSON.parse(jsonStr);
-        console.log('✅ Aggressive cleaning succeeded!');
-      } catch (secondError) {
-        console.error('❌ Aggressive cleaning also failed:', secondError.message);
-        throw new Error('Claude returnerede ugyldig JSON. Prøv igen eller kontakt support.');
-      }
+    if (!match) {
+      throw new Error('Failed to parse analysis result');
     }
 
-    console.log('✅ JSON parsed successfully');
+    const parsed = JSON.parse(match[0]);
 
     // Cache the result
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_cache`, {
@@ -358,32 +250,6 @@ ${pdfB.full_text.substring(0, 100000)}
 
 function getSystemPrompt() {
   return `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
-
-# ⚠️ CRITICAL: JSON FORMATTING RULES (FØLG DISSE STRENGT!)
-
-Du SKAL returnere 100% VALID JSON. Følg disse regler NØJE:
-
-1. **ESCAPE ALL QUOTES I STRINGS:**
-   ✅ KORREKT: "amount_a": "Dækker \\"stormskader\\" op til 50.000 kr"
-   ❌ FORKERT: "amount_a": "Dækker "stormskader" op til 50.000 kr"
-
-2. **INGEN LINE BREAKS I JSON STRINGS:**
-   ✅ KORREKT: "reason": "Linje 1. Linje 2."
-   ❌ FORKERT: "reason": "Linje 1
-                           Linje 2"
-
-3. **ESCAPE SPECIAL CHARS:**
-   - Backslash: \\\\ → \\\\\\\\
-   - Quote: " → \\"
-   - Newline: Brug mellemrum eller . i stedet
-
-4. **HVIS I TVIVL - UNDLAD QUOTES:**
-   ✅ SIKKERT: "amount_a": "Dækker stormskader op til 50000 kr"
-   ❌ RISIKABELT: "amount_a": "Dækker "stormskader" op til 50.000"
-
-5. **TEST MENTALT:**
-   Før du returnerer JSON, spørg dig selv: "Ville JSON.parse() acceptere dette?"
-   Hvis nej → ret det!
 
 # DIN OPGAVE
 Analyser de to sæt forsikringsbetingelser MEGET nøje og identificer præcist hvad hvert selskab dækker og IKKE dækker.
@@ -488,10 +354,7 @@ Returner KUN valid JSON uden markdown backticks:
       "amount_a": "Beløb eller vilkår",
       "amount_b": "Beløb eller vilkår",
       "winner": "a/b/equal",
-      "reason": "Forklaring på hvorfor",
-      "sales_tip": "Max 1 sætning salgstip hvis winner=a, ellers tom streng",
-      "objection_tip": "Max 1 sætning håndtering af indsigelse hvis winner=b, ellers tom streng",
-      "customer_explanation": "Max 1 sætning i simpelt dansk"
+      "reason": "Forklaring på hvorfor"
     }
   ],
   "pitch": {
