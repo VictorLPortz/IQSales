@@ -132,30 +132,16 @@ export default async function handler(req, res) {
 
     const feedbacks = feedbackResponse.ok ? await feedbackResponse.json() : [];
 
-    // Build prompt
-    let prompt = `Sammenlign ${companyA} og ${companyB} for ${type}.
+    // Build prompt with type-specific instructions
+    let prompt = buildPrompt(companyA, companyB, type, pdfA.full_text, pdfB.full_text, feedbacks);
 
-SELSKAB A (${companyA}) BETINGELSER:
-${pdfA.full_text.substring(0, 100000)}
+    console.log(`🔄 Starting analysis: ${companyA} vs ${companyB} for ${type}`);
 
-SELSKAB B (${companyB}) BETINGELSER:
-${pdfB.full_text.substring(0, 100000)}
-`;
-
-    if (feedbacks.length > 0) {
-      prompt += `\n\nGODKENDT FEEDBACK (VIGTIGT - tag højde for dette):\n`;
-      feedbacks.forEach(function(f, i) {
-        prompt += `${i + 1}. ${f.category}: ${f.comment}\n`;
-      });
-    }
-
-    prompt += `\n\nReturner JSON med: type, companyA, companyB, coverage (array af dækningspunkter), pitch (salgsargumenter), top3_a, top3_b.`;
-
-    // Call Claude API
+    // Call Claude API with structured outputs
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
-      system: getSystemPrompt(),
+      system: getSystemPrompt(type),
       messages: [{
         role: 'user',
         content: prompt
@@ -171,6 +157,40 @@ ${pdfB.full_text.substring(0, 100000)}
     }
 
     const parsed = JSON.parse(match[0]);
+
+    // ✨ MINIMAL POST-PROCESSING: Fix critical bugs only
+    if (parsed.coverage && Array.isArray(parsed.coverage)) {
+      parsed.coverage = parsed.coverage.map(item => {
+        // Fix status when amount text contradicts it
+        let status_a = item.status_a;
+        let status_b = item.status_b;
+        
+        if (item.amount_a && typeof item.amount_a === 'string') {
+          const lower = item.amount_a.toLowerCase();
+          if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning')) {
+            status_a = 'no';
+          }
+        }
+        
+        if (item.amount_b && typeof item.amount_b === 'string') {
+          const lower = item.amount_b.toLowerCase();
+          if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning')) {
+            status_b = 'no';
+          }
+        }
+        
+        return {
+          ...item,
+          status_a: status_a,
+          status_b: status_b,
+          sales_tip: item.sales_tip || '',
+          objection_tip: item.objection_tip || '',
+          customer_explanation: item.customer_explanation || ''
+        };
+      });
+      
+      console.log(`✅ Processed ${parsed.coverage.length} coverage items`);
+    }
 
     // Cache the result
     await fetch(`${SUPABASE_URL}/rest/v1/analysis_cache`, {
@@ -248,7 +268,85 @@ ${pdfB.full_text.substring(0, 100000)}
   }
 }
 
-function getSystemPrompt() {
+// ═══════════════════════════════════════════════════════════════
+// PROMPT BUILDER WITH TYPE-SPECIFIC INSTRUCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+function buildPrompt(companyA, companyB, type, textA, textB, feedbacks) {
+  let prompt = `Sammenlign ${companyA} og ${companyB} for ${type}.
+
+SELSKAB A (${companyA}) BETINGELSER:
+${textA.substring(0, 100000)}
+
+SELSKAB B (${companyB}) BETINGELSER:
+${textB.substring(0, 100000)}
+`;
+
+  if (feedbacks.length > 0) {
+    prompt += `\n\nGODKENDT FEEDBACK (VIGTIGT - tag højde for dette):\n`;
+    feedbacks.forEach(function(f, i) {
+      prompt += `${i + 1}. ${f.category}: ${f.comment}\n`;
+    });
+  }
+
+  // Add type-specific instructions
+  const typeGuide = getTypeSpecificGuide(type);
+  if (typeGuide) {
+    prompt += `\n\n${typeGuide}`;
+  }
+
+  prompt += `\n\n⚠️ VIGTIGT: Returner MAX 20 coverage items.
+
+PRIORITÉR I DENNE RÆKKEFØLGE:
+1. Store beløbsforskelle (f.eks. 50.000 kr vs 100.000 kr)
+2. Dækninger hvor kun ÉT selskab dækker (status: yes vs no/inib)
+3. Markant bedre vilkår (f.eks. selvrisiko 2.500 kr vs 5.000 kr)
+4. Kritiske dækninger som kunden ofte spørger om
+
+SPRING OVER:
+- Dækninger hvor begge er "inib" (ikke nævnt af nogen)
+- Meget små forskelle under 5.000 kr
+- Ansvarsforsikring (medmindre markant forskel)
+
+Returner JSON med: type, companyA, companyB, coverage (array), pitch, top3_a, top3_b.`;
+
+  return prompt;
+}
+
+function getTypeSpecificGuide(type) {
+  const guides = {
+    'Lystfartøj': `
+🔍 SPECIFIKT FOR LYSTFARTØJ:
+Find konkrete dækninger som: Kaskoforsikring, Maskinskade, Trailer, Bjærgning, Sejlområde, Udstyr om bord.
+ALDRIG bare "Ukendt dækning" - find det specifikke navn!`,
+
+    'Fritidshus': `
+🔍 SPECIFIKT FOR FRITIDSHUS:
+DIFFERENTIER bygningsskader: "Bygning - Stormskade", "Bygning - Vandskade", "Bygning - Solceller"
+ALDRIG bare "Bygning" uden specifikation!`,
+
+    'Hund': `
+🔍 SPECIFIKT FOR HUND:
+Find konkrete dækninger: Veterinærbehandling, Hundesygdom, Tandbehandling, Ansvar.
+ALDRIG "Ukendt dækning"!`,
+
+    'Motorcykel': `
+🔍 SPECIFIKT FOR MOTORCYKEL:
+Vær specifik om: Nyværdierstatning (hvor længe?), Kaskodækning, Glasskader, Tilbehør.`,
+
+    'Campingvogn': `
+🔍 SPECIFIKT FOR CAMPINGVOGN:
+Differentier: Vognen selv vs Fortelt vs Indbo vs Udstyr.`
+  };
+
+  return guides[type] || null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SYSTEM PROMPT - ENHANCED WITH EXPLICIT RULES
+// ═══════════════════════════════════════════════════════════════
+
+function getSystemPrompt(type) {
   return `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
 
 # DIN OPGAVE
@@ -258,43 +356,49 @@ Analyser de to sæt forsikringsbetingelser MEGET nøje og identificer præcist h
 
 ## ✅ REGEL 1: Højere beløb = Fordel
 Hvis Selskab A dækker 50.000 kr og Selskab B dækker 100.000 kr → winner=b
-Eksempel: 
-- A: "Personskade: 50.000 kr"
-- B: "Personskade: 100.000 kr"
-- → winner=b, reason="B dækker dobbelt så meget"
 
 ## ✅ REGEL 2: Kun én nævner dækningen = Fordel
 Hvis Selskab A nævner "blæsevejr" og Selskab B ikke gør → winner=a
 VIGTIGT: Dette gælder MEDMINDRE Selskab B eksplicit undtager det.
-Eksempel:
-- A: "Dækker blæsevejr under vindstyrke 8"
-- B: Nævner ikke blæsevejr
-- → winner=a, reason="A dækker blæsevejr, ikke nævnt hos B"
 
 ## ✅ REGEL 3: Bedre vilkår = Fordel
-Lavere selvrisiko, længere periode, bredere geografi, færre begrænsninger = Fordel
-Eksempel:
-- A: "Selvrisiko 2.500 kr"
-- B: "Selvrisiko 5.000 kr"  
-- → winner=a, reason="Halvt så lav selvrisiko"
+Lavere selvrisiko, længere periode, bredere geografi = Fordel
 
 ## ⚖️ REGEL 4: Vage beløb = Equal
-"50.000 kr" vs "fremgår af police" → winner=equal (kan ikke sammenlignes)
-Eksempel:
-- A: "Maksimal dækning: 100.000 kr"
-- B: "Dækning fremgår af police"
-- → winner=equal, reason="Kan ikke sammenlignes - B ikke specificeret"
+"50.000 kr" vs "fremgår af police" → winner=equal
 
-## 🚫 REGEL 5: UDELAD kun Ansvarsforsikring
-Returner IKKE Ansvarsforsikring MEDMINDRE der er konkret forskel i beløb eller vilkår.
-INKLUDER ALT ANDET hvor der er forskel - blæsevejr, tyveri, brand, personskade, osv.
+## 🚫 REGEL 5: Spring over "inib vs inib"
+Hvis BEGGE selskaber ikke nævner en dækning (status_a=inib OG status_b=inib) → medtag IKKE dette punkt!
+Vi vil kun se dækninger hvor mindst ÉT selskab nævner det.
 
 ## 📊 Status-definitioner (brug KUN disse 3):
-- **yes**: Dækkes eksplikt med konkrete vilkår
-- **no**: Eksplicit undtaget eller udelukket
-- **inib**: INIB (Ikke Nævnt I Betingelserne) - dækningen nævnes slet ikke
+- **yes**: Dækkes eksplicit med konkrete vilkår
+- **no**: Eksplicit undtaget eller ikke dækket (skriv "ikke dækket" eller lignende i amount felt)
+- **inib**: Ikke Nævnt I Betingelserne
 
-VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger, brug "yes" og forklar begrænsningen i reason.
+## 🔥 KRITISK: STATUS OG AMOUNT KONSISTENS
+Når du skriver status og amount, skal de MATCHE:
+- Hvis status="yes" → amount skal beskrive hvad der dækkes (f.eks. "Op til 50.000 kr")
+- Hvis status="no" → amount skal sige "Ikke dækket" eller forklare undtagelsen
+- Hvis status="inib" → amount skal være null
+
+⚠️ FORKERT eksempel:
+{
+  "status_b": "yes",  ← FORKERT!
+  "amount_b": "Dækkes ikke - kun storm..."  ← Dette er en no-status!
+}
+
+✅ KORREKT eksempel:
+{
+  "status_b": "no",  ← Korrekt!
+  "amount_b": "Dækkes ikke - kun storm over 17,2 m/s dækkes"
+}
+
+## 🔥 KRITISK: KONKRETE CATEGORIES
+- HVER coverage item SKAL have et KONKRET category navn
+- ✅ GODT: "Stormskade", "Nyværdierstatning første år", "Veterinærbehandling"
+- ❌ DÅRLIGT: "Ukendt dækning", "Ekstra dækning", "Bygning" (uden specifikation)
+- Hvis du finder flere ting i samme kategori → differentier: "Bygning - Stormskade", "Bygning - Solceller"
 
 # EKSEMPEL 1: Højere beløb
 {
@@ -304,57 +408,49 @@ VIGTIGT: Der findes IKKE "partial" status! Hvis noget dækkes med begrænsninger
   "amount_a": "50.000 kr",
   "amount_b": "100.000 kr",
   "winner": "b",
-  "reason": "Selskab B dækker dobbelt så meget som Selskab A"
+  "reason": "Selskab B dækker dobbelt så meget"
 }
 
 # EKSEMPEL 2: Kun én nævner
 {
-  "category": "Blæsevejr",
+  "category": "Blæsevejr under stormstyrke",
   "status_a": "yes",
   "status_b": "inib",
-  "amount_a": "Dækkes under vindstyrke 8",
+  "amount_a": "Dækkes ved vindstyrke under 17,2 m/s",
   "amount_b": null,
   "winner": "a",
   "reason": "Kun Selskab A dækker blæsevejr - ikke nævnt hos B"
 }
 
-# EKSEMPEL 3: Begge dækker ens
+# EKSEMPEL 3: Eksplicit ikke dækket
 {
-  "category": "Brand i bolig",
+  "category": "Stormskade under vindstyrke 8",
   "status_a": "yes",
-  "status_b": "yes",
-  "amount_a": "Fuld dækning",
-  "amount_b": "Fuld dækning",
-  "winner": "equal",
-  "reason": "Begge selskaber dækker brand fuldt ud"
-}
-
-# EKSEMPEL 4: Bedre vilkår
-{
-  "category": "Retshjælp",
-  "status_a": "yes",
-  "status_b": "yes",
-  "amount_a": "Op til 225.000 kr, selvrisiko 2.500 kr",
-  "amount_b": "Op til 225.000 kr, selvrisiko 5.000 kr",
+  "status_b": "no",
+  "amount_a": "Dækkes fra vindstyrke 5",
+  "amount_b": "Ikke dækket - kun storm over 17,2 m/s dækkes",
   "winner": "a",
-  "reason": "Samme dækningssum men A har halvt så lav selvrisiko"
+  "reason": "Selskab A dækker blæsevejr, Selskab B undtager det eksplicit"
 }
 
 # OUTPUT FORMAT
 Returner KUN valid JSON uden markdown backticks:
 {
-  "type": "Husforsikring",
-  "companyA": "Alm. Brand",
-  "companyB": "Tryg",
+  "type": "${type}",
+  "companyA": "Selskab A navn",
+  "companyB": "Selskab B navn",
   "coverage": [
     {
-      "category": "Navn på dækning",
+      "category": "Konkret dækningsnavn",
       "status_a": "yes/no/inib",
       "status_b": "yes/no/inib",
-      "amount_a": "Beløb eller vilkår",
-      "amount_b": "Beløb eller vilkår",
+      "amount_a": "Beløb eller beskrivelse (eller null hvis inib)",
+      "amount_b": "Beløb eller beskrivelse (eller null hvis inib)",
       "winner": "a/b/equal",
-      "reason": "Forklaring på hvorfor"
+      "reason": "Forklaring",
+      "sales_tip": "Kort salgstip hvis winner=a",
+      "objection_tip": "Håndtering hvis winner=b",
+      "customer_explanation": "Simpel forklaring"
     }
   ],
   "pitch": {
