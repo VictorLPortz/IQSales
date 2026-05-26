@@ -1108,7 +1108,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     <div class="card">
       <div class="section-lbl">1. Forsikringstyper <span style="font-weight:400;color:var(--muted)">(vælg op til 8)</span></div>
       <div class="type-grid" style="grid-template-columns:repeat(6,1fr)">
-        <button class="type-btn selected" data-type="Husforsikring" onclick="toggleType(this)"><span class="type-icon">🏡</span>Hus</button>
+        <button class="type-btn" data-type="Husforsikring" onclick="toggleType(this)"><span class="type-icon">🏡</span>Hus</button>
         <button class="type-btn" data-type="Bilforsikring" onclick="toggleType(this)"><span class="type-icon">🚗</span>Bil</button>
         <button class="type-btn" data-type="Indboforsikring" onclick="toggleType(this)"><span class="type-icon">🏠</span>Indbo</button>
         <button class="type-btn" data-type="Ulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">🩹</span>Ulykke</button>
@@ -1562,7 +1562,7 @@ const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://
 
 function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[side];const link=document.getElementById('link-'+side);if(!link)return;const url=BETINGELSER_LINKS[name];if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}else{link.href='#';link.style.display='none';}});}
 
-function resetAnalysis(){selectedTypes=['Husforsikring'];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');if(b.dataset.type==='Husforsikring')b.classList.add('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
+function resetAnalysis(){selectedTypes=[];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
 
 // ============================================================
 // USER PREFERENCES (Favoritter + Sortering)
