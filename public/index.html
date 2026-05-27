@@ -4309,6 +4309,7 @@ setTimeout(()=>renderCachePanel(),800);
 
 // Global chat history - persists across tab switches
 let coachChatHistory = [];
+function resetCoachHistory() { coachChatHistory = []; }
 
 function renderGlobalCoach() {
   const container = document.getElementById('tab-coach');
