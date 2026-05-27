@@ -3468,7 +3468,7 @@ async function retryType(type) {
             </div>
             <div id="prep-body-${shortName}" style="display: none; padding: 14px 16px;">
               <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
-                <span id="prep-loading-${shortName}">Klik "Generer" for at lave mødeforberedelse baseret på analysen</span>
+                <span id="prep-loading-${shortName}">⏱️ Tager ca. 10 sekunder at generere baseret på analysen</span>
               </div>
             </div>
           </div>
@@ -3485,7 +3485,7 @@ async function retryType(type) {
             </div>
             <div id="obj-body-${shortName}" style="display: none; padding: 14px 16px;">
               <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
-                <span id="obj-loading-${shortName}">Klik "Generer" for at se typiske indvendinger og svar</span>
+                <span id="obj-loading-${shortName}">⏱️ Tager ca. 10 sekunder at generere baseret på analysen</span>
               </div>
             </div>
           </div>
@@ -3502,7 +3502,7 @@ async function retryType(type) {
             </div>
             <div id="remot-body-${shortName}" style="display: none; padding: 14px 16px;">
               <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
-                <span id="remot-loading-${shortName}">Klik "Generer" for at få et manus til remotivering</span>
+                <span id="remot-loading-${shortName}">⏱️ Tager ca. 10 sekunder at generere baseret på analysen</span>
               </div>
             </div>
           </div>
@@ -4367,7 +4367,7 @@ function renderGlobalCoach() {
           <div><div style="font-size:14px;font-weight:600;color:var(--text);">Mødeforberedelse</div><div style="font-size:11px;color:var(--muted);">Baseret på alle forsikringstyper</div></div>
           <button id="global-prep-btn" onclick="generateGlobalSection('prep','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
         </div>
-        <div id="global-prep-body" style="display:none;padding:14px 16px;"><span id="global-prep-loading" style="color:var(--muted);font-size:13px;">Klik Generer...</span></div>
+        <div id="global-prep-body" style="display:none;padding:14px 16px;"><span id="global-prep-loading" style="color:var(--muted);font-size:13px;">⏱️ Tager ca. 10 sekunder at generere baseret på din analyse</span></div>
       </div>
 
       <!-- Indvendingsbehandling -->
@@ -4377,7 +4377,7 @@ function renderGlobalCoach() {
           <div><div style="font-size:14px;font-weight:600;color:var(--text);">Indvendingsbehandling</div><div style="font-size:11px;color:var(--muted);">Typiske indsigelser fra kunder</div></div>
           <button id="global-obj-btn" onclick="generateGlobalSection('obj','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
         </div>
-        <div id="global-obj-body" style="display:none;padding:14px 16px;"><span id="global-obj-loading" style="color:var(--muted);font-size:13px;">Klik Generer...</span></div>
+        <div id="global-obj-body" style="display:none;padding:14px 16px;"><span id="global-obj-loading" style="color:var(--muted);font-size:13px;">⏱️ Tager ca. 10 sekunder at generere baseret på din analyse</span></div>
       </div>
 
       <!-- Remotivering -->
@@ -4387,7 +4387,7 @@ function renderGlobalCoach() {
           <div><div style="font-size:14px;font-weight:600;color:var(--text);">Remotivering af mødet</div><div style="font-size:11px;color:var(--muted);">Manus til opkaldet inden mødet</div></div>
           <button id="global-remot-btn" onclick="generateGlobalSection('remot','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
         </div>
-        <div id="global-remot-body" style="display:none;padding:14px 16px;"><span id="global-remot-loading" style="color:var(--muted);font-size:13px;">Klik Generer...</span></div>
+        <div id="global-remot-body" style="display:none;padding:14px 16px;"><span id="global-remot-loading" style="color:var(--muted);font-size:13px;">⏱️ Tager ca. 10 sekunder at generere baseret på din analyse</span></div>
       </div>
     </div>
   `;
@@ -4597,17 +4597,22 @@ function renderPrepContent(text) {
 
 function renderObjContent(text) {
   const parts = text.split(/\n(?=["„»\d])/);
-  let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+  let counter = 1;
   parts.forEach(block => {
     const lines = block.split('\n').filter(l => l.trim());
     if (lines.length < 2) return;
     const q = lines[0].replace(/^[\"\„\»\d\.\-\*"]+\s*/, '').replace(/["""]/g, '').trim();
     const a = lines.slice(1).join(' ').replace(/^[→\-\*]+\s*/, '').trim();
     if (!q || !a) return;
-    html += `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-      <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;">"${q}"</div>
-      <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.6;">→ ${formatCoachAnswer(a)}</div>
+    html += `<div style="display:flex;gap:12px;align-items:flex-start;">
+      <div style="width:24px;height:24px;border-radius:50%;background:#FAEEDA;color:#854F0B;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${counter}</div>
+      <div style="flex:1;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;border-bottom:1px solid var(--border);">"${q}"</div>
+        <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.6;">${formatCoachAnswer(a)}</div>
+      </div>
     </div>`;
+    counter++;
   });
   return html + '</div>';
 }
