@@ -848,6 +848,29 @@
           </div>
         </div>
 
+        <!-- Forecast box -->
+        <div style="margin-top: 16px; background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 600; color: #166534; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">🔮 Forventet månedlig omkostning</div>
+            <div style="font-size: 28px; font-weight: 600; color: #166534;" id="forecastMonthly">—</div>
+            <div style="font-size: 12px; color: #4B7A5E; margin-top: 4px;" id="forecastBasis">Beregnes ud fra dagligt gennemsnit</div>
+          </div>
+          <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+            <div style="text-align: center;">
+              <div style="font-size: 11px; color: #4B7A5E; margin-bottom: 2px;">Pr. dag</div>
+              <div style="font-size: 18px; font-weight: 500; color: #166534;" id="forecastDaily">—</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 11px; color: #4B7A5E; margin-bottom: 2px;">Pr. bruger/md</div>
+              <div style="font-size: 18px; font-weight: 500; color: #166534;" id="forecastPerUser">—</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 11px; color: #4B7A5E; margin-bottom: 2px;">Pr. analyse</div>
+              <div style="font-size: 18px; font-weight: 500; color: #166534;" id="forecastPerAnalysis">—</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Charts -->
         <div class="card" style="margin-top: 24px;">
           <div class="card-header">
@@ -1268,7 +1291,7 @@
         </div>
         <div class="employee-stats">
           <div class="employee-analyses">${emp.analyses} analyser</div>
-          <div class="employee-cost">${emp.cost.toFixed(0)} kr</div>
+          <div class="employee-cost">${(emp.cost * 7).toFixed(2)} kr</div>
         </div>
       </div>
     `).join('');
@@ -1502,11 +1525,11 @@
       if (error) throw error;
 
       if (!analyses || analyses.length === 0) {
-        document.getElementById('apiCostTotal').textContent = '0';
-        document.getElementById('cacheHitRate').textContent = '—';
-        document.getElementById('cacheSavings').textContent = '0';
+        document.getElementById('apiCostTotal').textContent = '0,00 kr';
+        document.getElementById('cacheHitRate').textContent = '—%';
+        document.getElementById('cacheSavings').textContent = '0,00 kr';
         document.getElementById('avgResponseTime').textContent = '—';
-        document.getElementById('successRate').textContent = '—';
+        document.getElementById('successRate').textContent = '—%';
         document.getElementById('uniqueVisitors').textContent = '0';
         
         const topTable = document.getElementById('topAnalysesTable');
@@ -1525,33 +1548,47 @@
 
       // Total cost
       const totalCost = completed.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
-      document.getElementById('apiCostTotal').textContent = totalCost.toFixed(0);
+      document.getElementById('apiCostTotal').textContent = (totalCost * 7).toFixed(2) + ' kr';
 
       // Cache hit rate
       const cacheHits = completed.filter(a => a.cache_used).length;
       const cacheRate = completed.length > 0 ? (cacheHits / completed.length * 100).toFixed(0) : 0;
-      document.getElementById('cacheHitRate').textContent = cacheRate;
+      document.getElementById('cacheHitRate').textContent = cacheRate + '%';
 
       // Cache savings (estimated)
       const avgCostPerAnalysis = completed.length > 0 ? totalCost / completed.length : 0;
       const savings = cacheHits * avgCostPerAnalysis;
-      document.getElementById('cacheSavings').textContent = savings.toFixed(0);
+      document.getElementById('cacheSavings').textContent = (savings * 7).toFixed(2) + ' kr';
 
       // Avg response time
       const responseTimes = completed.filter(a => a.response_time_ms).map(a => a.response_time_ms);
       const avgTime = responseTimes.length > 0
-        ? (responseTimes.reduce((sum, t) => sum + t, 0) / responseTimes.length / 1000).toFixed(1)
+        ? (responseTimes.reduce((sum, t) => sum + t, 0) / responseTimes.length / 1000).toFixed(1) + 's'
         : '—';
       document.getElementById('avgResponseTime').textContent = avgTime;
 
       // Success rate
       const total = completed.length + failed.length;
       const successRate = total > 0 ? (completed.length / total * 100).toFixed(0) : '—';
-      document.getElementById('successRate').textContent = successRate;
+      document.getElementById('successRate').textContent = successRate + '%';
 
       // Unique visitors
       const uniqueUsers = new Set(pageViews.map(a => a.user_id).filter(Boolean));
       document.getElementById('uniqueVisitors').textContent = uniqueUsers.size;
+
+      // 🔮 Forecast
+      const allDates = [...new Set(completed.map(a => (a.timestamp||'').substring(0,10)).filter(Boolean))];
+      const daysWithData = allDates.length || 1;
+      const dailyAvgCost = totalCost / daysWithData;
+      const monthlyForecast = dailyAvgCost * 30;
+      const perAnalysisCost = completed.length > 0 ? totalCost / completed.length : 0;
+      const totalUsers = uniqueUsers.size || 1;
+
+      document.getElementById('forecastMonthly').textContent = (monthlyForecast * 7).toFixed(2) + ' kr';
+      document.getElementById('forecastDaily').textContent = (dailyAvgCost * 7).toFixed(2) + ' kr';
+      document.getElementById('forecastPerUser').textContent = ((monthlyForecast / totalUsers) * 7).toFixed(2) + ' kr';
+      document.getElementById('forecastPerAnalysis').textContent = (perAnalysisCost * 7).toFixed(3) + ' kr';
+      document.getElementById('forecastBasis').textContent = `Baseret på ${daysWithData} dage med data · ${completed.length} analyser`;
 
       // Daily cost chart
       const dailyCosts = {};
@@ -1561,7 +1598,7 @@
       });
 
       const costLabels = Object.keys(dailyCosts);
-      const costData = Object.values(dailyCosts);
+      const costData = Object.values(dailyCosts).map(v => parseFloat((v * 7).toFixed(2)));
 
       if (costChart) costChart.destroy();
       const costCtx = document.getElementById('costChart').getContext('2d');
@@ -1585,7 +1622,7 @@
             legend: { display: false }
           },
           scales: {
-            y: { beginAtZero: true }
+            y: { beginAtZero: true, ticks: { callback: v => v.toFixed(2) + ' kr' } }
           }
         }
       });
@@ -1649,7 +1686,7 @@
             <td>${a.insurance_type || '—'}</td>
             <td style="font-size:13px;">${a.company_a || '?'} vs ${a.company_b || '?'}</td>
             <td>${(a.tokens_used || 0).toLocaleString()}</td>
-            <td style="font-weight:600;">${(a.cost_estimate || 0).toFixed(2)} kr</td>
+            <td style="font-weight:600;">${((a.cost_estimate || 0) * 7).toFixed(2)} kr</td>
             <td>${a.response_time_ms ? (a.response_time_ms / 1000).toFixed(1) + 's' : '—'}</td>
             <td>${a.cache_used ? '<span class="badge badge-ready">Cache</span>' : '—'}</td>
             <td style="font-size:12px;color:var(--muted)">${formatDate(a.timestamp)}</td>
