@@ -1118,7 +1118,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         <button class="type-btn" data-type="Motorcykelforsikring" onclick="toggleType(this)"><span class="type-icon">🏍️</span>Motorcykel</button>
         <button class="type-btn" data-type="Lystfartøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🚤</span>Lystfartøj</button>
         <button class="type-btn" data-type="Campingvognsforsikring" onclick="toggleType(this)"><span class="type-icon">🚐</span>Campingvogn</button>
-        <button class="type-btn" data-type="Børneulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">👶</span>Børneulykke</button>
+        <button class="type-btn" data-type="Sundhedsforsikring" onclick="toggleType(this)"><span class="type-icon">🏥</span>Sundhed</button>
         <button class="type-btn" data-type="Veterankøretøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🏎️</span>Veterankøretøj</button>
       </div>
       <div class="type-max-note" id="type-max-note">Du kan max vælge 8 forsikringstyper ad gangen</div>
@@ -1710,9 +1710,9 @@ document.addEventListener('click',e=>{if(!e.target.closest('.cdd')){document.que
 function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(type)){selectedTypes=selectedTypes.filter(t=>t!==type);btn.classList.remove('selected');delete docsA[type];delete docsB[type];}else{if(selectedTypes.length>=8){document.getElementById('type-max-note').classList.add('show');setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);return;}selectedTypes.push(type);btn.classList.add('selected');// Gendan upload zones hvis de er foldet sammen
 const wA=document.getElementById('upload-zones-a-wrapper');const wB=document.getElementById('upload-zones-b-wrapper');if(wA&&!document.getElementById('upload-zones-a')){wA.innerHTML='<div id="upload-zones-a"></div>';}if(wB&&!document.getElementById('upload-zones-b')){wB.innerHTML='<div id="upload-zones-b"></div>';}}renderUploadZones();}
 
-const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Børneulykkesforsikring':'👶 Børneulykke','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
+const TYPE_LABELS={'Husforsikring':'🏡 Hus','Bilforsikring':'🚗 Bil','Indboforsikring':'🏠 Indbo','Ulykkesforsikring':'🩹 Ulykke','Rejseforsikring':'✈️ Rejse','Hundeforsikring':'🐶 Hund','Fritidshusforsikring':'🏕️ Fritidshus','Motorcykelforsikring':'🏍️ Motorcykel','Lystfartøjsforsikring':'🚤 Lystfartøj','Campingvognsforsikring':'🚐 Campingvogn','Sundhedsforsikring':'🏥 Sundhed','Veterankøretøjsforsikring':'🏎️ Veterankøretøj'};
 
-const TYPE_EMOJI={'Husforsikring':'🏡','Bilforsikring':'🚗','Indboforsikring':'🏠','Ulykkesforsikring':'🩹','Rejseforsikring':'✈️','Hundeforsikring':'🐶','Fritidshusforsikring':'🏕️','Motorcykelforsikring':'🏍️','Lystfartøjsforsikring':'🚤','Campingvognsforsikring':'🚐','Børneulykkesforsikring':'👶','Veterankøretøjsforsikring':'🏎️'};
+const TYPE_EMOJI={'Husforsikring':'🏡','Bilforsikring':'🚗','Indboforsikring':'🏠','Ulykkesforsikring':'🩹','Rejseforsikring':'✈️','Hundeforsikring':'🐶','Fritidshusforsikring':'🏕️','Motorcykelforsikring':'🏍️','Lystfartøjsforsikring':'🚤','Campingvognsforsikring':'🚐','Sundhedsforsikring':'🏥','Veterankøretøjsforsikring':'🏎️'};
 
   // ==================== BONUS FEATURES: TOAST + SOUND + PAUSE ====================
   
