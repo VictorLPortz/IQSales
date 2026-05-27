@@ -4328,18 +4328,17 @@ async function generateCoachSection(shortName, section) {
   if (loadingEl) loadingEl.innerHTML = '<span style="color:var(--muted)">Genererer...</span>';
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/coach', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompts[section] }]
+        message: prompts[section],
+        max_tokens: 1000
       })
     });
 
     const result = await response.json();
-    const text = result.content?.map(c => c.text || '').join('') || '';
+    const text = result.text || '';
 
     if (section === 'prep') bodyEl.innerHTML = renderPrepContent(text);
     else if (section === 'obj') bodyEl.innerHTML = renderObjContent(text);
@@ -4441,18 +4440,17 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/api/coach', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
         system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB} (${type}). ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
-        messages: [{ role: 'user', content: question }]
+        message: question,
+        max_tokens: 600
       })
     });
     const r = await resp.json();
-    const answer = r.content?.map(c=>c.text||'').join('') || 'Beklager, prøv igen.';
+    const answer = r.text || 'Beklager, prøv igen.';
     const el = document.getElementById(loadingId);
     if (el) el.innerHTML = `${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.65;max-width:85%;">${answer}</div>`;
   } catch(e) {
