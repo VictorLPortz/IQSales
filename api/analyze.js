@@ -404,10 +404,15 @@ Eksempel:
 - B: "Ikke dækket - huset anses ubeboet ved weekendophold" → status_b=no
 → winner=a ← A dækker, B undtager!
 
-## 📊 Status-definitioner (brug KUN disse 3):
+## 📊 Status-definitioner (brug KUN disse 4):
 - **yes**: Dækkes eksplicit med konkrete vilkår
-- **no**: Eksplicit undtaget eller ikke dækket (skriv "ikke dækket" eller lignende i amount felt)
-- **inib**: Ikke Nævnt I Betingelserne
+- **no**: Forsikringen nævner det men dækker det IKKE (f.eks. "vi dækker ikke skader på løsøre")
+- **excluded**: Eksplicit UNDTAGET — forsikringen dækker normalt denne type men undtager specifikt dette scenarie (f.eks. "storm dækkes, men ikke hvis bygningen er ubeboet")
+- **inib**: Ikke Nævnt I Betingelserne — dækningen omtales slet ikke
+
+## 🔥 KRITISK: FORSKEL PÅ "no" OG "excluded"
+- **no** = Forsikringen siger direkte at denne ting ikke dækkes: "Skader på løsøre er ikke dækket"
+- **excluded** = Forsikringen dækker normalt, men undtager SPECIFIKT dette scenarie: "Stormskade dækkes — dog ikke hvis ejendommen er ubeboet mere end 60 dage"
 
 ## 🔥 KRITISK: STATUS OG AMOUNT KONSISTENS
 Når du skriver status og amount, skal de MATCHE:
