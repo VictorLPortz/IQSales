@@ -779,12 +779,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(10, 37, 64, 0.75);
-  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 99999;
   opacity: 0;
   animation: fadeIn 0.2s forwards;
 }
@@ -2543,9 +2544,10 @@ function showProgressModal(types) {
     </div>
   `;
   
-  // Add to DOM
+  // Add to DOM - ensure it's on body
   document.body.insertAdjacentHTML('beforeend', modalHTML);
   progressModal = document.getElementById('progress-modal-overlay');
+  document.body.style.overflow = 'hidden';
 }
 
 function updateProgressItem(type, status, message) {
@@ -2716,6 +2718,7 @@ function showProgressSuccess() {
 function closeProgressModal() {
   if (progressModal) {
     progressModal.style.animation = 'fadeOut 0.2s forwards';
+    document.body.style.overflow = '';
     setTimeout(() => {
       if (progressModal && progressModal.parentNode) {
         progressModal.parentNode.removeChild(progressModal);
