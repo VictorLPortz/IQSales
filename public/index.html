@@ -3415,10 +3415,93 @@ async function retryType(type) {
       </div>
       
       <div id="pitch-${shortName}" class="sub-tab-content">
-        <div class="placeholder-content">
-          <div class="placeholder-icon">💡</div>
-          <h3>Salgspitch kommer snart</h3>
-          <p>Her vil du kunne se et færdigt salgspitch baseret på analysen.</p>
+        <div style="padding: 1rem 0;">
+
+          <!-- AI Salgscoach chatbot -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px;">
+            <div style="background: #1A3C2E; padding: 12px 16px; display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/><circle cx="9" cy="16" r="1" fill="#95D5B2" stroke="none"/><circle cx="15" cy="16" r="1" fill="#95D5B2" stroke="none"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: white;">AI Salgscoach</div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Kender din analyse — stil alt hvad du vil vide</div>
+              </div>
+            </div>
+
+            <div id="chat-messages-${shortName}" style="padding: 16px; min-height: 160px; max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #1A3C2E; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg>
+                </div>
+                <div style="background: var(--surface-2, #F8F6F1); border-radius: 0 12px 12px 12px; padding: 10px 14px; font-size: 13px; color: var(--text); line-height: 1.65; max-width: 85%;">
+                  Hej! Jeg kender din analyse. Hvad vil du gerne have hjælp til? Du kan spørge om alt fra salgstips til konkrete formuleringer.
+                </div>
+              </div>
+            </div>
+
+            <div style="padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+              <input id="chat-input-${shortName}" placeholder="Stil et spørgsmål til din salgscoach..." style="flex: 1; font-size: 13px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; background: var(--bg); color: var(--text);" onkeydown="if(event.key==='Enter'){sendCoachMessage('${shortName}','${data.companyA}','${data.companyB}','${data.type}');}">
+              <button onclick="sendCoachMessage('${shortName}','${data.companyA}','${data.companyB}','${data.type}')" style="padding: 8px 14px; background: #1A3C2E; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px;">Send</button>
+            </div>
+
+            <div style="padding: 8px 12px 10px; border-top: 1px solid var(--border); display: flex; gap: 6px; flex-wrap: wrap;">
+              <span style="font-size: 11px; color: var(--muted); padding-top: 3px; margin-right: 2px;">Hurtigspørgsmål:</span>
+              ${['Stærkeste argument?','Bedste åbningssætning?','Hvad er vi svage på?'].map(q =>
+                `<button onclick="document.getElementById('chat-input-${shortName}').value='${q}';sendCoachMessage('${shortName}','${data.companyA}','${data.companyB}','${data.type}');" style="font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 20px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">${q}</button>`
+              ).join('')}
+            </div>
+          </div>
+
+          <!-- Mødeforberedelse -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px;">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A3C2E" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h2m-2 4h2m4-4h2m-2 4h2"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Mødeforberedelse</div>
+                <div style="font-size: 11px; color: var(--muted);">De vigtigste punkter til dette møde</div>
+              </div>
+              <button id="prep-toggle-${shortName}" onclick="toggleCoachSection('prep-body-${shortName}','prep-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">Generer ▼</button>
+            </div>
+            <div id="prep-body-${shortName}" style="display: none; padding: 14px 16px;">
+              <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
+                <span id="prep-loading-${shortName}">Klik "Generer" for at lave mødeforberedelse baseret på analysen</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indvendingsbehandling -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px;">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4m0 4h.01"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Indvendingsbehandling</div>
+                <div style="font-size: 11px; color: var(--muted);">Typiske indsigelser og hvordan du håndterer dem</div>
+              </div>
+              <button id="obj-toggle-${shortName}" onclick="toggleCoachSection('obj-body-${shortName}','obj-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">Generer ▼</button>
+            </div>
+            <div id="obj-body-${shortName}" style="display: none; padding: 14px 16px;">
+              <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
+                <span id="obj-loading-${shortName}">Klik "Generer" for at se typiske indvendinger og svar</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Remotivering -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Remotivering af mødet</div>
+                <div style="font-size: 11px; color: var(--muted);">Manus til opkaldet inden mødet</div>
+              </div>
+              <button id="remot-toggle-${shortName}" onclick="toggleCoachSection('remot-body-${shortName}','remot-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">Generer ▼</button>
+            </div>
+            <div id="remot-body-${shortName}" style="display: none; padding: 14px 16px;">
+              <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
+                <span id="remot-loading-${shortName}">Klik "Generer" for at få et manus til remotivering</span>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
       
@@ -4200,6 +4283,184 @@ renderUploadZones();
 setTimeout(()=>{updateCddDisplay('a');updateCddDisplay('b');},50);
 // Load cache panel after slight delay to ensure auth is ready
 setTimeout(()=>renderCachePanel(),800);
+
+// ═══════════════════════════════════════════════════════════
+// SALGSCOACH FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+
+function toggleCoachSection(bodyId, btnId) {
+  const body = document.getElementById(bodyId);
+  const btn = document.getElementById(btnId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  if (isOpen) {
+    body.style.display = 'none';
+    if (btn) btn.textContent = 'Generer ▼';
+  } else {
+    body.style.display = 'block';
+    if (btn) btn.textContent = 'Skjul ▲';
+    const parts = bodyId.split('-');
+    const section = parts[0];
+    const shortName = parts.slice(2).join('-');
+    if (!document.getElementById(bodyId).dataset.generated) {
+      generateCoachSection(shortName, section);
+    }
+  }
+}
+
+async function generateCoachSection(shortName, section) {
+  const loadingEl = document.getElementById(section + '-loading-' + shortName);
+  const bodyEl = document.getElementById(section + '-body-' + shortName);
+  if (!bodyEl || bodyEl.dataset.generated === '1') return;
+
+  const data = allResults[shortName];
+  if (!data) return;
+
+  const topA = (data.coverage || []).filter(c => c.winner === 'a').slice(0, 5).map(c => `${c.category}: ${c.amount_a || ''}`).join('\n');
+  const topB = (data.coverage || []).filter(c => c.winner === 'b').slice(0, 3).map(c => `${c.category}: ${c.amount_b || ''}`).join('\n');
+
+  const prompts = {
+    prep: `Du er en erfaren dansk forsikringssælger. Baseret på denne analyse af ${data.companyA} vs ${data.companyB} for ${data.type}:\n\nFORDELE FOR ${data.companyA}:\n${topA}\n\nFORDELE FOR ${data.companyB}:\n${topB}\n\nLav en mødeforberedelse med de 3 vigtigste punkter sælgeren skal fremhæve. For hvert punkt: kort titel og 1-2 sætninger om hvordan man præsenterer det bedst. Vær konkret og praktisk. Svar på dansk.`,
+    obj: `Du er en erfaren dansk forsikringssælger. Baseret på denne analyse af ${data.companyA} vs ${data.companyB} for ${data.type}:\n\nFORDELE FOR ${data.companyA}:\n${topA}\n\nFORDELE FOR ${data.companyB}:\n${topB}\n\nLav 4 typiske indvendinger fra kunder hos ${data.companyB} og giv et konkret svar til hver. Format per punkt:\n"[Indvending]"\n→ [Svar]\n\nVær naturlig i sproget. Svar på dansk.`,
+    remot: `Du er en erfaren dansk forsikringssælger. Baseret på denne analyse af ${data.companyA} vs ${data.companyB} for ${data.type}:\n\nVIGTIGSTE FORDELE FOR ${data.companyA}:\n${topA}\n\nSkriv et telefonmanus til remotivering af mødet inden det afholdes. Opdel i 3 sektioner:\n1) Åbning\n2) Værdiskabelse\n3) Bekræftelse af møde\n\nManus skal føles naturligt. Brug [navn] som placeholder. Svar på dansk.`
+  };
+
+  if (loadingEl) loadingEl.innerHTML = '<span style="color:var(--muted)">Genererer...</span>';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompts[section] }]
+      })
+    });
+
+    const result = await response.json();
+    const text = result.content?.map(c => c.text || '').join('') || '';
+
+    if (section === 'prep') bodyEl.innerHTML = renderPrepContent(text);
+    else if (section === 'obj') bodyEl.innerHTML = renderObjContent(text);
+    else if (section === 'remot') bodyEl.innerHTML = renderRemotContent(text);
+    bodyEl.dataset.generated = '1';
+
+  } catch(e) {
+    if (loadingEl) loadingEl.innerHTML = '<span style="color:#DC2626">Kunne ikke generere — prøv igen</span>';
+  }
+}
+
+function renderPrepContent(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+  let counter = 1;
+  let inPoint = false;
+
+  lines.forEach(line => {
+    const cleaned = line.replace(/^[\*\#\-\d\.]+\s*/, '').trim();
+    if (!cleaned) return;
+    if (counter <= 3 && (line.match(/^\d/) || line.match(/^\*\*/) || (line.length < 80 && !inPoint))) {
+      if (inPoint) html += '</div></div>';
+      html += `<div style="display:flex;gap:12px;align-items:flex-start;"><div style="width:22px;height:22px;border-radius:50%;background:#EAF3DE;color:#3B6D11;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${counter}</div><div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;">${cleaned}</div>`;
+      counter++; inPoint = true;
+    } else if (inPoint) {
+      html += `<div style="font-size:13px;color:var(--muted);line-height:1.6;">${cleaned}</div>`;
+    }
+  });
+  if (inPoint) html += '</div></div>';
+  return html + '</div>';
+}
+
+function renderObjContent(text) {
+  const parts = text.split(/\n(?=["„»\d])/);
+  let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  parts.forEach(block => {
+    const lines = block.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+    const q = lines[0].replace(/^[\"\„\»\d\.\-\*"]+\s*/, '').replace(/["""]/g, '').trim();
+    const a = lines.slice(1).join(' ').replace(/^[→\-\*]+\s*/, '').trim();
+    if (!q || !a) return;
+    html += `<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;">"${q}"</div>
+      <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.6;">→ ${a}</div>
+    </div>`;
+  });
+  return html + '</div>';
+}
+
+function renderRemotContent(text) {
+  const sectionDefs = [
+    { keys: ['åbning','1.','1)'], label: 'Åbning', bg: '#EAF3DE', color: '#3B6D11' },
+    { keys: ['værdiskab','konkret','2.','2)'], label: 'Værdiskabelse', bg: '#EFF6FF', color: '#1E40AF' },
+    { keys: ['bekræft','mødet','3.','3)'], label: 'Bekræftelse af møde', bg: '#F5F3FF', color: '#5B21B6' }
+  ];
+  const lines = text.split('\n').filter(l => l.trim());
+  let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  let cur = null; let curLines = [];
+  const flush = () => {
+    if (!cur || !curLines.length) return;
+    const content = curLines.join(' ').replace(/^[\*\#\-]+\s*/,'').trim();
+    html += `<div style="background:${cur.bg};border-radius:8px;padding:12px 14px;">
+      <div style="font-size:11px;font-weight:600;color:${cur.color};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${cur.label}</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.65;font-style:italic;">${content}</div>
+    </div>`;
+    curLines = [];
+  };
+  lines.forEach(line => {
+    const lower = line.toLowerCase();
+    const matched = sectionDefs.find(s => s.keys.some(k => lower.includes(k)));
+    if (matched) { flush(); cur = matched; const rest = line.replace(/^[\*\#\d\.\)\-]+\s*/,'').trim(); if(rest) curLines.push(rest); }
+    else curLines.push(line.replace(/^[\*\#\-]+\s*/,'').trim());
+  });
+  flush();
+  return html + '</div>';
+}
+
+async function sendCoachMessage(shortName, companyA, companyB, type) {
+  const input = document.getElementById('chat-input-' + shortName);
+  const messagesEl = document.getElementById('chat-messages-' + shortName);
+  if (!input || !messagesEl) return;
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+
+  const data = allResults[shortName];
+  const topA = data ? (data.coverage||[]).filter(c=>c.winner==='a').slice(0,5).map(c=>c.category).join(', ') : '';
+  const topB = data ? (data.coverage||[]).filter(c=>c.winner==='b').slice(0,3).map(c=>c.category).join(', ') : '';
+
+  const botIcon = `<div style="width:28px;height:28px;border-radius:50%;background:#1A3C2E;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg></div>`;
+
+  messagesEl.innerHTML += `<div style="display:flex;gap:10px;align-items:flex-start;justify-content:flex-end;">
+    <div style="background:#EAF3DE;border-radius:12px 12px 0 12px;padding:10px 14px;font-size:13px;color:#3B6D11;line-height:1.65;max-width:85%;">${question}</div>
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--surface-2,#F8F6F1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:var(--muted);">dig</div>
+  </div>`;
+
+  const loadingId = 'cl-' + Date.now();
+  messagesEl.innerHTML += `<div id="${loadingId}" style="display:flex;gap:10px;align-items:flex-start;">${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--muted);">Tænker...</div></div>`;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB} (${type}). ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
+        messages: [{ role: 'user', content: question }]
+      })
+    });
+    const r = await resp.json();
+    const answer = r.content?.map(c=>c.text||'').join('') || 'Beklager, prøv igen.';
+    const el = document.getElementById(loadingId);
+    if (el) el.innerHTML = `${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.65;max-width:85%;">${answer}</div>`;
+  } catch(e) {
+    const el = document.getElementById(loadingId);
+    if (el) el.querySelector('div:last-child').textContent = 'Fejl — prøv igen';
+  }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
 </script>
 </body>
 </html>
