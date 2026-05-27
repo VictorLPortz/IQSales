@@ -3288,7 +3288,7 @@ async function retryType(type) {
           '<h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">' + c.category + '</h3>' +
           (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
         '</div>' +
-        '<span style="font-size: 12px; color: #9CA3AF; transition: transform 0.2s; flex-shrink: 0; transform: rotate(0deg);">▼</span>' +
+        '<span class="card-chevron-icon" style="font-size: 12px; color: #9CA3AF; transition: transform 0.2s; flex-shrink: 0; transform: rotate(0deg);">▼</span>' +
       '</div>' +
       '<div id="' + cardId + '" style="display: none; padding: 0 12px 16px 12px;">' +
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">' +
@@ -3659,16 +3659,16 @@ function getStatusColor(status) {
   
 function toggleCard(id, header) {
   const body = document.getElementById(id);
-  const chevron = header.querySelector('span:last-child');
+  const chevron = header.querySelector('.card-chevron-icon');
   const isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
-  chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
 function expandAll(shortName) {
   document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
     el.style.display = 'block';
-    const chevron = el.previousElementSibling?.querySelector('span:last-child');
+    const chevron = el.previousElementSibling?.querySelector('.card-chevron-icon');
     if (chevron) chevron.style.transform = 'rotate(180deg)';
   });
 }
@@ -3676,7 +3676,7 @@ function expandAll(shortName) {
 function collapseAll(shortName) {
   document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
     el.style.display = 'none';
-    const chevron = el.previousElementSibling?.querySelector('span:last-child');
+    const chevron = el.previousElementSibling?.querySelector('.card-chevron-icon');
     if (chevron) chevron.style.transform = 'rotate(0deg)';
   });
 }
