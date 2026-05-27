@@ -3462,14 +3462,12 @@ async function retryType(type) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A3C2E" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h2m-2 4h2m4-4h2m-2 4h2"/></svg>
               <div>
                 <div style="font-size: 14px; font-weight: 600; color: var(--text);">Mødeforberedelse</div>
-                <div style="font-size: 11px; color: var(--muted);">De vigtigste punkter til dette møde</div>
+                <div style="font-size: 11px; color: var(--muted);">De vigtigste punkter til dette møde · ⏱️ ca. 10 sek.</div>
               </div>
-              <button id="prep-toggle-${shortName}" onclick="toggleCoachSection('prep-body-${shortName}','prep-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">Generer ▼</button>
+              <button id="prep-toggle-${shortName}" onclick="toggleCoachSection('prep-body-${shortName}','prep-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit; white-space: nowrap;">Generer ▼</button>
             </div>
             <div id="prep-body-${shortName}" style="display: none; padding: 14px 16px;">
-              <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
-                <span id="prep-loading-${shortName}">⏱️ Tager ca. 10 sekunder at generere baseret på analysen</span>
-              </div>
+              <span id="prep-loading-${shortName}" style="color:var(--muted);font-size:13px;">Genererer...</span>
             </div>
           </div>
 
@@ -3479,14 +3477,12 @@ async function retryType(type) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4m0 4h.01"/></svg>
               <div>
                 <div style="font-size: 14px; font-weight: 600; color: var(--text);">Indvendingsbehandling</div>
-                <div style="font-size: 11px; color: var(--muted);">Typiske indsigelser og hvordan du håndterer dem</div>
+                <div style="font-size: 11px; color: var(--muted);">Typiske indsigelser og hvordan du håndterer dem · ⏱️ ca. 10 sek.</div>
               </div>
-              <button id="obj-toggle-${shortName}" onclick="toggleCoachSection('obj-body-${shortName}','obj-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">Generer ▼</button>
+              <button id="obj-toggle-${shortName}" onclick="toggleCoachSection('obj-body-${shortName}','obj-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit; white-space: nowrap;">Generer ▼</button>
             </div>
             <div id="obj-body-${shortName}" style="display: none; padding: 14px 16px;">
-              <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
-                <span id="obj-loading-${shortName}">⏱️ Tager ca. 10 sekunder at generere baseret på analysen</span>
-              </div>
+              <span id="obj-loading-${shortName}" style="color:var(--muted);font-size:13px;">Genererer...</span>
             </div>
           </div>
 
@@ -3496,14 +3492,12 @@ async function retryType(type) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               <div>
                 <div style="font-size: 14px; font-weight: 600; color: var(--text);">Remotivering af mødet</div>
-                <div style="font-size: 11px; color: var(--muted);">Manus til opkaldet inden mødet</div>
+                <div style="font-size: 11px; color: var(--muted);">Manus til opkaldet inden mødet · ⏱️ ca. 10 sek.</div>
               </div>
-              <button id="remot-toggle-${shortName}" onclick="toggleCoachSection('remot-body-${shortName}','remot-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">Generer ▼</button>
+              <button id="remot-toggle-${shortName}" onclick="toggleCoachSection('remot-body-${shortName}','remot-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit; white-space: nowrap;">Generer ▼</button>
             </div>
             <div id="remot-body-${shortName}" style="display: none; padding: 14px 16px;">
-              <div style="display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); font-size: 13px;">
-                <span id="remot-loading-${shortName}">⏱️ Tager ca. 10 sekunder at generere baseret på analysen</span>
-              </div>
+              <span id="remot-loading-${shortName}" style="color:var(--muted);font-size:13px;">Genererer...</span>
             </div>
           </div>
 
@@ -4364,30 +4358,30 @@ function renderGlobalCoach() {
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
         <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A3C2E" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Mødeforberedelse</div><div style="font-size:11px;color:var(--muted);">Baseret på alle forsikringstyper</div></div>
-          <button id="global-prep-btn" onclick="generateGlobalSection('prep','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Mødeforberedelse</div><div style="font-size:11px;color:var(--muted);">Baseret på alle forsikringstyper · ⏱️ ca. 10 sek.</div></div>
+          <button id="global-prep-btn" onclick="generateGlobalSection('prep','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;white-space:nowrap;">Generer ▼</button>
         </div>
-        <div id="global-prep-body" style="display:none;padding:14px 16px;"><span id="global-prep-loading" style="color:var(--muted);font-size:13px;">⏱️ Tager ca. 10 sekunder at generere baseret på din analyse</span></div>
+        <div id="global-prep-body" style="display:none;padding:14px 16px;"><span id="global-prep-loading" style="color:var(--muted);font-size:13px;">Genererer...</span></div>
       </div>
 
       <!-- Indvendingsbehandling -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
         <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4m0 4h.01"/></svg>
-          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Indvendingsbehandling</div><div style="font-size:11px;color:var(--muted);">Typiske indsigelser fra kunder</div></div>
-          <button id="global-obj-btn" onclick="generateGlobalSection('obj','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Indvendingsbehandling</div><div style="font-size:11px;color:var(--muted);">Typiske indsigelser fra kunder · ⏱️ ca. 10 sek.</div></div>
+          <button id="global-obj-btn" onclick="generateGlobalSection('obj','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;white-space:nowrap;">Generer ▼</button>
         </div>
-        <div id="global-obj-body" style="display:none;padding:14px 16px;"><span id="global-obj-loading" style="color:var(--muted);font-size:13px;">⏱️ Tager ca. 10 sekunder at generere baseret på din analyse</span></div>
+        <div id="global-obj-body" style="display:none;padding:14px 16px;"><span id="global-obj-loading" style="color:var(--muted);font-size:13px;">Genererer...</span></div>
       </div>
 
       <!-- Remotivering -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
         <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Remotivering af mødet</div><div style="font-size:11px;color:var(--muted);">Manus til opkaldet inden mødet</div></div>
-          <button id="global-remot-btn" onclick="generateGlobalSection('remot','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Remotivering af mødet</div><div style="font-size:11px;color:var(--muted);">Manus til opkaldet inden mødet · ⏱️ ca. 10 sek.</div></div>
+          <button id="global-remot-btn" onclick="generateGlobalSection('remot','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;white-space:nowrap;">Generer ▼</button>
         </div>
-        <div id="global-remot-body" style="display:none;padding:14px 16px;"><span id="global-remot-loading" style="color:var(--muted);font-size:13px;">⏱️ Tager ca. 10 sekunder at generere baseret på din analyse</span></div>
+        <div id="global-remot-body" style="display:none;padding:14px 16px;"><span id="global-remot-loading" style="color:var(--muted);font-size:13px;">Genererer...</span></div>
       </div>
     </div>
   `;
@@ -4596,50 +4590,90 @@ function renderPrepContent(text) {
 }
 
 function renderObjContent(text) {
-  const parts = text.split(/\n(?=["„»\d])/);
+  // Split on blank lines or lines starting with a quote/number
+  const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
   let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
   let counter = 1;
-  parts.forEach(block => {
+
+  blocks.forEach(block => {
     const lines = block.split('\n').filter(l => l.trim());
     if (lines.length < 2) return;
-    const q = lines[0].replace(/^[\"\„\»\d\.\-\*"]+\s*/, '').replace(/["""]/g, '').trim();
-    const a = lines.slice(1).join(' ').replace(/^[→\-\*]+\s*/, '').trim();
+
+    // First line = indvending (question), rest = svar
+    const q = lines[0].replace(/^[\"\„\»\d\.\-\*"#]+\s*/, '').replace(/["""]/g, '').trim();
+    const aLines = lines.slice(1).map(l => l.replace(/^[→\-\*]+\s*/, '').trim()).filter(l => l);
+    const a = aLines.join('<br>');
     if (!q || !a) return;
+
     html += `<div style="display:flex;gap:12px;align-items:flex-start;">
       <div style="width:24px;height:24px;border-radius:50%;background:#FAEEDA;color:#854F0B;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${counter}</div>
       <div style="flex:1;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-        <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;border-bottom:1px solid var(--border);">"${q}"</div>
-        <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.6;">${formatCoachAnswer(a)}</div>
+        <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;border-bottom:1px solid var(--border);">"${formatCoachAnswer(q)}"</div>
+        <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.7;">${formatCoachAnswer(a)}</div>
       </div>
     </div>`;
     counter++;
   });
+
+  // Fallback: try original splitting if no blocks found
+  if (counter === 1) {
+    const parts = text.split(/\n(?=["„»\d])/);
+    parts.forEach(block => {
+      const lines = block.split('\n').filter(l => l.trim());
+      if (lines.length < 2) return;
+      const q = lines[0].replace(/^[\"\„\»\d\.\-\*"]+\s*/, '').replace(/["""]/g, '').trim();
+      const a = lines.slice(1).map(l => l.replace(/^[→\-\*]+\s*/, '').trim()).join('<br>');
+      if (!q || !a) return;
+      html += `<div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border-radius:50%;background:#FAEEDA;color:#854F0B;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${counter}</div>
+        <div style="flex:1;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;border-bottom:1px solid var(--border);">"${formatCoachAnswer(q)}"</div>
+          <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.7;">${formatCoachAnswer(a)}</div>
+        </div>
+      </div>`;
+      counter++;
+    });
+  }
+
   return html + '</div>';
 }
 
 function renderRemotContent(text) {
   const sectionDefs = [
-    { keys: ['åbning','1.','1)'], label: 'Åbning', bg: '#EAF3DE', color: '#3B6D11' },
-    { keys: ['værdiskab','konkret','2.','2)'], label: 'Værdiskabelse', bg: '#EFF6FF', color: '#1E40AF' },
-    { keys: ['bekræft','mødet','3.','3)'], label: 'Bekræftelse af møde', bg: '#F5F3FF', color: '#5B21B6' }
+    { keys: ['åbning','1.','1)'], label: 'Åbning', bg: '#EAF3DE', color: '#3B6D11', border: '#C6E5B3' },
+    { keys: ['værdiskab','konkret','2.','2)'], label: 'Værdiskabelse', bg: '#EFF6FF', color: '#185FA5', border: '#B5D4F4' },
+    { keys: ['bekræft','mødet','3.','3)'], label: 'Bekræftelse af møde', bg: '#F5F3FF', color: '#534AB7', border: '#CECBF6' }
   ];
-  const lines = text.split('\n').filter(l => l.trim());
-  let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  const lines = text.split('\n');
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
   let cur = null; let curLines = [];
+
   const flush = () => {
     if (!cur || !curLines.length) return;
-    const content = formatCoachAnswer(curLines.join(' ').replace(/^[\*\#\-]+\s*/,'').trim());
-    html += `<div style="background:${cur.bg};border-radius:8px;padding:12px 14px;">
-      <div style="font-size:11px;font-weight:600;color:${cur.color};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${cur.label}</div>
-      <div style="font-size:13px;color:var(--text);line-height:1.65;font-style:italic;">${content}</div>
+    const content = curLines
+      .filter(l => l.trim())
+      .map(l => formatCoachAnswer(l.replace(/^[\*\#\-]+\s*/, '').trim()))
+      .join('<br>');
+    html += `<div style="border:1px solid ${cur.border};border-radius:8px;overflow:hidden;">
+      <div style="padding:8px 14px;background:${cur.bg};font-size:11px;font-weight:600;color:${cur.color};text-transform:uppercase;letter-spacing:.06em;">${cur.label}</div>
+      <div style="padding:12px 14px;font-size:13px;color:var(--text);line-height:1.75;font-style:italic;">${content}</div>
     </div>`;
     curLines = [];
   };
+
   lines.forEach(line => {
     const lower = line.toLowerCase();
     const matched = sectionDefs.find(s => s.keys.some(k => lower.includes(k)));
-    if (matched) { flush(); cur = matched; const rest = line.replace(/^[\*\#\d\.\)\-]+\s*/,'').trim(); if(rest) curLines.push(rest); }
-    else curLines.push(line.replace(/^[\*\#\-]+\s*/,'').trim());
+    if (matched) {
+      flush();
+      cur = matched;
+      const rest = line.replace(/^[\*\#\d\.\)\-]+\s*/, '').trim();
+      // Skip if rest is just the section label
+      const isJustLabel = matched.keys.some(k => rest.toLowerCase() === k || rest.toLowerCase() === matched.label.toLowerCase());
+      if (rest && !isJustLabel) curLines.push(rest);
+    } else {
+      curLines.push(line);
+    }
   });
   flush();
   return html + '</div>';
