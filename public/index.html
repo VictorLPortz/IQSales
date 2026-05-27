@@ -3226,6 +3226,10 @@ async function retryType(type) {
 
 
  function renderIndividualTab(typeKey, data) {
+  if (!typeKey || !data || !data.coverage) {
+    console.error('❌ renderIndividualTab: missing data for', typeKey);
+    return '<div style="padding:2rem;text-align:center;color:#6B7280;">Ingen analysedata tilgængelig</div>';
+  }
   const shortName = typeKey.replace('forsikring', '').toLowerCase();
   
   // Count winners
@@ -3850,7 +3854,7 @@ function switchMultiTab(type){
   
   // Render content if not already done
   if(allResults[shortName]) {
-    renderTypeInTab(shortName);
+    renderTypeInTab(fullType);
   }
 }
 
