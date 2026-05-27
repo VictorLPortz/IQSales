@@ -603,12 +603,10 @@
           body: JSON.stringify({
             email: email,
             password: password,
-            options: {
-              data: {
-                full_name: name,
-                department: department,
-                role: 'seller'
-              }
+            data: {
+              full_name: name,
+              department: department,
+              role: 'seller'
             }
           })
         });
@@ -621,23 +619,26 @@
         
         console.log('✅ User created in auth.users:', data.user?.id);
         
-        // ✅ OGSÅ opret bruger i profiles tabel (samme som admin gør)
+        // ✅ OGSÅ opret bruger i profiles tabel
         if (data.user) {
           console.log('🔵 Attempting to create profile for:', data.user.id);
+
+          // Brug brugerens eget access_token hvis tilgængeligt, ellers service key via proxy
+          const authToken = data.access_token || SUPABASE_ANON_KEY;
           
           const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'apikey': SUPABASE_ANON_KEY,
-              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + authToken,
               'Prefer': 'resolution=merge-duplicates'
             },
             body: JSON.stringify({
               id: data.user.id,
               email: email,
               full_name: name,
-              department: department,
+              department: department || null,
               role: 'seller'
             })
           });
@@ -645,6 +646,22 @@
           if (!profileResponse.ok) {
             const profileError = await profileResponse.text();
             console.error('❌ Profile creation failed:', profileError);
+            // Forsøg via create-user API som fallback
+            try {
+              await fetch('/api/create-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: data.user.id,
+                  email: email,
+                  full_name: name,
+                  department: department || null
+                })
+              });
+              console.log('✅ Profile created via fallback API');
+            } catch(e) {
+              console.error('❌ Fallback also failed:', e);
+            }
           } else {
             console.log('✅ Profile created successfully');
           }
@@ -679,4 +696,3 @@
   </script>
 </body>
 </html>
- 
