@@ -2461,8 +2461,8 @@ selectedTypes=[type];
 docsA[type]={name:nameA+' - '+type+' (fra database)',data:'cached',fromCache:true};
 docsB[type]={name:nameB+' - '+type+' (fra database)',data:'cached',fromCache:true};
 renderUploadZones();
-  const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')">${TYPE_LABELS[type]} ✓</button>`;
-  document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div></div>`;
+  const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button><button class="tab" id="mtab-coach" onclick="switchToCoach()">🤖 Salgscoach</button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')">${TYPE_LABELS[type]} ✓</button>`;
+  document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-coach" class="multi-tab-content" style="display:none"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div></div>`;
   renderMultiResult(nameA,nameB);renderTypeInTab(type);switchMultiTab(type);
   document.getElementById('reset-btn').style.display='block';
   window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
@@ -2813,6 +2813,7 @@ async function analyze() {
 
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
+  resetCoachHistory();
 
   // Fold upload zones sammen automatisk
   const wrapperA = document.getElementById('upload-zones-a-wrapper');
@@ -2841,6 +2842,7 @@ async function analyze() {
   // Init result area with tabs upfront
   const tabsInitHtml = `
     <button class="tab active" id="mtab-overview" onclick="switchToOverview()">Samlet overblik</button>
+    <button class="tab" id="mtab-coach" onclick="switchToCoach()">🤖 Salgscoach</button>
     ${typesToAnalyze.map(t => {
       const shortName = t.replace('forsikring','').toLowerCase(); 
       return `<button class="tab" id="mtab-${shortName}" onclick="switchMultiTab('${shortName}')" style="opacity:.5;cursor:not-allowed" disabled>${TYPE_EMOJI[t]} ${TYPE_LABELS[t]} <span style="color:var(--muted);font-size:11px">⏳</span></button>`;
@@ -2853,6 +2855,7 @@ async function analyze() {
       </div>
       <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
       <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
+      <div id="tab-coach" class="multi-tab-content" style="display:none"></div>
       ${typesToAnalyze.map(t => `<div id="tab-${t}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`).join('')}
     </div>`;
 
@@ -3371,7 +3374,7 @@ async function retryType(type) {
     <div class="individual-tab-container">
       <div class="sub-tabs">
         <button class="sub-tab active" onclick="switchSubTab('coverage-${shortName}', this)">📊 Dækningsoversigt</button>
-        <button class="sub-tab" onclick="switchSubTab('pitch-${shortName}', this)">💡 Salgspitch</button>
+        <button class="sub-tab" onclick="switchSubTab('pitch-${shortName}', this)">🤖 Salgscoach</button>
         <button class="sub-tab" onclick="switchSubTab('send-${shortName}', this)">📧 Send til kunde</button>
       </div>
       
@@ -3964,6 +3967,19 @@ function switchMultiTab(type){
   document.getElementById('mtab-overview').classList.add('active');
 }
 
+function switchToCoach(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  const coachTab = document.getElementById('tab-coach');
+  coachTab.style.display='block';
+  const coachBtn = document.getElementById('mtab-coach');
+  if(coachBtn) coachBtn.classList.add('active');
+  if(!coachTab.dataset.initialized) {
+    renderGlobalCoach();
+    coachTab.dataset.initialized = '1';
+  }
+}
+
 function renderTypeInTab(type){
   const container=document.getElementById('tab-'+type);
   const shortName = type.replace('forsikring', '').toLowerCase();
@@ -4285,8 +4301,202 @@ setTimeout(()=>{updateCddDisplay('a');updateCddDisplay('b');},50);
 setTimeout(()=>renderCachePanel(),800);
 
 // ═══════════════════════════════════════════════════════════
-// SALGSCOACH FUNCTIONS
+// GLOBAL SALGSCOACH
 // ═══════════════════════════════════════════════════════════
+
+// Global chat history - persists across tab switches
+let coachChatHistory = [];
+
+function renderGlobalCoach() {
+  const container = document.getElementById('tab-coach');
+  if (!container) return;
+
+  // Build summary of all analyses
+  const analyses = Object.entries(allResults).map(([shortName, data]) => {
+    const wins = (data.coverage||[]).filter(c=>c.winner==='a').length;
+    const loses = (data.coverage||[]).filter(c=>c.winner==='b').length;
+    return `${data.type}: ${wins} fordele, ${loses} ulemper`;
+  }).join('\n');
+
+  const companyA = Object.values(allResults)[0]?.companyA || 'Dit selskab';
+  const companyB = Object.values(allResults)[0]?.companyB || 'Kundens selskab';
+  const types = Object.values(allResults).map(d=>d.type).join(', ');
+
+  container.innerHTML = `
+    <div style="padding:1rem 0;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;">
+        <div style="background:#1A3C2E;padding:12px 16px;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/><circle cx="9" cy="16" r="1" fill="#95D5B2" stroke="none"/><circle cx="15" cy="16" r="1" fill="#95D5B2" stroke="none"/></svg>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:white;">AI Salgscoach</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.6);">Kender hele din analyse — ${companyA} vs ${companyB} · ${Object.keys(allResults).length} forsikringstyper</div>
+          </div>
+        </div>
+
+        <div id="global-chat-messages" style="padding:16px;min-height:200px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#1A3C2E;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg>
+            </div>
+            <div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.65;max-width:85%;">
+              Hej! Jeg kender hele din analyse af <strong>${companyA}</strong> vs <strong>${companyB}</strong> på tværs af ${Object.keys(allResults).length} forsikringstyper. Hvad vil du gerne have hjælp til?
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <input id="global-chat-input" placeholder="Stil et spørgsmål om din analyse..." style="flex:1;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--bg);color:var(--text);" onkeydown="if(event.key==='Enter'){sendGlobalCoachMessage('${companyA}','${companyB}','${types}');}">
+          <button onclick="sendGlobalCoachMessage('${companyA}','${companyB}','${types}')" style="padding:8px 14px;background:#1A3C2E;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Send</button>
+        </div>
+
+        <div style="padding:8px 12px 10px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--muted);padding-top:3px;margin-right:2px;">Hurtigspørgsmål:</span>
+          ${['Stærkeste argument på tværs?','Bedste åbningssætning?','Hvad er vi svage på?','Generer remotivering'].map(q=>
+            `<button onclick="document.getElementById('global-chat-input').value='${q}';sendGlobalCoachMessage('${companyA}','${companyB}','${types}');" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:20px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">${q}</button>`
+          ).join('')}
+        </div>
+      </div>
+
+      <!-- Mødeforberedelse -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A3C2E" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Mødeforberedelse</div><div style="font-size:11px;color:var(--muted);">Baseret på alle forsikringstyper</div></div>
+          <button id="global-prep-btn" onclick="generateGlobalSection('prep','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
+        </div>
+        <div id="global-prep-body" style="display:none;padding:14px 16px;"><span id="global-prep-loading" style="color:var(--muted);font-size:13px;">Klik Generer...</span></div>
+      </div>
+
+      <!-- Indvendingsbehandling -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4m0 4h.01"/></svg>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Indvendingsbehandling</div><div style="font-size:11px;color:var(--muted);">Typiske indsigelser fra kunder</div></div>
+          <button id="global-obj-btn" onclick="generateGlobalSection('obj','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
+        </div>
+        <div id="global-obj-body" style="display:none;padding:14px 16px;"><span id="global-obj-loading" style="color:var(--muted);font-size:13px;">Klik Generer...</span></div>
+      </div>
+
+      <!-- Remotivering -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Remotivering af mødet</div><div style="font-size:11px;color:var(--muted);">Manus til opkaldet inden mødet</div></div>
+          <button id="global-remot-btn" onclick="generateGlobalSection('remot','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">Generer ▼</button>
+        </div>
+        <div id="global-remot-body" style="display:none;padding:14px 16px;"><span id="global-remot-loading" style="color:var(--muted);font-size:13px;">Klik Generer...</span></div>
+      </div>
+    </div>
+  `;
+
+  // Restore chat history if any
+  if (coachChatHistory.length > 0) {
+    const messagesEl = document.getElementById('global-chat-messages');
+    coachChatHistory.forEach(msg => {
+      messagesEl.innerHTML += msg;
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+}
+
+async function sendGlobalCoachMessage(companyA, companyB, types) {
+  const input = document.getElementById('global-chat-input');
+  const messagesEl = document.getElementById('global-chat-messages');
+  if (!input || !messagesEl) return;
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+
+  // Build context from all analyses
+  const topA = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='a').slice(0,3).map(c=>`${d.type}: ${c.category}`)).join(', ');
+  const topB = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='b').slice(0,2).map(c=>`${d.type}: ${c.category}`)).join(', ');
+
+  const botIcon = `<div style="width:28px;height:28px;border-radius:50%;background:#1A3C2E;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg></div>`;
+
+  const userMsg = `<div style="display:flex;gap:10px;align-items:flex-start;justify-content:flex-end;">
+    <div style="background:#EAF3DE;border-radius:12px 12px 0 12px;padding:10px 14px;font-size:13px;color:#3B6D11;line-height:1.65;max-width:85%;">${question}</div>
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--surface-2,#F8F6F1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:var(--muted);">dig</div>
+  </div>`;
+
+  messagesEl.innerHTML += userMsg;
+  coachChatHistory.push(userMsg);
+
+  const loadingId = 'gcl-' + Date.now();
+  const loadingMsg = `<div id="${loadingId}" style="display:flex;gap:10px;align-items:flex-start;">${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--muted);">Tænker...</div></div>`;
+  messagesEl.innerHTML += loadingMsg;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    const resp = await fetch('/api/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB}. Analysen dækker: ${types}. ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
+        message: question,
+        max_tokens: 600
+      })
+    });
+    const r = await resp.json();
+    const answer = r.text || 'Beklager, prøv igen.';
+    const botMsg = `<div style="display:flex;gap:10px;align-items:flex-start;">${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.65;max-width:85%;">${answer}</div></div>`;
+    const el = document.getElementById(loadingId);
+    if (el) el.outerHTML = botMsg;
+    coachChatHistory.push(botMsg);
+  } catch(e) {
+    const el = document.getElementById(loadingId);
+    if (el) el.querySelector('div:last-child').textContent = 'Fejl — prøv igen';
+  }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function generateGlobalSection(section, companyA, companyB, types) {
+  const bodyEl = document.getElementById('global-' + section + '-body');
+  const btnEl = document.getElementById('global-' + section + '-btn');
+  const loadingEl = document.getElementById('global-' + section + '-loading');
+  if (!bodyEl) return;
+
+  const isOpen = bodyEl.style.display !== 'none';
+  if (isOpen && bodyEl.dataset.generated === '1') {
+    bodyEl.style.display = 'none';
+    if (btnEl) btnEl.textContent = 'Generer ▼';
+    return;
+  }
+
+  bodyEl.style.display = 'block';
+  if (btnEl) btnEl.textContent = 'Skjul ▲';
+  if (bodyEl.dataset.generated === '1') return;
+
+  if (loadingEl) loadingEl.innerHTML = '<span style="color:var(--muted)">Genererer...</span>';
+
+  const topA = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='a').slice(0,3).map(c=>`${d.type} - ${c.category}: ${c.amount_a||''}`)).join('\n');
+  const topB = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='b').slice(0,2).map(c=>`${d.type} - ${c.category}: ${c.amount_b||''}`)).join('\n');
+
+  const prompts = {
+    prep: `Du er en erfaren dansk forsikringssælger. Analysen sammenligner ${companyA} vs ${companyB} på tværs af: ${types}.\n\nFORDELE FOR ${companyA}:\n${topA}\n\nFORDELE FOR ${companyB}:\n${topB}\n\nLav en mødeforberedelse med de 3 vigtigste punkter på tværs af ALLE forsikringstyper. For hvert punkt: kort titel og 1-2 sætninger om hvordan man præsenterer det bedst. Vær konkret. Svar på dansk.`,
+    obj: `Du er en erfaren dansk forsikringssælger. Analysen sammenligner ${companyA} vs ${companyB} på: ${types}.\n\nFORDELE FOR ${companyB} (indsigelser at forberede sig på):\n${topB}\n\nLav 4 typiske indvendinger fra kunder hos ${companyB} og giv et konkret svar til hver.\nFormat:\n"[Indvending]"\n→ [Svar]\n\nVær naturlig. Svar på dansk.`,
+    remot: `Du er en erfaren dansk forsikringssælger. Analysen sammenligner ${companyA} vs ${companyB} på: ${types}.\n\nVIGTIGSTE FORDELE FOR ${companyA}:\n${topA}\n\nSkriv et telefonmanus til remotivering af mødet. 3 sektioner:\n1) Åbning\n2) Værdiskabelse\n3) Bekræftelse af møde\n\nNaturligt sprog. Brug [navn]. Svar på dansk.`
+  };
+
+  try {
+    const response = await fetch('/api/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompts[section], max_tokens: 1000 })
+    });
+    const result = await response.json();
+    const text = result.text || '';
+    if (section === 'prep') bodyEl.innerHTML = renderPrepContent(text);
+    else if (section === 'obj') bodyEl.innerHTML = renderObjContent(text);
+    else if (section === 'remot') bodyEl.innerHTML = renderRemotContent(text);
+    bodyEl.dataset.generated = '1';
+  } catch(e) {
+    if (loadingEl) loadingEl.innerHTML = '<span style="color:#DC2626">Kunne ikke generere — prøv igen</span>';
+  }
+}
+
+// Reset coach chat history when new analysis starts
+const _origAnalyze = typeof analyze === 'function' ? analyze : null;
+function resetCoachHistory() { coachChatHistory = []; }
 
 function toggleCoachSection(bodyId, btnId) {
   const body = document.getElementById(bodyId);
