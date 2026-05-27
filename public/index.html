@@ -2010,7 +2010,7 @@ function getCacheAge(side, type) {
     const d = allResults[t];
     if (!d || !d.coverage) return;
     
-    d.coverage.filter(c => c.winner === 'a' && (c.status_b === 'no' || c.status_b === 'inib' || c.sales_tip)).slice(0, 2).forEach(c => {
+    d.coverage.filter(c => c.winner === 'a' && (c.status_b === 'no' || c.status_b === 'excluded' || c.status_b === 'inib' || c.sales_tip)).slice(0, 2).forEach(c => {
       strongA.push({
         type: TYPE_LABELS[t] || d.type || t,
         category: c.category,
@@ -3282,13 +3282,14 @@ async function retryType(type) {
     }
     
     const cardId = 'card-body-' + shortName + '-' + idx;
+    const chevronId = 'chevron-' + cardId;
     return '<div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
-      '<div onclick="toggleCard(\'' + cardId + '\', this)" style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 10px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none;">' +
+      '<div onclick="toggleCard(\'' + cardId + '\', \'' + chevronId + '\')" style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 10px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none;">' +
         '<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">' +
           '<h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">' + c.category + '</h3>' +
           (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
         '</div>' +
-        '<span class="card-chevron-icon" style="font-size: 12px; color: #9CA3AF; transition: transform 0.2s; flex-shrink: 0; transform: rotate(0deg);">▼</span>' +
+        '<span id="' + chevronId + '" style="font-size: 12px; color: #9CA3AF; transition: transform 0.2s; flex-shrink: 0; display: inline-block;">▼</span>' +
       '</div>' +
       '<div id="' + cardId + '" style="display: none; padding: 0 12px 16px 12px;">' +
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">' +
@@ -3580,15 +3581,15 @@ function generateCoverageHTML(data) {
 function getStatusIcon(status) {
   if (status === 'yes') return '✓';
   if (status === 'no') return '✗';
-  // partial removed
+  if (status === 'excluded') return '⊘';
   if (status === 'inib') return '?';
   return '−';
 }
 
 function getStatusLabel(status) {
   if (status === 'yes') return 'Dækket';
-  if (status === 'no') return 'Undtaget';
-  // partial removed
+  if (status === 'no') return 'Ikke dækket';
+  if (status === 'excluded') return 'Undtaget';
   if (status === 'inib') return 'INIB';
   return 'Ukendt';
 }
@@ -3596,7 +3597,7 @@ function getStatusLabel(status) {
 function getStatusBg(status) {
   if (status === 'yes') return '#EAF3DE';
   if (status === 'no') return '#FCEBEB';
-  // partial removed
+  if (status === 'excluded') return '#FFF4ED';
   if (status === 'inib') return '#FEF9C3';
   return '#F8F9FA';
 }
@@ -3604,7 +3605,7 @@ function getStatusBg(status) {
 function getStatusColor(status) {
   if (status === 'yes') return '#3B6D11';
   if (status === 'no') return '#791F1F';
-  // partial removed
+  if (status === 'excluded') return '#9A3412';
   if (status === 'inib') return '#854D0E';
   return '#6C757D';
 }
@@ -3612,7 +3613,7 @@ function getStatusColor(status) {
 function getStatusBorder(status) {
   if (status === 'yes') return '#C6E5B3';
   if (status === 'no') return '#F5C6CB';
-  // partial removed
+  if (status === 'excluded') return '#FDBA74';
   if (status === 'inib') return '#FDE047';
   return '#DEE2E6';
 }
@@ -3620,15 +3621,15 @@ function getStatusBorder(status) {
 function getStatusIcon(status) {
   if (status === 'yes') return '✓';
   if (status === 'no') return '✗';
-  // partial removed
+  if (status === 'excluded') return '⊘';
   if (status === 'inib') return '?';
   return '−';
 }
 
 function getStatusLabel(status) {
   if (status === 'yes') return 'Dækket';
-  if (status === 'no') return 'Undtaget';
-  // partial removed
+  if (status === 'no') return 'Ikke dækket';
+  if (status === 'excluded') return 'Undtaget';
   if (status === 'inib') return 'INIB';
   return 'Ukendt';
 }
@@ -3636,7 +3637,7 @@ function getStatusLabel(status) {
 function getStatusBg(status) {
   if (status === 'yes') return '#EAF3DE';
   if (status === 'no') return '#FCEBEB';
-  // partial removed
+  if (status === 'excluded') return '#FFF4ED';
   if (status === 'inib') return '#FEF9C3';
   return '#FEF9C3';
 }
@@ -3644,7 +3645,7 @@ function getStatusBg(status) {
 function getStatusColor(status) {
   if (status === 'yes') return '#3B6D11';
   if (status === 'no') return '#791F1F';
-  // partial removed
+  if (status === 'excluded') return '#9A3412';
   if (status === 'inib') return '#854D0E';
   return '#854D0E';
 }
@@ -3652,14 +3653,14 @@ function getStatusColor(status) {
   function getStatusBorder(status) {
   if (status === 'yes') return '#C6E5B3';
   if (status === 'no') return '#F5C6CB';
-  // partial removed
+  if (status === 'excluded') return '#FDBA74';
   if (status === 'inib') return '#FDE047';
   return '#DEE2E6';
 }
   
-function toggleCard(id, header) {
+function toggleCard(id, chevronId) {
   const body = document.getElementById(id);
-  const chevron = header.querySelector('.card-chevron-icon');
+  const chevron = document.getElementById(chevronId);
   const isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
   if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
@@ -3668,7 +3669,7 @@ function toggleCard(id, header) {
 function expandAll(shortName) {
   document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
     el.style.display = 'block';
-    const chevron = el.previousElementSibling?.querySelector('.card-chevron-icon');
+    const chevron = document.getElementById('chevron-' + el.id);
     if (chevron) chevron.style.transform = 'rotate(180deg)';
   });
 }
@@ -3676,7 +3677,7 @@ function expandAll(shortName) {
 function collapseAll(shortName) {
   document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
     el.style.display = 'none';
-    const chevron = el.previousElementSibling?.querySelector('.card-chevron-icon');
+    const chevron = document.getElementById('chevron-' + el.id);
     if (chevron) chevron.style.transform = 'rotate(0deg)';
   });
 }
@@ -3889,8 +3890,8 @@ container.innerHTML = html;
   });
 }
 
-function ico(s){if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;if(s==='no')return`<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='inib')return`<svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="8.5" r="1" fill="#92400E"/></svg>`;return`<svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>`;}
-function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':'dp';}
+function ico(s){if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;if(s==='no')return`<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='excluded')return`<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" stroke="#9A3412" stroke-width="1.8" fill="none"/><line x1="2" y1="8" x2="8" y2="2" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='inib')return`<svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="8.5" r="1" fill="#92400E"/></svg>`;return`<svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>`;}
+function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':s==='excluded'?'dn':'dp';}
 function inibBadge(type){const label=type==='inib'?'INIB':'Undtaget';const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;}
 
 function buildResultHtml(d,prefs){
@@ -3900,8 +3901,8 @@ function buildResultHtml(d,prefs){
   const bW=d.coverage.filter(c=>c.winner==='b').length;
   const eq=d.coverage.filter(c=>c.winner==='equal').length;
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
-  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
-  const topRank=c=>{if(c.status_b==='no'||c.status_b==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));return r!==-1?r+1:null;};
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  const topRank=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));return r!==-1?r+1:null;};
 
   // Apply saved sort order and favorites
   let coverage=[...d.coverage];
@@ -3925,7 +3926,7 @@ function buildResultHtml(d,prefs){
     const isTop=isTopA(c);const rank=topRank(c);
     const aCls=dotCls(c.status_a);const aTop=isTop?' is-top':'';
     let aBadges=`<div class="cv-badges">`;
-    if(c.status_a==='inib'||c.status_a==='no')aBadges+=inibBadge(c.status_a);
+    if(c.status_a==='inib'||c.status_a==='no'||c.status_a==='excluded')aBadges+=inibBadge(c.status_a);
     if(isTop&&c.status_a!=='inib'&&c.status_a!=='no'){aBadges+=`<div class="badge-tip"><span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span><div class="tip-box">Dette er en af de vigtigste fordele ${d.companyA} har over ${d.companyB} på ${d.type}. ${c.amount_a.substring(0,200)}${c.amount_a.length>100?'...':''}</div></div>`;}
     else if(c.winner==='a'&&!isTop)aBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyA} er bedre: ${c.amount_a.substring(0,200)}${c.amount_a.length>120?'...':''}</div></div>`;
     aBadges+=`</div>`;
@@ -3940,7 +3941,7 @@ function buildResultHtml(d,prefs){
     const dragHandle=`<span class="drag-handle" draggable="true" ondragstart="rowDragStart(event,${rowIdx})" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" ondragend="rowDragEnd(event)">⋮⋮</span>`;
     const bCls=dotCls(c.status_b);const bWeak=c.winner==='a'?' is-yours-weak':'';
     let bBadges=`<div class="cv-badges">`;
-    if(c.status_b==='inib'||c.status_b==='no')bBadges+=inibBadge(c.status_b);
+    if(c.status_b==='inib'||c.status_b==='no'||c.status_b==='excluded')bBadges+=inibBadge(c.status_b);
     else if(c.winner==='b')bBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyB} er bedre: ${c.amount_b.substring(0,200)}${c.amount_b.length>120?'...':''}</div></div>`;
     else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.amount_b.substring(0,200)}${c.amount_b.length>120?'...':''}</div></div>`;
     bBadges+=`</div>`;
@@ -3982,7 +3983,7 @@ function renderResult(d){window._d=d;document.getElementById('result').innerHTML
 
 function buildSelector(d){
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
-  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
   const grid=document.getElementById('sel-grid');
   if(!grid)return;
   grid.innerHTML=d.coverage.map((c,i)=>{const isTop=isTopA(c);return`<label class="sel-item${isTop?' selected':''}" id="sel-${i}" onclick="toggleSel(${i})"><input type="checkbox" id="chk-${i}"${isTop?' checked':''} onclick="event.stopPropagation();toggleSel(${i})"><div class="sel-item-text"><div class="sel-item-cat">${c.category}${isTop?` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">Top</span>`:''}</div><div class="sel-item-det">${c.amount_a.substring(0,60)}${c.amount_a.length>60?'...':''}</div></div></label>`;}).join('');
@@ -3991,7 +3992,7 @@ function buildSelector(d){
 
 function toggleSel(i){const chk=document.getElementById('chk-'+i);const lbl=document.getElementById('sel-'+i);chk.checked=!chk.checked;lbl.classList.toggle('selected',chk.checked);updateCustomerPreview();}
 function selAll(v){const d=window._d;d.coverage.forEach((_,i)=>{document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
-function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.status_b==='no'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
+function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
 
 function updateCustomerPreview(){
   const d=window._d;if(!d)return;
