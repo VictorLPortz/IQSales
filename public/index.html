@@ -1301,6 +1301,7 @@ function makeFallback(name,size,id){return getBrandEl(name,size,id);}
 function logoHtml(n,size=28){return getBrandEl(n,size);}
 
 const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring','Privatsikring','Lærerstandens Brandforsikring','GF Forsikring','Vesta Forsikring','Thisted Forsikring','Runa Forsikring','Bauta Forsikring','Alka','Vejle Brand','Vestjylland Forsikring','Købstedernes Forsikring','Jyske Forsikring','Aros Forsikring','Nærsikring','Bornholms Brandforsikring','Spira Forsikring','Concordia Forsikring','IDA Forsikring','TJM Forsikring','Storstrom Forsikring','OK Forsikring','FDM Forsikring','Himmerland Forsikring','Forsia Forsikring','Frida Forsikring','Dansk Bilforsikring','Gavmild'];
+const YOUR_COMPANIES=['Privatsikring','Alm. Brand','Codan'];
 const cddState={a:'',b:''};
   
 let fbState={};
@@ -1622,6 +1623,11 @@ async function buildMenus(){
 
   ['a','b'].forEach(side=>{
     const menu=document.getElementById('cdd-'+side+'-menu');
+    const isYourSide = side === 'a';
+    const sideCompanies = isYourSide ? YOUR_COMPANIES : COMPANIES;
+    const sideSorted = isYourSide ? YOUR_COMPANIES : sorted;
+    const sidePopular = isYourSide ? [] : popular.filter(n => YOUR_COMPANIES.indexOf(n) === -1 ? true : false);
+    const sideRest = isYourSide ? YOUR_COMPANIES : rest;
 
     // Build search input safely
     const searchDiv=document.createElement('div');
@@ -1635,7 +1641,9 @@ async function buildMenus(){
 
     // Build options HTML
     let optionsHtml='';
-    if(popular.length>0){
+    if(isYourSide){
+      optionsHtml=YOUR_COMPANIES.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
+    } else if(popular.length>0){
       optionsHtml+='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Hyppigt brugte</div>';
       optionsHtml+=popular.map(name=>{
         const count=companyRanks[name]?'<span style="font-size:10px;color:var(--muted);margin-left:auto;padding-left:8px">'+companyRanks[name]+'x</span>':'';
@@ -1651,8 +1659,12 @@ async function buildMenus(){
     optionsHtml+='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
 
     menu.innerHTML='';
-    menu.appendChild(searchDiv);
+    if(!isYourSide) menu.appendChild(searchDiv);
+    if(isYourSide){
+      menu.insertAdjacentHTML('beforeend','<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Dit selskab</div>');
+    }
     menu.insertAdjacentHTML('beforeend',optionsHtml);
+    if(!isYourSide) menu.insertAdjacentHTML('beforeend','<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>');
     menu.addEventListener('click',e=>{const opt=e.target.closest('.cdd-option');if(!opt)return;selectCdd(opt.dataset.side,opt.dataset.name);});
   });
   updateCddDisplay('a');
@@ -1684,18 +1696,22 @@ function buildMenusWithRanks(companyRanks){
   const popular=sorted.filter(n=>companyRanks[n]>0);
   const rest=sorted.filter(n=>!companyRanks[n]);
   ['a','b'].forEach(side=>{
+    const isYourSide = side === 'a';
     const menu=document.getElementById('cdd-'+side+'-menu');
     if(!menu)return;
     const searchDiv=menu.querySelector('.cdd-search');
     let optionsHtml='';
-    if(popular.length>0){
+    if(isYourSide){
+      optionsHtml='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Dit selskab</div>';
+      optionsHtml+=YOUR_COMPANIES.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
+    } else if(popular.length>0){
       optionsHtml+='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Hyppigt brugte</div>';
       optionsHtml+=popular.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span><span style="font-size:10px;color:var(--muted);margin-left:auto;padding-left:8px">'+companyRanks[name]+'x</span></div>').join('');
       if(rest.length>0){optionsHtml+='<hr class="cdd-divider"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Alle selskaber</div>';optionsHtml+=rest.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');}
     }else{optionsHtml=sorted.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');}
-    optionsHtml+='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
+    if(!isYourSide) optionsHtml+='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
     menu.innerHTML='';
-    if(searchDiv)menu.appendChild(searchDiv);
+    if(!isYourSide && searchDiv) menu.appendChild(searchDiv);
     menu.insertAdjacentHTML('beforeend',optionsHtml);
   });
 }
