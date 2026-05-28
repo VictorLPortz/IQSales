@@ -1069,6 +1069,142 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 </script>
 </head>
 <body>
+
+<!-- ONBOARDING MODAL -->
+<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;width:440px;max-width:90vw;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+    <div style="padding:2rem 2rem 1.25rem;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:500;color:#141412;margin-bottom:1.25rem;">
+        <div style="width:28px;height:28px;border-radius:6px;background:#1D9E75;display:flex;align-items:center;justify-content:center;">
+          <i class="ti ti-shield-check" style="color:#fff;font-size:16px;" aria-hidden="true"></i>
+        </div>
+        IQSales
+      </div>
+      <p style="font-size:22px;font-weight:500;color:#141412;margin:0 0 6px;">Velkommen til IQSales</p>
+      <p style="font-size:14px;color:#7A7870;margin:0;">Dit stærkeste værktøj til forsikringsanalyse</p>
+    </div>
+    <div style="padding:0 2rem;">
+      <div style="display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #E3E1D9;">
+        <div style="flex:1;padding:12px 8px;text-align:center;background:#E1F5EE;border-right:0.5px solid #E3E1D9;">
+          <div style="font-size:11px;font-weight:500;color:#0F6E56;margin-bottom:3px;">Trin 1</div>
+          <div style="font-size:12px;font-weight:500;color:#085041;">Vælg typer</div>
+        </div>
+        <div style="flex:1;padding:12px 8px;text-align:center;background:#F8F6F1;border-right:0.5px solid #E3E1D9;">
+          <div style="font-size:11px;font-weight:500;color:#A09E96;margin-bottom:3px;">Trin 2</div>
+          <div style="font-size:12px;font-weight:500;color:#7A7870;">Upload betingelser</div>
+        </div>
+        <div style="flex:1;padding:12px 8px;text-align:center;background:#F8F6F1;">
+          <div style="font-size:11px;font-weight:500;color:#A09E96;margin-bottom:3px;">Trin 3</div>
+          <div style="font-size:12px;font-weight:500;color:#7A7870;">Analysér</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:1.25rem 2rem;">
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;">
+        <li style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#141412;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+            <i class="ti ti-files" style="color:#0F6E56;font-size:15px;" aria-hidden="true"></i>
+          </div>
+          <div>
+            <strong style="font-weight:500;display:block;margin-bottom:2px;">Saml betingelserne</strong>
+            <span style="color:#7A7870;font-size:13px;">Upload PDF-betingelser fra to forsikringsselskaber</span>
+          </div>
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#141412;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+            <i class="ti ti-chart-bar" style="color:#0F6E56;font-size:15px;" aria-hidden="true"></i>
+          </div>
+          <div>
+            <strong style="font-weight:500;display:block;margin-bottom:2px;">Få en præcis analyse</strong>
+            <span style="color:#7A7870;font-size:13px;">AI gennemgår forskellene på sekunder — ikke timer</span>
+          </div>
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#141412;">
+          <div style="width:28px;height:28px;border-radius:6px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+            <i class="ti ti-user-check" style="color:#0F6E56;font-size:15px;" aria-hidden="true"></i>
+          </div>
+          <div>
+            <strong style="font-weight:500;display:block;margin-bottom:2px;">Hjælp kunden med at beslutte</strong>
+            <span style="color:#7A7870;font-size:13px;">Klare fordele og ulemper i et sprog kunden forstår</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div style="padding:0 2rem 2rem;display:flex;flex-direction:column;gap:10px;">
+      <button onclick="closeOnboarding()" style="background:#1D9E75;color:#fff;border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:500;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;">
+        Kom i gang <i class="ti ti-arrow-right" aria-hidden="true"></i>
+      </button>
+      <button onclick="closeOnboarding(true)" style="background:none;border:0.5px solid #D3D1C7;border-radius:8px;padding:10px 20px;font-size:13px;color:#7A7870;cursor:pointer;width:100%;font-family:inherit;">
+        Spring over — vis mig ikke dette igen
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- VELKOMSTBESKED -->
+<div id="greeting-bar" style="display:none;background:#fff;border-bottom:1px solid #E3E1D9;padding:10px 20px;align-items:center;gap:10px;">
+  <div style="width:7px;height:7px;border-radius:50%;background:#1D9E75;flex-shrink:0;"></div>
+  <p id="greeting-text" style="font-size:14px;color:#141412;margin:0;"></p>
+  <button onclick="document.getElementById('greeting-bar').style.display='none';localStorage.setItem('iqsales_greeting_closed_'+new Date().toDateString(),'1');" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#A09E96;padding:2px;display:flex;align-items:center;" aria-label="Luk besked">
+    <i class="ti ti-x" style="font-size:16px;" aria-hidden="true"></i>
+  </button>
+</div>
+
+<script>
+(function(){
+  function getGreeting(name, h) {
+    var hilsen;
+    if (h >= 5 && h < 10) hilsen = 'Godmorgen';
+    else if (h >= 10 && h < 12) hilsen = 'Godformiddag';
+    else if (h >= 12 && h < 18) hilsen = 'Goddag';
+    else if (h >= 18 && h < 22) hilsen = 'Godaften';
+    else hilsen = 'Godnat';
+    return hilsen + (name ? ', ' + name : '') + '! 👋 Klar til dagens møder?';
+  }
+
+  window.closeOnboarding = function(permanent) {
+    document.getElementById('onboarding-overlay').style.display = 'none';
+    if (permanent) localStorage.setItem('iqsales_onboarding_done', '1');
+    else localStorage.setItem('iqsales_onboarding_done', '1');
+  };
+
+  window.addEventListener('DOMContentLoaded', function() {
+    // Onboarding — vis kun hvis ikke set før
+    var onboardingDone = localStorage.getItem('iqsales_onboarding_done');
+    if (!onboardingDone) {
+      var overlay = document.getElementById('onboarding-overlay');
+      overlay.style.display = 'flex';
+    }
+
+    // Velkomstbesked — vis kun én gang per dag
+    var todayKey = 'iqsales_greeting_closed_' + new Date().toDateString();
+    var greetingClosed = localStorage.getItem(todayKey);
+    if (!greetingClosed) {
+      var bar = document.getElementById('greeting-bar');
+      bar.style.display = 'flex';
+      // Sæt tekst med navn hvis tilgængeligt — opdateres nedenfor når session loades
+      document.getElementById('greeting-text').innerHTML =
+        '<strong>' + getGreeting('', new Date().getHours()) + '</strong>';
+    }
+
+    // Hent navn fra session og opdater begge steder
+    if (window._sb) {
+      window._sb.auth.getSession().then(function(res) {
+        var session = res.data && res.data.session;
+        if (!session) return;
+        window._sb.from('profiles').select('full_name').eq('id', session.user.id).single().then(function(res2) {
+          var name = res2.data && res2.data.full_name ? res2.data.full_name.split(' ')[0] : '';
+          var greetingEl = document.getElementById('greeting-text');
+          if (greetingEl && greetingEl.parentElement.style.display !== 'none') {
+            greetingEl.innerHTML = '<strong>' + getGreeting(name, new Date().getHours()) + '</strong>';
+          }
+        });
+      });
+    }
+  });
+})();
+</script>
+
 <header>
   <div class="logo-wrap">
     <div class="logo-iq">IQ<span>Sales</span></div>
