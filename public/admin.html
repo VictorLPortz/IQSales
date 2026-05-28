@@ -853,7 +853,7 @@
           <div>
             <div style="font-size: 12px; font-weight: 600; color: #166534; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">🔮 Forventet månedlig omkostning</div>
             <div style="font-size: 28px; font-weight: 600; color: #166534;" id="forecastMonthly">—</div>
-            <div style="font-size: 12px; color: #4B7A5E; margin-top: 4px;" id="forecastBasis">Beregnes ud fra dagligt gennemsnit</div>
+            <div style="font-size: 12px; color: #4B7A5E; margin-top: 4px;" id="forecastBasis">Beregnes ud fra seneste 30 dage</div>
           </div>
           <div style="display: flex; gap: 24px; flex-wrap: wrap;">
             <div style="text-align: center;">
@@ -868,6 +868,18 @@
               <div style="font-size: 11px; color: #4B7A5E; margin-bottom: 2px;">Pr. analyse</div>
               <div style="font-size: 18px; font-weight: 500; color: #166534;" id="forecastPerAnalysis">—</div>
             </div>
+          </div>
+        </div>
+
+        <!-- Salgscoach omkostninger -->
+        <div style="margin-top: 12px; background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 12px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 600; color: #1E40AF; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">🤖 Salgscoach omkostning</div>
+            <div style="font-size: 24px; font-weight: 600; color: #1E40AF;" id="coachCostDisplay">—</div>
+            <div style="font-size: 12px; color: #3B5EA6; margin-top: 2px;" id="coachCostSub">i valgt periode</div>
+          </div>
+          <div style="font-size: 13px; color: #3B5EA6; max-width: 300px; line-height: 1.5;">
+            Chat-spørgsmål, mødeforberedelse, indvendingsbehandling og remotivering tæller med her.
           </div>
         </div>
 
@@ -1576,19 +1588,44 @@
       const uniqueUsers = new Set(pageViews.map(a => a.user_id).filter(Boolean));
       document.getElementById('uniqueVisitors').textContent = uniqueUsers.size;
 
-      // 🔮 Forecast
-      const allDates = [...new Set(completed.map(a => (a.timestamp||'').substring(0,10)).filter(Boolean))];
-      const daysWithData = allDates.length || 1;
-      const dailyAvgCost = totalCost / daysWithData;
+      // Salgscoach omkostninger i perioden
+      const coachAnalyses = analyses.filter(a => a.insurance_type === 'Salgscoach');
+      const coachCost = coachAnalyses.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
+      const coachEl = document.getElementById('coachCostDisplay');
+      if (coachEl) {
+        coachEl.textContent = (coachCost * 7).toFixed(2) + ' kr';
+        const coachSub = document.getElementById('coachCostSub');
+        if (coachSub) coachSub.textContent = coachAnalyses.length + ' coach-kald';
+      }
+
+      // 🔮 Forecast - altid baseret på seneste 30 dage uanset valgt periode
+      let forecastBase = analyses; // fallback til valgt periode
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const { data: last30Data } = await sb
+          .from('analytics')
+          .select('timestamp, cost_estimate, event_type, user_id')
+          .gte('timestamp', thirtyDaysAgo.toISOString())
+          .eq('event_type', 'analysis_completed');
+        if (last30Data && last30Data.length > 0) forecastBase = last30Data;
+      } catch(e) { /* fallback til valgt periode */ }
+
+      const forecastCompleted = forecastBase.filter(a => a.event_type === 'analysis_completed');
+      const forecastTotalCost = forecastCompleted.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
+      const forecastDates = [...new Set(forecastCompleted.map(a => (a.timestamp||'').substring(0,10)).filter(Boolean))];
+      const forecastDays = forecastDates.length || 1;
+      const dailyAvgCost = forecastTotalCost / forecastDays;
       const monthlyForecast = dailyAvgCost * 30;
-      const perAnalysisCost = completed.length > 0 ? totalCost / completed.length : 0;
-      const totalUsers = uniqueUsers.size || 1;
+      const perAnalysisCost = forecastCompleted.length > 0 ? forecastTotalCost / forecastCompleted.length : 0;
+      const forecastUsers = new Set(forecastCompleted.map(a => a.user_id).filter(Boolean));
+      const totalUsers = forecastUsers.size || 1;
 
       document.getElementById('forecastMonthly').textContent = (monthlyForecast * 7).toFixed(2) + ' kr';
       document.getElementById('forecastDaily').textContent = (dailyAvgCost * 7).toFixed(2) + ' kr';
       document.getElementById('forecastPerUser').textContent = ((monthlyForecast / totalUsers) * 7).toFixed(2) + ' kr';
       document.getElementById('forecastPerAnalysis').textContent = (perAnalysisCost * 7).toFixed(3) + ' kr';
-      document.getElementById('forecastBasis').textContent = `Baseret på ${daysWithData} dage med data · ${completed.length} analyser`;
+      document.getElementById('forecastBasis').textContent = `Baseret på seneste 30 dage · ${forecastDays} dage med data · ${forecastCompleted.length} analyser`;
 
       // Daily cost chart
       const dailyCosts = {};
