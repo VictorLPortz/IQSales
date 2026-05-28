@@ -93,8 +93,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .dots span:nth-child(3){animation-delay:.4s}
 @keyframes dt{0%,80%,100%{opacity:.2}40%{opacity:1}}
 .result-section{animation:fadeIn .4s ease;margin-top:1.5rem}
-.disclaimer-banner{display:flex;align-items:flex-start;gap:10px;background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:var(--r);padding:10px 16px;margin-bottom:1rem;font-size:13px;color:#633806;line-height:1.6}
-.disclaimer-banner i{font-size:18px;color:#854F0B;flex-shrink:0;margin-top:1px}
+.disclaimer-banner{display:flex;align-items:center;gap:8px;background:#FEF9C3;border:0.5px solid #FDE047;border-radius:var(--r);padding:7px 14px;margin-bottom:1rem;font-size:12px;color:#713F12;line-height:1.5}
+.disclaimer-banner i{font-size:14px;color:#854F0B;flex-shrink:0}
 .screenshot-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(10,37,64,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s forwards}
 .screenshot-modal{background:var(--surface);border-radius:12px;border:0.5px solid var(--border);padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.15)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -1096,6 +1096,12 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   </script>
 </header>
 <main>
+
+  <!-- INTERN BRUG DISCLAIMER -->
+  <div class="disclaimer-banner" id="global-disclaimer">
+    <i class="ti ti-shield-lock" aria-hidden="true"></i>
+    <span><strong>Kun til intern brug</strong> — Må ikke deles med kunder. Verificér altid i de officielle betingelser inden præsentation.</span>
+  </div>
 
   <!-- KOLLEGA CACHE PANEL -->
   <div class="cache-panel" id="cache-panel" style="display:none">
@@ -2468,7 +2474,7 @@ docsA[type]={name:nameA+' - '+type+' (fra database)',data:'cached',fromCache:tru
 docsB[type]={name:nameB+' - '+type+' (fra database)',data:'cached',fromCache:true};
 renderUploadZones();
   const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()"><span class="tab-emoji">📊</span><span class="tab-label">Samlet overblik</span></button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')"><span class="tab-emoji">${TYPE_EMOJI[type]}</span><span class="tab-label">${TYPE_LABELS[type]} ✓</span></button><div class="tabs-divider"></div><button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button><button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>`;
-  document.getElementById('result').innerHTML=`<div class="result-section"><div class="disclaimer-banner"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span><strong>Kun til intern brug</strong> — Analysen er et salgsværktøj og må ikke deles med kunder. Verificér altid dækninger i de officielle betingelser inden præsentation.</span></div><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div><div id="tab-coach" class="multi-tab-content" style="display:none"></div><div id="tab-send" class="multi-tab-content" style="display:none"></div></div>`;
+  document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div><div id="tab-coach" class="multi-tab-content" style="display:none"></div><div id="tab-send" class="multi-tab-content" style="display:none"></div></div>`;
   renderMultiResult(nameA,nameB);renderTypeInTab(type);switchMultiTab(type);
   document.getElementById('reset-btn').style.display='block';
   window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
@@ -2860,7 +2866,6 @@ async function analyze() {
 
   resultDiv.innerHTML = `
     <div class="result-section">
-      <div class="disclaimer-banner"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span><strong>Kun til intern brug</strong> — Analysen er et salgsværktøj og må ikke deles med kunder. Verificér altid dækninger i de officielle betingelser inden præsentation.</span></div>
       <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
         ${typesToAnalyze.map(t => {const shortName = t.replace('forsikring','').toLowerCase(); return `<span id="status-${shortName}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`;}).join('')}
       </div>
@@ -4326,7 +4331,7 @@ let screenshotPopupShown = false;
 
 function hasActiveAnalysis() {
   const result = document.getElementById('result');
-  return result && result.querySelector('.disclaimer-banner') !== null;
+  return result && result.querySelector('.tabs') !== null;
 }
 
 function showScreenshotPopup() {
