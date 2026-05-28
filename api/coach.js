@@ -4,16 +4,24 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const INPUT_COST_PER_TOKEN = 0.000003;
+const OUTPUT_COST_PER_TOKEN = 0.000015;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { system, message, max_tokens } = req.body;
+  const { system, message, max_tokens, user_id, section_type } = req.body;
 
   if (!message) {
     return res.status(400).json({ error: 'message required' });
   }
+
+  const startTime = Date.now();
 
   try {
     const response = await anthropic.messages.create({
@@ -24,6 +32,37 @@ export default async function handler(req, res) {
     });
 
     const text = response.content.map(c => c.type === 'text' ? c.text : '').join('');
+    const responseTime = Date.now() - startTime;
+
+    // Log to analytics
+    const inputTokens = response.usage?.input_tokens || 0;
+    const outputTokens = response.usage?.output_tokens || 0;
+    const tokensUsed = inputTokens + outputTokens;
+    const costEstimate = (inputTokens * INPUT_COST_PER_TOKEN) + (outputTokens * OUTPUT_COST_PER_TOKEN);
+
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      fetch(`${SUPABASE_URL}/rest/v1/analytics`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          user_id: user_id || null,
+          event_type: 'coach_' + (section_type || 'chat'),
+          insurance_type: 'Salgscoach',
+          company_a: null,
+          company_b: null,
+          cache_used: false,
+          response_time_ms: responseTime,
+          tokens_used: tokensUsed,
+          cost_estimate: costEstimate
+        })
+      }).catch(err => console.error('Analytics log failed:', err));
+    }
+
     return res.status(200).json({ text });
 
   } catch (error) {
