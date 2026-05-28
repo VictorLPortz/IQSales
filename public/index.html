@@ -1194,10 +1194,12 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         if (!session) return;
         window._sb.from('profiles').select('full_name').eq('id', session.user.id).single().then(function(res2) {
           var name = res2.data && res2.data.full_name ? res2.data.full_name.split(' ')[0] : '';
+          window._userName = name;
           var greetingEl = document.getElementById('greeting-text');
           if (greetingEl && greetingEl.parentElement.style.display !== 'none') {
             greetingEl.innerHTML = '<strong>' + getGreeting(name, new Date().getHours()) + '</strong>';
           }
+          if (typeof showDayQuip === 'function') showDayQuip(name);
         });
       });
     }
@@ -4996,3 +4998,87 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
 </script>
 </body>
 </html>
+
+<script>
+// ==================== KÆKKE KOMMENTARER ====================
+window._userName = window._userName || '';
+
+function isDanishHoliday(d) {
+  var m=d.getMonth()+1,day=d.getDate(),y=d.getFullYear();
+  if(['1/1','5/6','24/12','25/12','26/12','31/12'].includes(m+'/'+day))return true;
+  var a=y%19,b=Math.floor(y/100),c=y%100,d2=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),hh=(19*a+b-d2-g+15)%30,ii=Math.floor(c/4),k=c%4,l=(32+2*e+2*ii-hh-k)%7,m2=Math.floor((a+11*hh+22*l)/451),mo=Math.floor((hh+l-7*m2+114)/31),de=(hh+l-7*m2+114)%31+1;
+  var easter=new Date(y,mo-1,de);
+  for(var o of[-3,-2,1,39,49,50]){var hd=new Date(easter);hd.setDate(hd.getDate()+o);if(hd.getMonth()+1===m&&hd.getDate()===day)return true;}
+  return false;
+}
+function getAnalysesToday(){return parseInt(localStorage.getItem('iqsales_analyses_'+new Date().toDateString())||'0',10);}
+function incrementAnalysesToday(){var n=getAnalysesToday()+1;localStorage.setItem('iqsales_analyses_'+new Date().toDateString(),n);return n;}
+function isFirstEverAnalysis(){return!localStorage.getItem('iqsales_first_analysis_done');}
+function markFirstAnalysisDone(){localStorage.setItem('iqsales_first_analysis_done','1');}
+
+function showQuip(msg){
+  var container=document.querySelector('.toast-container');
+  if(!container){container=document.createElement('div');container.className='toast-container';document.body.appendChild(container);}
+  var el=document.createElement('div');el.className='toast';el.style.cssText='border-left:4px solid #1D9E75;';
+  el.innerHTML='<div class="toast-icon">\ud83d\udcac</div><div class="toast-content"><div class="toast-title">'+msg+'</div></div><div class="toast-close">\xd7</div>';
+  container.appendChild(el);
+  setTimeout(function(){el.classList.add('show');},10);
+  setTimeout(function(){el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.remove();},400);},6000);
+  el.querySelector('.toast-close').addEventListener('click',function(){el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.remove();},400);});
+}
+
+function showDayQuip(name){
+  var n=name?', '+name:'',d=new Date(),h=d.getHours(),dow=d.getDay();
+  if(isDanishHoliday(d)){setTimeout(function(){showQuip('Har du ikke fri'+n+'? \ud83d\ude04 Respekt for indsatsen!');},2500);return;}
+  if(dow===1&&h>=5&&h<12){setTimeout(function(){showQuip('Ny uge, nye kunder \u2014 lad os komme i gang'+n+'! \ud83d\udcbc');},2500);return;}
+  if(dow===5&&h>=12&&h<22){setTimeout(function(){showQuip('Sidste m\u00f8de inden weekend eller planl\u00e6gger du n\u00e6ste uge'+n+'? Uanset hvad, er jeg her for dig! \ud83d\udd25');},2500);return;}
+  if(h>=22||h<5){setTimeout(function(){showQuip('Sent p\u00e5 den'+n+' \u2014 du g\u00e5r benh\u00e5rdt efter at blive \u00e5rets s\u00e6lger! \ud83c\udf19');},2500);return;}
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  if(window._sb){
+    window._sb.auth.getSession().then(function(res){
+      var session=res.data&&res.data.session;if(!session)return;
+      window._sb.from('profiles').select('full_name').eq('id',session.user.id).single().then(function(res2){
+        var name=res2.data&&res2.data.full_name?res2.data.full_name.split(' ')[0]:'';
+        window._userName=name;
+        showDayQuip(name);
+      });
+    });
+  }
+});
+
+var _quipToggleDone=false;
+var _origToggleType=window.toggleType;
+if(typeof _origToggleType==='function'){
+  window.toggleType=function(btn){
+    _origToggleType(btn);
+    var rare={'Lystf\u00e6rt\u00f8jsforsikring':'Lystf\u00e6rt\u00f8j? Sp\u00e6ndende kunde! \ud83d\udea2','Campingvognsforsikring':'Campingvogn \u2014 ikke hverdagskost! \ud83d\ude90','Vetrank\u00f8ret\u00f8jsforsikring':'Vetrank\u00f8ret\u00f8j \u2014 en \u00e6gte entusiast! \ud83c\udfce\ufe0f','Sundhedsforsikring':'Sundhedsforsikring \u2014 en vigtig \u00e9n! \ud83c\udfe5'};
+    var type=btn.dataset.type;
+    if(btn.classList.contains('selected')){
+      if(rare[type]){setTimeout(function(){showQuip(rare[type]);},300);return;}
+      if(window.selectedTypes&&window.selectedTypes.length>=6&&!_quipToggleDone){
+        _quipToggleDone=true;
+        setTimeout(function(){showQuip('Ambiti\u00f8st \u2014 '+window.selectedTypes.length+' typer p\u00e5 \u00e9n gang! Du udfordrer mig \ud83d\ude04');},300);
+      }
+    }else{_quipToggleDone=false;}
+  };
+}
+
+var _origAnalyze=window.analyze;
+if(typeof _origAnalyze==='function'){
+  window.analyze=async function(){
+    var name=window._userName||'',n=name?', '+name:'';
+    var firstEver=isFirstEverAnalysis();
+    if(firstEver){markFirstAnalysisDone();setTimeout(function(){showQuip('F\u00f8rste rigtige analyse \u2014 sp\u00e6ndende! Vi er her hvis du har sp\u00f8rgsm\u00e5l \ud83d\ude4c');},1000);}
+    else if(getAnalysesToday()===0){setTimeout(function(){showQuip('F\u00f8rste analyse i dag \u2014 godt gjort'+n+' \ud83d\udc4f');},1000);}
+    var slowTimer=setTimeout(function(){showQuip('Vi t\u00e6nker os godt om... de her betingelser er ikke lette \ud83e\udde0');},20000);
+    try{await _origAnalyze.call(this);}finally{clearTimeout(slowTimer);}
+    var count=incrementAnalysesToday();
+    setTimeout(function(){
+      if(count>=5){showQuip(count+' analyser i dag \u2014 du er brandvarm'+n+'! \ud83d\udd25');}
+      else{showQuip('Analysen er klar'+n+'! Nu ved du mere om de her betingelser end de fleste s\u00e6lgere \ud83d\ude0f');}
+    },800);
+  };
+}
+</script>
