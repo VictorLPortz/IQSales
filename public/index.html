@@ -2113,10 +2113,10 @@ function getCacheAge(side, type) {
       </div>
     </div>
  
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
+    ${allAdvA.length > 0 ? `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
       <div style="font-size:12px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Top salgsargumenter på tværs af alle produkter</div>
       <ul style="list-style:none;padding:0">${allAdvA.map(a => `<li style="font-size:13px;padding:6px 0 6px 18px;position:relative;border-bottom:1px solid var(--border);color:var(--text)"><span style="position:absolute;left:0;color:var(--accent2);font-weight:600">→</span><span style="font-size:11px;color:var(--accent2);font-weight:500;margin-right:6px">[${a.label}]</span>${a.text}</li>`).join('')}</ul>
-    </div>`;
+    </div>` : ''}`;
  
   const overviewEl = document.getElementById('tab-overview');
   if (overviewEl) overviewEl.innerHTML = overviewHtml;
@@ -3514,14 +3514,6 @@ async function retryType(type) {
             </div>
           </div>
 
-        </div>
-      </div>
-      
-      <div id="send-${shortName}" class="sub-tab-content">
-        <div class="placeholder-content">
-          <div class="placeholder-icon">📧</div>
-          <h3>Kundemail kommer snart</h3>
-          <p>Her vil du kunne generere en kunde-venlig rapport.</p>
         </div>
       </div>
     </div>
