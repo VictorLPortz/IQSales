@@ -1212,23 +1212,37 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
 <script>
 const FAQS=[
+  {section:'Kom i gang'},
   {q:'Hvordan bruger jeg IQSales?',a:'Vælg forsikringstype øverst, vælg dit selskab i venstre kolonne og kundens nuværende selskab i højre. Klik "Hent betingelser" for at gå til selskabets hjemmeside og download betingelserne som PDF. Upload begge PDF\'er og klik "Analysér". AI\'en sammenligner betingelserne og genererer en dækningsoversigt og et salgspitch på under et minut.'},
   {q:'Hvor finder jeg betingelserne fra de forskellige selskaber?',a:'Klik på "Hent betingelser" linket ved siden af dropdown\'en — det sender dig direkte til selskabets hjemmeside. Find den relevante forsikringstype, download PDF\'en med betingelserne og upload den i IQSales. Betingelserne ligger typisk under "Forsikringer", "Betingelser" eller "Vilkår" på hjemmesiden.'},
   {q:'Hvorfor skal man selv uploade betingelserne?',a:'Forsikringsbetingelser opdateres løbende af selskaberne. Ved at uploade dem selv sikrer du at analysen altid er baseret på de nyeste og mest præcise betingelser. Det tager under et minut og sikrer at du aldrig møder en kunde med forældet information.'},
   {q:'Hvorfor ser jeg analyser fra mine kolleger?',a:'Øverst på siden under "Dine kollegaer har analyseret" kan du se hvilke selskabspar dine kolleger allerede har analyseret. Disse analyser er gemt i systemet og kan genbruges — det sparer tid og reducerer omkostningerne. Klik på en analyse for at åbne den direkte.'},
+
+  {section:'Funktioner'},
   {q:'Hvad er Salgscoach og hvordan bruger jeg den?',a:'Salgscoach er en AI-assistent der kender hele din analyse. Du finder den i fanen "🤖 Salgscoach" øverst. Du kan stille den spørgsmål som "Hvad er vores stærkeste argument?" eller "Hvordan håndterer jeg indvendingen om pris?". Den genererer også mødeforberedelse, typiske kundeindvendinger med svar og et manus til remotivering af mødet.'},
   {q:'Kan jeg stole 100% på analysen?',a:'Analysen er et salgsværktøj baseret på AI-gennemgang af forsikringsbetingelserne og skal ikke betragtes som juridisk rådgivning. Verificér altid vigtige dækninger direkte i betingelserne inden du præsenterer dem for kunden. Hvis du finder en fejl, brug feedback-knappen så vi kan rette det.'},
+
+  {section:'Forstå analysens begreber'},
   {q:'Hvad betyder "Undtaget"?',a:'Et orange ⊘ "Undtaget" betyder at forsikringen normalt dækker denne type skade, men eksplicit undtager netop dette scenarie. Eksempel: "Stormskade dækkes — dog ikke hvis ejendommen har stået tom i over 60 dage." Det er altså ikke bare ikke dækket, men aktivt fravalgt under bestemte omstændigheder.'},
   {q:'Hvad er forskellen på "Ikke dækket" og "Undtaget"?',a:'"Ikke dækket" (rødt ✗) betyder at forsikringen direkte siger at dette ikke dækkes — f.eks. "skader på løsøre er ikke dækket". "Undtaget" (orange ⊘) betyder at forsikringen normalt dækker den slags, men gør en specifik undtagelse — f.eks. "dækkes ikke ved ubeboet ejendom". Forskellen er vigtig i salget: undtagelser er noget kunden aktivt skal være opmærksom på.'},
   {q:'Hvad betyder "INIB"?',a:'INIB står for "Ikke Nævnt I Betingelserne". Det betyder at betingelserne hverken bekræfter eller afviser dækningen — den er simpelthen ikke omtalt. Det kan betyde at dækningen ikke eksisterer, eller at den fremgår af et andet dokument. Brug altid feedback-knappen hvis du mener det er en fejl.'},
+
+  {section:'Feedback og fejl'},
   {q:'Hvad betyder "Vigtig" og "Ligegyldig"?',a:'"👍 Vigtig" betyder at du bekræfter at denne forsikringsforskel er relevant og værd at fremhæve overfor kunden. "👎 Ligegyldig" betyder at du vurderer at forskellen ikke er betydningsfuld i praksis — f.eks. fordi beløbene er for små eller scenariet er usandsynligt. Din feedback bruges aktivt til at forbedre hvilke forskelle der fremhæves i fremtidige analyser.'},
   {q:'Hvad gør jeg hvis jeg finder en fejl?',a:'Klik på det lille "⚑ Giv feedback" link under den pågældende dækning i tabellen. Vælg fejltype og beskriv hvad der er forkert. Din feedback sendes direkte til os og bruges til at forbedre analyserne løbende.'},
   {q:'Hvornår skal jeg slette cache?',a:'Du behøver ikke selv slette cache — det håndteres af administratoren. Cache slettes typisk når der uploades nye betingelser eller der er kommet godkendt feedback der ændrer analyserne. Når cachen slettes, vil næste analyse af det pågældende selskabspar blive kørt igen med de nyeste data.'}
 ];
-FAQS.forEach((faq,i)=>{
+let faqIdx=0;
+FAQS.forEach((faq)=>{
   const el=document.createElement('div');
-  el.style.cssText='background:var(--surface);border:1px solid #E3E1D9;border-radius:10px;overflow:hidden';
-  el.innerHTML=`<button onclick="toggleFaq(${i})" style="width:100%;text-align:left;padding:1rem 1.25rem;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:DM Sans,sans-serif"><span style="font-size:14px;font-weight:500;color:#141412">${faq.q}</span><svg id="faq-arrow-${i}" viewBox="0 0 12 8" fill="none" style="width:12px;height:8px;flex-shrink:0;transition:transform .2s"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></button><div id="faq-body-${i}" style="display:none;padding:0 1.25rem 1rem;font-size:13px;color:#7A7870;line-height:1.7;border-top:1px solid #E3E1D9">${faq.a}</div>`;
+  if(faq.section){
+    el.style.cssText='font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:1rem 0 6px;margin-top:4px';
+    el.textContent=faq.section;
+  } else {
+    const i=faqIdx++;
+    el.style.cssText='background:var(--surface);border:1px solid #E3E1D9;border-radius:10px;overflow:hidden';
+    el.innerHTML=`<button onclick="toggleFaq(${i})" style="width:100%;text-align:left;padding:1rem 1.25rem;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:DM Sans,sans-serif"><span style="font-size:14px;font-weight:500;color:#141412">${faq.q}</span><svg id="faq-arrow-${i}" viewBox="0 0 12 8" fill="none" style="width:12px;height:8px;flex-shrink:0;transition:transform .2s"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></button><div id="faq-body-${i}" style="display:none;padding:0 1.25rem 1rem;font-size:13px;color:#7A7870;line-height:1.7;border-top:1px solid #E3E1D9">${faq.a}</div>`;
+  }
   document.getElementById('faq-list').appendChild(el);
 });
 function toggleFaq(i){const body=document.getElementById('faq-body-'+i);const arrow=document.getElementById('faq-arrow-'+i);const open=body.style.display==='block';body.style.display=open?'none':'block';arrow.style.transform=open?'':'rotate(180deg)';}
