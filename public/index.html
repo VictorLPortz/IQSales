@@ -1517,7 +1517,7 @@ function setFbType(btn){document.querySelectorAll('.fb-type-btn').forEach(b=>b.c
 async function sendFb(){
   if(!fbState.issueType){alert('Vælg venligst en fejltype.');return;}
   const comment=document.getElementById('fb-comment').value.trim();
-  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:fbState.companyA,company_b:fbState.companyB,insurance_type:fbState.type,category:fbState.category,issue_type:fbState.issueType,comment:(comment||'')+(fbState.side==='b'?' [Feedback om '+fbState.companyB+']':''),user_id:getUserId(),status:'pending',scope_type:fbState.scopeType})});}catch(e){}
+  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:fbState.companyA,company_b:fbState.companyB,insurance_type:fbState.type,category:fbState.category,issue_type:fbState.issueType,comment:(comment||'')+(fbState.side==='b'?' [Feedback om '+fbState.companyB+']':''),user_id:getSupabaseUserId(),status:'pending',scope_type:fbState.scopeType})});}catch(e){}
   document.getElementById('fb-success').classList.remove('hidden');
   document.getElementById('fb-actions').style.display='none';
   setTimeout(()=>closeFb(),1500);
@@ -1556,7 +1556,9 @@ async function quickFeedback(category, type, sentiment) {
         category: category,
         issue_type: sentiment === 'important' ? 'priority_high' : 'priority_low',
         comment: sentiment === 'important' ? 'Vigtig dækning - skal med' : 'Ligegyldig dækning - kan udelades',
-        user_id: getUserId(),
+        user_id: getSupabaseUserId(),
+        company_a: getName('a'),
+        company_b: getName('b'),
         status: 'pending',
         scope_type: 'general'
       })
@@ -2437,7 +2439,8 @@ function handleFileMulti(input){
 }
 
 function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+Math.random().toString(36).substring(2,10);localStorage.setItem('iqsales_uid',id);}return id;}
-async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getUserId()})});}catch(e){}}
+function getSupabaseUserId(){try{const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(raw){const p=JSON.parse(raw);return p.user?.id||null;}}catch(e){}return null;}
+async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getSupabaseUserId()})});}catch(e){}}
 
  async function extractPdfText(base64data) {
   try {
@@ -4364,7 +4367,7 @@ function addCoachMsg(text,role,question=''){const msgs=document.getElementById('
 
 function coachFeedback(msgId,positive,question){if(positive){document.getElementById(msgId+'-up').style.opacity=1;document.getElementById(msgId+'-dn').style.opacity=.3;saveCoachFeedback(question,'','positive');const btn=document.getElementById(msgId+'-up');btn.insertAdjacentHTML('afterend','<span style="font-size:11px;color:var(--accent2);margin-left:6px">Tak for din feedback ✓</span>');document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;}else{document.getElementById(msgId+'-dn').style.opacity=1;document.getElementById(msgId+'-up').style.opacity=.3;document.getElementById(msgId+'-form').style.display='block';}}
 async function sendCoachFeedback(msgId,question,answer){const comment=document.getElementById(msgId+'-txt').value.trim();saveCoachFeedback(question,comment,'negative',answer);document.getElementById(msgId+'-form').style.display='none';document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;const container=document.getElementById(msgId+'-form').parentElement;container.insertAdjacentHTML('beforeend','<div style="font-size:11px;color:var(--accent2);margin-top:4px">Tak for din konstruktive feedback — det hjælper os med at forbedre coachen ✓</div>');}
-async function saveCoachFeedback(question,comment,type,answer=''){const d=window._d;if(!d)return;try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:d.companyA,company_b:d.companyB,insurance_type:d.type,category:'IQSales Coach',issue_type:type==='positive'?'coach_positiv':'coach_negativ',comment:question+(comment?'\nFeedback: '+comment:''),user_id:getUserId()})});}catch(e){}}
+async function saveCoachFeedback(question,comment,type,answer=''){const d=window._d;if(!d)return;try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:d.companyA,company_b:d.companyB,insurance_type:d.type,category:'IQSales Coach',issue_type:type==='positive'?'coach_positiv':'coach_negativ',comment:question+(comment?'\nFeedback: '+comment:''),user_id:getSupabaseUserId()})});}catch(e){}}
 
 async function sendCoachFeedback(msgId,question,answer){const comment=document.getElementById(msgId+'-txt').value.trim();saveCoachFeedback(question, comment, 'negative', answer);document.getElementById(msgId+'-form').style.display='none';document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;const container=document.getElementById(msgId+'-form').parentElement;container.insertAdjacentHTML('beforeend','<div style="font-size:11px;color:var(--accent2);margin-top:4px">Tak for din konstruktive feedback — det hjælper os med at forbedre coachen ✓</div>');}
   
@@ -4377,7 +4380,7 @@ async function sendGeneralFb(btn){
     await fetch(SUPABASE_URL+'/rest/v1/feedback',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
-      body:JSON.stringify({company_a:'Generel',company_b:'Generel',insurance_type:'Generel',category:'Generel feedback',issue_type:'generel',comment:text,user_id:getUserId()})
+      body:JSON.stringify({company_a:'Generel',company_b:'Generel',insurance_type:'Generel',category:'Generel feedback',issue_type:'generel',comment:text,user_id:getSupabaseUserId()})
     });
   }catch(e){}
   textarea.value='';
