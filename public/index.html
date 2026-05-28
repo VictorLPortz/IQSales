@@ -4447,7 +4447,9 @@ async function sendGlobalCoachMessage(companyA, companyB, types) {
       body: JSON.stringify({
         system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB}. Analysen dækker: ${types}. ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
         message: question,
-        max_tokens: 600
+        max_tokens: 600,
+        user_id: getUserId() || null,
+        section_type: 'chat'
       })
     });
     const r = await resp.json();
@@ -4495,7 +4497,12 @@ async function generateGlobalSection(section, companyA, companyB, types) {
     const response = await fetch('/api/coach', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: prompts[section], max_tokens: 1000 })
+      body: JSON.stringify({
+        message: prompts[section],
+        max_tokens: 1000,
+        user_id: getUserId() || null,
+        section_type: section
+      })
     });
     const result = await response.json();
     const text = result.text || '';
@@ -4591,7 +4598,9 @@ async function generateCoachSection(shortName, section) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: prompts[section],
-        max_tokens: 1000
+        max_tokens: 1000,
+        user_id: getUserId() || null,
+        section_type: section
       })
     });
 
@@ -4749,7 +4758,9 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
       body: JSON.stringify({
         system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB} (${type}). ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
         message: question,
-        max_tokens: 600
+        max_tokens: 600,
+        user_id: getUserId() || null,
+        section_type: 'chat'
       })
     });
     const r = await resp.json();
