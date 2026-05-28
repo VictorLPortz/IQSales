@@ -561,12 +561,29 @@
     line-height: 1.6;
     color: #1E40AF;
   }
-
-  .info-box strong {
-    display: block;
-    margin-bottom: 4px;
-    font-weight: 600;
-  }
+  .info-box strong { display: block; margin-bottom: 4px; font-weight: 600; }
+  tbody tr.user-row { cursor: pointer; }
+  tbody tr.user-row:hover { background: #F9F7F2; }
+  tr.user-expand-row td { padding: 0 !important; border-bottom: 1px solid var(--border) !important; }
+  .user-expand-panel { display: none; background: #F9F7F2; padding: 20px 24px; }
+  tr.user-expand-row.open .user-expand-panel { display: block; }
+  .expand-mini-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+  .expand-mini-stat { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; text-align: center; }
+  .expand-mini-stat-val { font-size: 20px; font-weight: 600; color: var(--text); }
+  .expand-mini-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .expand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 14px; }
+  .expand-section-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
+  .expand-bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .expand-bar-label { font-size: 12px; color: var(--muted); width: 100px; flex-shrink: 0; }
+  .expand-bar-bg { flex: 1; height: 5px; background: #E8E6DF; border-radius: 3px; overflow: hidden; }
+  .expand-bar-fill { height: 100%; border-radius: 3px; background: var(--green); }
+  .expand-bar-val { font-size: 12px; color: var(--muted); width: 24px; text-align: right; flex-shrink: 0; }
+  .expand-pair { font-size: 13px; color: var(--text); margin-bottom: 5px; }
+  .expand-pair span { color: var(--muted); }
+  .expand-meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .expand-meta strong { color: var(--text); }
+  .feedback-avatar { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; font-weight: 600; background: #E1F5EE; color: #085041; flex-shrink: 0; }
+  .feedback-submitter { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text); }
 </style>
 </head>
 <body>
@@ -678,6 +695,7 @@
                 <th>Rolle</th>
                 <th>Oprettet</th>
                 <th>Sidst aktiv</th>
+                <th></th>
                 <th></th>
               </tr>
             </thead>
@@ -1169,27 +1187,133 @@
       return;
     }
 
+    // Hent analysedata per bruger
+    const { data: allAnalyses } = await sb.from('analyses').select('user_id, insurance_type, company_a, company_b, created_at');
+    const { data: allFeedbackData } = await sb.from('feedback').select('user_id');
+
+    // Byg lookup-maps
+    const analysisMap = {};
+    if (allAnalyses) {
+      allAnalyses.forEach(a => {
+        if (!a.user_id) return;
+        if (!analysisMap[a.user_id]) analysisMap[a.user_id] = [];
+        analysisMap[a.user_id].push(a);
+      });
+    }
+    const feedbackCountMap = {};
+    if (allFeedbackData) {
+      allFeedbackData.forEach(f => {
+        if (!f.user_id) return;
+        feedbackCountMap[f.user_id] = (feedbackCountMap[f.user_id] || 0) + 1;
+      });
+    }
+
+    // Beregn gennemsnit
+    const avgAnalyses = profiles.length ? Math.round(Object.values(analysisMap).reduce((s,a)=>s+a.length,0) / profiles.length) : 0;
+
     tbody.innerHTML = profiles.map(p => {
       const lastActive = lastLoginMap[p.id];
       const lastActiveText = lastActive ? formatDate(lastActive) : '<span style="color:var(--muted)">Aldrig</span>';
-      
+      const userAnalyses = analysisMap[p.id] || [];
+      const totalAnalyses = userAnalyses.length;
+      const feedbackCount = feedbackCountMap[p.id] || 0;
+
+      // Denne uge
+      const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
+      const thisWeek = userAnalyses.filter(a => new Date(a.created_at) > weekAgo).length;
+
+      // Aktive dage
+      const activeDays = new Set(userAnalyses.map(a => a.created_at?.split('T')[0])).size;
+
+      // Top forsikringstyper
+      const typeCounts = {};
+      userAnalyses.forEach(a => { if(a.insurance_type) typeCounts[a.insurance_type] = (typeCounts[a.insurance_type]||0)+1; });
+      const topTypes = Object.entries(typeCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      const maxTypeCount = topTypes[0]?.[1] || 1;
+
+      // Top selskabspar
+      const pairCounts = {};
+      userAnalyses.forEach(a => {
+        if(a.company_a && a.company_b) {
+          const key = [a.company_a, a.company_b].sort().join(' vs ');
+          pairCounts[key] = (pairCounts[key]||0)+1;
+        }
+      });
+      const topPairs = Object.entries(pairCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+      // Over/under gennemsnit
+      const diffPct = avgAnalyses > 0 ? Math.round((totalAnalyses - avgAnalyses) / avgAnalyses * 100) : 0;
+      const diffText = diffPct >= 0
+        ? `<span style="color:var(--green);font-weight:600;">+${diffPct}% over gennemsnit</span>`
+        : `<span style="color:#DC2626;font-weight:600;">${diffPct}% under gennemsnit</span>`;
+
+      // Initialer
+      const initials = (p.full_name || p.email || '?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+
+      const expandId = 'expand-' + p.id;
       return `
-      <tr>
+      <tr class="user-row" onclick="toggleUserExpand('${p.id}', this)">
         <td><strong>${p.full_name || '—'}</strong></td>
         <td style="color:var(--muted)">${p.email || '—'}</td>
         <td>${p.department || '—'}</td>
         <td><span class="badge badge-${p.role}">${p.role === 'admin' ? 'Admin' : 'Sælger'}</span></td>
         <td style="color:var(--muted);font-size:13px">${formatDate(p.created_at)}</td>
         <td style="color:var(--muted);font-size:13px">${lastActiveText}</td>
-        <td>
+        <td onclick="event.stopPropagation()">
           ${p.id !== currentUser.id
             ? `<button class="btn-primary" style="padding:6px 12px;font-size:12px;margin-right:8px;" onclick="editUser('${p.id}', '${p.full_name || ''}', '${p.email}', '${p.department || ''}')">Rediger</button><button class="btn-danger" onclick="deleteUser('${p.id}', '${p.full_name || p.email}')">Slet</button>`
             : '<span style="font-size:12px;color:var(--muted)">Dig</span>'
           }
         </td>
+        <td style="width:28px;color:var(--muted);font-size:11px;text-align:center;" id="arrow-${p.id}">▼</td>
+      </tr>
+      <tr class="user-expand-row" id="${expandId}">
+        <td colspan="8">
+          <div class="user-expand-panel">
+            <div class="expand-mini-stats">
+              <div class="expand-mini-stat"><div class="expand-mini-stat-val">${totalAnalyses}</div><div class="expand-mini-stat-lbl">Analyser i alt</div></div>
+              <div class="expand-mini-stat"><div class="expand-mini-stat-val">${thisWeek}</div><div class="expand-mini-stat-lbl">Denne uge</div></div>
+              <div class="expand-mini-stat"><div class="expand-mini-stat-val">${activeDays}</div><div class="expand-mini-stat-lbl">Aktive dage</div></div>
+              <div class="expand-mini-stat"><div class="expand-mini-stat-val">${feedbackCount}</div><div class="expand-mini-stat-lbl">Feedbacks</div></div>
+            </div>
+            <div class="expand-grid">
+              <div>
+                <div class="expand-section-title">Foretrukne typer</div>
+                ${topTypes.length ? topTypes.map(([type, count]) => `
+                  <div class="expand-bar-wrap">
+                    <div class="expand-bar-label">${type.replace('forsikring','')}</div>
+                    <div class="expand-bar-bg"><div class="expand-bar-fill" style="width:${Math.round(count/maxTypeCount*100)}%"></div></div>
+                    <div class="expand-bar-val">${count}</div>
+                  </div>`).join('') : '<div style="font-size:13px;color:var(--muted);">Ingen analyser endnu</div>'}
+              </div>
+              <div>
+                <div class="expand-section-title">Mest sammenlignede selskaber</div>
+                ${topPairs.length ? topPairs.map(([pair, count]) => `
+                  <div class="expand-pair">${pair} <span>— ${count}x</span></div>`).join('') : '<div style="font-size:13px;color:var(--muted);">Ingen analyser endnu</div>'}
+              </div>
+            </div>
+            <div class="expand-meta">
+              <div>Sidst aktiv: <strong>${lastActive ? formatDate(lastActive) : 'Aldrig'}</strong></div>
+              <div>Sammenlignet med holdet: ${diffText}</div>
+            </div>
+          </div>
+        </td>
       </tr>
       `;
     }).join('');
+  }
+
+  function toggleUserExpand(userId, rowEl) {
+    const expandRow = document.getElementById('expand-' + userId);
+    const arrow = document.getElementById('arrow-' + userId);
+    const isOpen = expandRow.classList.contains('open');
+    // Luk alle andre
+    document.querySelectorAll('.user-expand-row.open').forEach(r => r.classList.remove('open'));
+    document.querySelectorAll('[id^="arrow-"]').forEach(a => { a.style.transform = ''; });
+    if (!isOpen) {
+      expandRow.classList.add('open');
+      if (arrow) arrow.style.transform = 'rotate(180deg)';
+    }
   }
 
   async function loadStats() {
@@ -1361,6 +1485,12 @@
       return;
     }
 
+    // Hent brugernavne til feedback
+    const { data: profiles } = await sb.from('profiles').select('id, full_name');
+    const profileMap = {};
+    if (profiles) profiles.forEach(p => { profileMap[p.id] = p.full_name; });
+    window._feedbackProfileMap = profileMap;
+
     allFeedback = feedback || [];
 
     // Update stats
@@ -1398,8 +1528,13 @@
       return;
     }
 
-    container.innerHTML = filtered.map(f => `
+    const pMap = window._feedbackProfileMap || {};
+    container.innerHTML = filtered.map(f => {
+      const name = (f.user_id && pMap[f.user_id]) ? pMap[f.user_id] : null;
+      const initials = name ? name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : '?';
+      return `
       <div class="feedback-item">
+        ${name ? `<div class="feedback-submitter"><span class="feedback-avatar">${initials}</span>${name}</div>` : ''}
         <div class="feedback-header">
           <div class="feedback-title">🏡 ${f.insurance_type || 'Ukendt type'} — ${f.company_a || '?'} vs ${f.company_b || '?'}</div>
           <span class="badge badge-${f.status || 'pending'}">${f.status === 'pending' ? 'Afventer' : f.status === 'approved' ? 'Godkendt' : 'Afvist'}</span>
@@ -1416,7 +1551,7 @@
           </div>
         ` : ''}
       </div>
-    `).join('');
+    `}).join('');
   }
 
   async function approveFeedback(id) {
