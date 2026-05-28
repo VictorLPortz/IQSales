@@ -2077,45 +2077,52 @@ function getCacheAge(side, type) {
  
   const overviewHtml = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
- 
-      <div style="background:var(--accent-light);border:1px solid #A7D7B8;border-radius:var(--r);overflow:hidden">
-        <div style="background:var(--accent2);padding:10px 14px;display:flex;align-items:center;gap:8px">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1.5,7 5,10.5 12.5,3.5" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
-          <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Dine stærkeste kort — ${nameA}</span>
+
+      <div style="background:var(--surface);border:1px solid #C6E5B3;border-radius:var(--r);overflow:hidden">
+        <div style="padding:10px 14px;border-bottom:1px solid #C6E5B3;display:flex;align-items:center;gap:8px;background:#EAF3DE">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1.5,7 5,10.5 12.5,3.5" stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+          <span style="font-size:12px;font-weight:600;color:#3B6D11;text-transform:uppercase;letter-spacing:.06em">Dine stærkeste kort — ${nameA}</span>
         </div>
-        <div style="padding:10px 14px">
+        <div style="padding:8px 14px">
           ${strongA.slice(0, 5).map(s => `
-            <div style="padding:8px 0;border-bottom:1px solid #A7D7B8">
-              <div style="font-size:11px;color:var(--accent2);font-weight:600;margin-bottom:3px">${s.type} · ${s.category}</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.5">${s.detail.substring(0, 100)}${s.detail.length > 100 ? '...' : ''}</div>
-              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:var(--accent2);font-style:italic">→ "${s.tip}"</div>` : ''}
+            <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:11px;color:#3B6D11;font-weight:600;margin-bottom:3px">${s.type} · ${s.category}</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.55">${s.detail.substring(0, 100)}${s.detail.length > 100 ? '...' : ''}</div>
+              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:#3B6D11;font-style:italic;line-height:1.5">→ "${s.tip}"</div>` : ''}
             </div>
           `).join('')}
           ${strongA.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Kør en analyse for at se dine stærkeste kort</div>` : ''}
         </div>
       </div>
- 
-      <div style="background:#FFF8F8;border:1px solid #FECACA;border-radius:var(--r);overflow:hidden">
-        <div style="background:#9B1C1C;padding:10px 14px;display:flex;align-items:center;gap:8px">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L1.5 11.5h11L7 2z" stroke="rgba(255,255,255,.8)" stroke-width="1.2" fill="none"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r=".7" fill="white"/></svg>
-          <span style="font-size:12px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.06em">Vær forberedt på — ${nameB}</span>
+
+      <div style="background:var(--surface);border:1px solid #FDBA74;border-radius:var(--r);overflow:hidden">
+        <div style="padding:10px 14px;border-bottom:1px solid #FDBA74;display:flex;align-items:center;gap:8px;background:#FFF4ED">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L1.5 11.5h11L7 2z" stroke="#9A3412" stroke-width="1.4" fill="none"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="#9A3412" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r=".7" fill="#9A3412"/></svg>
+          <span style="font-size:12px;font-weight:600;color:#9A3412;text-transform:uppercase;letter-spacing:.06em">Vær forberedt på — ${nameB}</span>
         </div>
-        <div style="padding:10px 14px">
+        <div style="padding:8px 14px">
           ${strongB.slice(0, 5).map(s => `
-            <div style="padding:8px 0;border-bottom:1px solid #FECACA">
-              <div style="font-size:11px;color:var(--danger);font-weight:600;margin-bottom:3px">${s.type} · ${s.category}</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.5">${s.detail.substring(0, 100)}${s.detail.length > 100 ? '...' : ''}</div>
-              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:#9B1C1C;font-style:italic">↩ "${s.tip}"</div>` : ''}
+            <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:11px;color:#9A3412;font-weight:600;margin-bottom:3px">${s.type} · ${s.category}</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.55">${s.detail.substring(0, 100)}${s.detail.length > 100 ? '...' : ''}</div>
+              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:#9A3412;font-style:italic;line-height:1.5">↩ "${s.tip}"</div>` : ''}
             </div>
           `).join('')}
           ${strongB.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Ingen væsentlige ulemper fundet</div>` : ''}
         </div>
       </div>
     </div>
- 
-    ${allAdvA.length > 0 ? `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
-      <div style="font-size:12px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Top salgsargumenter på tværs af alle produkter</div>
-      <ul style="list-style:none;padding:0">${allAdvA.map(a => `<li style="font-size:13px;padding:6px 0 6px 18px;position:relative;border-bottom:1px solid var(--border);color:var(--text)"><span style="position:absolute;left:0;color:var(--accent2);font-weight:600">→</span><span style="font-size:11px;color:var(--accent2);font-weight:500;margin-right:6px">[${a.label}]</span>${a.text}</li>`).join('')}</ul>
+
+    ${allAdvA.length > 0 ? `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-2,#F8F6F1);">
+        <span style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:.06em;">Top salgsargumenter på tværs af alle produkter</span>
+      </div>
+      <div style="padding:8px 14px;">
+        ${allAdvA.map(a => `<div style="padding:7px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start;">
+          <span style="color:#3B6D11;font-weight:600;flex-shrink:0;margin-top:1px;">→</span>
+          <div><span style="font-size:11px;font-weight:600;color:#3B6D11;margin-right:6px;">[${a.label}]</span><span style="font-size:13px;color:var(--text);">${a.text}</span></div>
+        </div>`).join('')}
+      </div>
     </div>` : ''}`;
  
   const overviewEl = document.getElementById('tab-overview');
