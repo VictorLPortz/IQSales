@@ -546,6 +546,16 @@ Når du skriver status og amount, skal de MATCHE:
 - ✅ GODT: "Stormskade", "Nyværdierstatning første år", "Veterinærbehandling"
 - ❌ DÅRLIGT: "Ukendt dækning", "Ekstra dækning", "Bygning" (uden specifikation)
 - Hvis du finder flere ting i samme kategori → differentier: "Bygning - Stormskade", "Bygning - Solceller"
+
+## 🔥 KRITISK: AMOUNT FELTER SKAL ALTID VÆRE STRINGS
+- amount_a og amount_b SKAL ALTID være TEXT STRINGS — ALDRIG objekter!
+- ✅ KORREKT: "amount_a": "Dækker op til 50.000 kr med selvrisiko 2.500 kr"
+- ✅ KORREKT: "amount_a": "Ikke dækket — kun storm over 17,2 m/s dækkes"
+- ❌ FORKERT: "amount_a": {"covered": false, "details": "..."}
+- ❌ FORKERT: "amount_a": null (når status er "yes"!)
+- Hvis status er "yes" → SKRIV hvad der dækkes som en TEXT STRING
+- Hvis status er "no" → SKRIV hvad der IKKE dækkes som en TEXT STRING
+- Hvis status er "inib" → sæt amount til null
  
 ## 🔥 KRITISK: AMOUNT FELTER SKAL ALTID VÆRE STRINGS
 - amount_a og amount_b SKAL ALTID være TEXT STRINGS — ALDRIG objekter!
@@ -638,4 +648,3 @@ Returner KUN valid JSON uden markdown backticks:
   "top3_b": ["Fordel 1", "Fordel 2", "Fordel 3"]
 }`;
 }
- 
