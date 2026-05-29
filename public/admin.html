@@ -1786,19 +1786,54 @@
 
       const forecastCompleted = forecastBase.filter(a => a.event_type === 'analysis_completed');
       const forecastTotalCost = forecastCompleted.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
-      const forecastDates = [...new Set(forecastCompleted.map(a => (a.timestamp||'').substring(0,10)).filter(Boolean))];
-      const forecastDays = forecastDates.length || 1;
-      const dailyAvgCost = forecastTotalCost / forecastDays;
-      const monthlyForecast = dailyAvgCost * 30;
+
+      // Helper: check if a date is a Danish workday (mon-fri, no holiday)
+      function isDanishHolidayAdmin(d) {
+        const m = d.getMonth() + 1, day = d.getDate(), y = d.getFullYear();
+        if (['1/1','5/6','24/12','25/12','26/12','31/12'].includes(m+'/'+day)) return true;
+        // Easter calculation
+        const a=y%19,b=Math.floor(y/100),c=y%100,d2=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d2-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m2=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m2+114)/31),de=(h+l-7*m2+114)%31+1;
+        const easter=new Date(y,mo-1,de);
+        for (const o of [-3,-2,1,39,49,50]) { const hd=new Date(easter); hd.setDate(hd.getDate()+o); if(hd.getMonth()+1===m&&hd.getDate()===day) return true; }
+        return false;
+      }
+      function isWorkday(d) {
+        const dow = d.getDay();
+        return dow >= 1 && dow <= 5 && !isDanishHolidayAdmin(d);
+      }
+      function countWorkdays(from, to) {
+        let count = 0;
+        const cur = new Date(from);
+        cur.setHours(0,0,0,0);
+        const end = new Date(to);
+        end.setHours(0,0,0,0);
+        while (cur <= end) { if (isWorkday(cur)) count++; cur.setDate(cur.getDate()+1); }
+        return Math.max(1, count);
+      }
+
+      // Elapsed workdays since 1st of month up to today
+      const now30 = new Date();
+      const monthStart30 = new Date(now30.getFullYear(), now30.getMonth(), 1);
+      const elapsedWorkdays = countWorkdays(monthStart30, now30);
+
+      // Remaining workdays from tomorrow to end of month
+      const tomorrow30 = new Date(now30); tomorrow30.setDate(tomorrow30.getDate()+1);
+      const monthEnd30 = new Date(now30.getFullYear(), now30.getMonth()+1, 0);
+      const remainingWorkdays = countWorkdays(tomorrow30, monthEnd30);
+      const totalWorkdaysInMonth = elapsedWorkdays + remainingWorkdays;
+
+      const dailyAvgCost = forecastTotalCost / elapsedWorkdays;
+      const monthlyForecast = dailyAvgCost * totalWorkdaysInMonth;
       const perAnalysisCost = forecastCompleted.length > 0 ? forecastTotalCost / forecastCompleted.length : 0;
       const forecastUsers = new Set(forecastCompleted.map(a => a.user_id).filter(Boolean));
       const totalUsers = forecastUsers.size || 1;
+      const daysWithData = new Set(forecastCompleted.map(a => (a.timestamp||'').substring(0,10)).filter(Boolean)).size;
 
-      document.getElementById('forecastMonthly').textContent = (monthlyForecast * 7).toFixed(2) + ' kr';
-      document.getElementById('forecastDaily').textContent = (dailyAvgCost * 7).toFixed(2) + ' kr';
-      document.getElementById('forecastPerUser').textContent = ((monthlyForecast / totalUsers) * 7).toFixed(2) + ' kr';
-      document.getElementById('forecastPerAnalysis').textContent = (perAnalysisCost * 7).toFixed(3) + ' kr';
-      document.getElementById('forecastBasis').textContent = `Baseret på seneste 30 dage · ${forecastDays} dage med data · ${forecastCompleted.length} analyser`;
+      document.getElementById('forecastMonthly').textContent = monthlyForecast.toFixed(2) + ' kr';
+      document.getElementById('forecastDaily').textContent = dailyAvgCost.toFixed(2) + ' kr';
+      document.getElementById('forecastPerUser').textContent = (monthlyForecast / totalUsers).toFixed(2) + ' kr';
+      document.getElementById('forecastPerAnalysis').textContent = perAnalysisCost.toFixed(3) + ' kr';
+      document.getElementById('forecastBasis').textContent = `Baseret på ${elapsedWorkdays} forløbne hverdage · ${remainingWorkdays} tilbage · ${daysWithData} aktive dage · ${forecastCompleted.length} analyser`;
 
       // Daily cost chart
       const dailyCosts = {};
@@ -1808,7 +1843,7 @@
       });
 
       const costLabels = Object.keys(dailyCosts);
-      const costData = Object.values(dailyCosts).map(v => parseFloat((v * 7).toFixed(2)));
+      const costData = Object.values(dailyCosts).map(v => parseFloat(v.toFixed(2)));
 
       if (costChart) costChart.destroy();
       const costCtx = document.getElementById('costChart').getContext('2d');
