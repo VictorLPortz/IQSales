@@ -1823,7 +1823,8 @@
       const totalWorkdaysInMonth = elapsedWorkdays + remainingWorkdays;
 
       const dailyAvgCost = forecastTotalCost / elapsedWorkdays;
-      const monthlyForecast = dailyAvgCost * totalWorkdaysInMonth;
+      // Projected end-of-month = already spent + daily average × remaining workdays
+      const monthlyForecast = forecastTotalCost + (dailyAvgCost * remainingWorkdays);
       const perAnalysisCost = forecastCompleted.length > 0 ? forecastTotalCost / forecastCompleted.length : 0;
       const forecastUsers = new Set(forecastCompleted.map(a => a.user_id).filter(Boolean));
       const totalUsers = forecastUsers.size || 1;
@@ -1833,7 +1834,7 @@
       document.getElementById('forecastDaily').textContent = dailyAvgCost.toFixed(2) + ' kr';
       document.getElementById('forecastPerUser').textContent = (monthlyForecast / totalUsers).toFixed(2) + ' kr';
       document.getElementById('forecastPerAnalysis').textContent = perAnalysisCost.toFixed(3) + ' kr';
-      document.getElementById('forecastBasis').textContent = `Baseret på ${elapsedWorkdays} forløbne hverdage · ${remainingWorkdays} tilbage · ${daysWithData} aktive dage · ${forecastCompleted.length} analyser`;
+      document.getElementById('forecastBasis').textContent = `${forecastTotalCost.toFixed(2)} kr brugt · dagsnit ${dailyAvgCost.toFixed(2)} kr · ${remainingWorkdays} hverdage tilbage · ${forecastCompleted.length} analyser`;
 
       // Daily cost chart
       const dailyCosts = {};
