@@ -818,6 +818,7 @@
           <label style="font-size: 13px; font-weight: 600; color: var(--text);">Tidsperiode:</label>
           <select id="timeFilter" onchange="loadAPIStats()" style="padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif;">
             <option value="today">I dag</option>
+            <option value="yesterday">I går</option>
             <option value="week">Denne uge</option>
             <option value="month" selected>Denne måned</option>
             <option value="custom">Valgfri periode</option>
@@ -1347,9 +1348,18 @@
     const now = new Date();
     
     if (period === 'week') {
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Start from Monday this week
+      const weekStart = new Date(now);
+      const day = weekStart.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      weekStart.setDate(weekStart.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      startDate = weekStart.toISOString();
     } else if (period === 'month') {
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      // Start from 1st of current month
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      startDate = monthStart.toISOString();
     } else {
       startDate = '2020-01-01T00:00:00.000Z'; // All time
     }
@@ -1641,15 +1651,33 @@
     endDate = now.toISOString();
 
     if (filter === 'today') {
-      startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      startDate = todayStart.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'i dag';
+    } else if (filter === 'yesterday') {
+      const yesterdayStart = new Date(now);
+      yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+      yesterdayStart.setHours(0, 0, 0, 0);
+      const yesterdayEnd = new Date(yesterdayStart);
+      yesterdayEnd.setHours(23, 59, 59, 999);
+      startDate = yesterdayStart.toISOString();
+      endDate = yesterdayEnd.toISOString();
+      document.getElementById('apiCostPeriod').textContent = 'i går';
     } else if (filter === 'week') {
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      startDate = weekAgo.toISOString();
+      // Start from Monday this week
+      const weekStart = new Date(now);
+      const day = weekStart.getDay(); // 0=Sun, 1=Mon...
+      const diff = day === 0 ? -6 : 1 - day; // Monday
+      weekStart.setDate(weekStart.getDate() + diff);
+      weekStart.setHours(0, 0, 0, 0);
+      startDate = weekStart.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'denne uge';
     } else if (filter === 'month') {
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      startDate = monthAgo.toISOString();
+      // Start from 1st of current month
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      startDate = monthStart.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'denne måned';
     } else if (filter === 'custom') {
       const from = document.getElementById('dateFrom').value;
