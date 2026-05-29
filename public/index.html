@@ -4770,7 +4770,7 @@ function renderGlobalSend() {
       </div>
     </div>`;
 }
-const _origAnalyze = typeof analyze === 'function' ? analyze : null;
+const _origAnalyzeLegacy = typeof analyze === 'function' ? analyze : null;
 function formatCoachAnswer(text) {
   return text
     .replace(/---+/g, '')
@@ -5036,12 +5036,48 @@ function showQuip(msg){
   el.querySelector('.toast-close').addEventListener('click',function(){el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.remove();},400);});
 }
 
+function isWeekday(d){var dow=d.getDay();return dow>=1&&dow<=5&&!isDanishHoliday(d);}
+
+function getWorkdayStreak(){
+  var streak=0;
+  var check=new Date();
+  check.setHours(0,0,0,0);
+  // Start fra i dag eller seneste hverdag
+  while(!isWeekday(check)){check.setDate(check.getDate()-1);}
+  // Gå baglæns dag for dag (kun hverdage)
+  for(var i=0;i<365;i++){
+    var key='iqsales_analyses_'+check.toDateString();
+    var count=parseInt(localStorage.getItem(key)||'0',10);
+    if(count>0){
+      streak++;
+      // Find forrige hverdag
+      check.setDate(check.getDate()-1);
+      while(!isWeekday(check)){check.setDate(check.getDate()-1);}
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function showStreakQuip(name){
+  var streak=getWorkdayStreak();
+  if(streak<2) return;
+  var n=name?', '+name:'';
+  var msg;
+  if(streak>=10) msg='\ud83d\udd25 '+streak+' hverdage i str\u00e6k'+n+' \u2014 du er usl\u00e5elig!';
+  else if(streak>=5) msg='\ud83d\udd25 '+streak+' hverdage i str\u00e6k'+n+' \u2014 hold den i gang!';
+  else msg='\ud83d\udd25 '+streak+' hverdage i str\u00e6k'+n+' \u2014 godt k\u00f8rt!';
+  setTimeout(function(){showQuip(msg);},5000);
+}
+
 function showDayQuip(name){
   var n=name?', '+name:'',d=new Date(),h=d.getHours(),dow=d.getDay();
   if(isDanishHoliday(d)){setTimeout(function(){showQuip('Har du ikke fri'+n+'? \ud83d\ude04 Respekt for indsatsen!');},2500);return;}
   if(dow===1&&h>=5&&h<12){setTimeout(function(){showQuip('Ny uge, nye kunder \u2014 lad os komme i gang'+n+'! \ud83d\udcbc');},2500);return;}
   if(dow===5&&h>=12&&h<22){setTimeout(function(){showQuip('Sidste m\u00f8de inden weekend eller planl\u00e6gger du n\u00e6ste uge'+n+'? Uanset hvad, er jeg her for dig! \ud83d\udd25');},2500);return;}
   if(h>=22||h<5){setTimeout(function(){showQuip('Sent p\u00e5 den'+n+' \u2014 du g\u00e5r benh\u00e5rdt efter at blive \u00e5rets s\u00e6lger! \ud83c\udf19');},2500);return;}
+  showStreakQuip(name);
 }
 
 window.addEventListener('DOMContentLoaded',function(){
