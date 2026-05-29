@@ -13,13 +13,11 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
  
 function sanitizeJSON(jsonStr) {
   return jsonStr
-    .replace(/,(\s*[}\]])/g, '$1')      // Remove trailing commas
-    .replace(/
-/g, ' ')                 // Remove newlines
-    .replace(/
-/g, '')                  // Remove carriage returns
-    .replace(/	/g, ' ')                 // Replace tabs with spaces
-    .replace(/  +/g, ' ')                // Collapse multiple spaces
+    .replace(/,(\s*[}\]])/g, '$1')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, '')
+    .replace(/\t/g, ' ')
+    .replace(/  +/g, ' ')
     .trim();
 }
  
