@@ -5105,7 +5105,10 @@ function updateWatermark() {
   const resultEl = document.getElementById('result');
   const watermark = document.getElementById('iqWatermark');
   if (!resultEl || !watermark) return;
-  const hasResults = resultEl.innerHTML.trim().length > 100;
+  // Only show watermark when there's actual analysis content (coverage cards)
+  const hasResults = resultEl.innerHTML.trim().length > 500 && 
+    (resultEl.querySelector('.coverage-card, .result-section, [class*="coverage"], [id*="tab-"]') !== null ||
+     resultEl.innerHTML.includes('DÆKKET') || resultEl.innerHTML.includes('fordele'));
   if (!hasResults) { watermark.style.display = 'none'; return; }
   watermark.style.display = 'block';
 
