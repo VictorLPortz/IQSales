@@ -866,6 +866,11 @@
             <div class="stat-value" id="uniqueVisitors">—</div>
             <div class="stat-subtext">forskellige brugere</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-label">Screenshot-forsøg</div>
+            <div class="stat-value" id="screenshotAttempts">—</div>
+            <div class="stat-subtext">blokerede forsøg</div>
+          </div>
         </div>
 
         <!-- Forecast box -->
@@ -1243,11 +1248,7 @@
       });
       const topPairs = Object.entries(pairCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
 
-      // Over/under gennemsnit
-      const diffPct = avgAnalyses > 0 ? Math.round((totalAnalyses - avgAnalyses) / avgAnalyses * 100) : 0;
-      const diffText = diffPct >= 0
-        ? `<span style="color:var(--green);font-weight:600;">+${diffPct}% over gennemsnit</span>`
-        : `<span style="color:#DC2626;font-weight:600;">${diffPct}% under gennemsnit</span>`;
+
 
       // Initialer
       const initials = (p.full_name || p.email || '?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
@@ -1296,7 +1297,6 @@
             </div>
             <div class="expand-meta">
               <div>Sidst aktiv: <strong>${lastActive ? formatDate(lastActive) : 'Aldrig'}</strong></div>
-              <div>Sammenlignet med holdet: ${diffText}</div>
             </div>
           </div>
         </td>
@@ -1716,6 +1716,7 @@
         document.getElementById('avgResponseTime').textContent = '—';
         document.getElementById('successRate').textContent = '—%';
         document.getElementById('uniqueVisitors').textContent = '0';
+      document.getElementById('screenshotAttempts').textContent = '0';
         
         const topTable = document.getElementById('topAnalysesTable');
         topTable.innerHTML = '<tr><td colspan="7"><div class="empty-state">Ingen analyser i denne periode</div></td></tr>';
