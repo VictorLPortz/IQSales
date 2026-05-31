@@ -721,6 +721,7 @@
         <button class="subtab-button active" onclick="switchSubtab('overview')">📊 Overblik</button>
         <button class="subtab-button" onclick="switchSubtab('feedback')">✅ Feedback Godkendelse</button>
         <button class="subtab-button" onclick="switchSubtab('api')">💰 API Økonomi</button>
+        <button class="subtab-button" onclick="switchSubtab('protection')">🔒 Beskyttelse & overvågning</button>
       </div>
 
       <!-- SUBTAB: Overblik -->
@@ -1039,6 +1040,51 @@
         </div>
       </div>
     </div>
+
+      <!-- SUBTAB: Beskyttelse & overvågning -->
+      <div id="subtab-protection" class="subtab-content">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+          <!-- Screenshot forsøg -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#FCEBEB;display:flex;align-items:center;justify-content:center;font-size:16px;">📵</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:var(--text);">Screenshot-forsøg</div>
+                <div style="font-size:12px;color:var(--muted);">Advarsel vist + logget</div>
+              </div>
+              <div style="margin-left:auto;font-size:28px;font-weight:700;color:#B91C1C;" id="protScreenshotTotal">—</div>
+            </div>
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
+              <input type="text" id="searchScreenshot" placeholder="Søg medarbejder..." oninput="filterProtectionList('screenshot')"
+                style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;">
+            </div>
+            <div style="padding:8px 0;" id="screenshotList">
+              <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Indlæser...</div>
+            </div>
+          </div>
+
+          <!-- Fokus forladt -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#FAEEDA;display:flex;align-items:center;justify-content:center;font-size:16px;">👁️</div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:var(--text);">Fokus forladt</div>
+                <div style="font-size:12px;color:var(--muted);">Skiftede væk under analyse</div>
+              </div>
+              <div style="margin-left:auto;font-size:28px;font-weight:700;color:#92400E;" id="protFocusTotal">—</div>
+            </div>
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);">
+              <input type="text" id="searchFocus" placeholder="Søg medarbejder..." oninput="filterProtectionList('focus')"
+                style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;">
+            </div>
+            <div style="padding:8px 0;" id="focusList">
+              <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Indlæser...</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
   </div>
 </div>
 
@@ -1149,6 +1195,77 @@
 
     if (subtabName === 'feedback') loadFeedback();
     if (subtabName === 'api') loadAPIStats();
+    if (subtabName === 'protection') loadProtectionData();
+  }
+
+  // ========== BESKYTTELSE & OVERVÅGNING ==========
+  let _protScreenshotData = [];
+  let _protFocusData = [];
+
+  async function loadProtectionData() {
+    try {
+      const headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+      const [ssRes, focusRes, profilesRes] = await Promise.all([
+        fetch(SUPABASE_URL + '/rest/v1/analytics?event_type=eq.screenshot_attempt&select=user_id,metadata,timestamp&order=timestamp.desc', { headers }),
+        fetch(SUPABASE_URL + '/rest/v1/analytics?event_type=eq.focus_lost&select=user_id,metadata,timestamp&order=timestamp.desc', { headers }),
+        fetch(SUPABASE_URL + '/rest/v1/profiles?select=id,full_name', { headers })
+      ]);
+      const [ssData, focusData, profiles] = await Promise.all([ssRes.json(), focusRes.json(), profilesRes.json()]);
+      const profileMap = {};
+      if (Array.isArray(profiles)) profiles.forEach(p => { profileMap[p.id] = p.full_name || 'Ukendt'; });
+
+      function buildCounts(data) {
+        const counts = {}, lastSeen = {};
+        data.forEach(item => {
+          const name = (item.user_id && profileMap[item.user_id]) ? profileMap[item.user_id] : (() => {
+            try { return JSON.parse(item.metadata || '{}').name || 'Ukendt'; } catch(e) { return 'Ukendt'; }
+          })();
+          counts[name] = (counts[name] || 0) + 1;
+          if (!lastSeen[name] || item.timestamp > lastSeen[name]) lastSeen[name] = item.timestamp;
+        });
+        return Object.entries(counts).map(([name, count]) => ({ name, count, lastSeen: lastSeen[name] }))
+          .sort((a, b) => b.count - a.count);
+      }
+
+      _protScreenshotData = buildCounts(Array.isArray(ssData) ? ssData : []);
+      _protFocusData = buildCounts(Array.isArray(focusData) ? focusData : []);
+      document.getElementById('protScreenshotTotal').textContent = Array.isArray(ssData) ? ssData.length : 0;
+      document.getElementById('protFocusTotal').textContent = Array.isArray(focusData) ? focusData.length : 0;
+      renderProtectionList('screenshot', _protScreenshotData);
+      renderProtectionList('focus', _protFocusData);
+    } catch(e) { console.error('Protection data error:', e); }
+  }
+
+  function renderProtectionList(type, data, filter = '') {
+    const listEl = document.getElementById(type === 'screenshot' ? 'screenshotList' : 'focusList');
+    const filtered = filter ? data.filter(d => d.name.toLowerCase().includes(filter.toLowerCase())) : data;
+    const top = filtered.slice(0, 5);
+    if (top.length === 0) {
+      listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Ingen data fundet</div>';
+      return;
+    }
+    const colors = type === 'screenshot'
+      ? { bg: '#FCEBEB', text: '#B91C1C', badge: '#FEE2E2' }
+      : { bg: '#FAEEDA', text: '#92400E', badge: '#FEF3C7' };
+    listEl.innerHTML = top.map((item, i) => {
+      const lastDate = item.lastSeen ? new Date(item.lastSeen).toLocaleDateString('da-DK', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+      const initials = item.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);">
+        <div style="width:20px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);">${i+1}</div>
+        <div style="width:32px;height:32px;border-radius:50%;background:${colors.bg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:${colors.text};flex-shrink:0;">${initials}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+          <div style="font-size:11px;color:var(--muted);">Sidst: ${lastDate}</div>
+        </div>
+        <div style="font-size:18px;font-weight:700;color:${colors.text};background:${colors.badge};padding:4px 10px;border-radius:8px;">${item.count}x</div>
+      </div>`;
+    }).join('');
+  }
+
+  function filterProtectionList(type) {
+    const searchEl = document.getElementById(type === 'screenshot' ? 'searchScreenshot' : 'searchFocus');
+    const data = type === 'screenshot' ? _protScreenshotData : _protFocusData;
+    renderProtectionList(type, data, searchEl.value);
   }
 
   async function loadUsers() {
