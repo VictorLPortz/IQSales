@@ -1193,7 +1193,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         var session = res.data && res.data.session;
         if (!session) return;
         window._sb.from('profiles').select('full_name').eq('id', session.user.id).single().then(function(res2) {
-          var name = res2.data && res2.data.full_name ? res2.data.full_name.split(' ')[0] : '';
+          var name = res2.data && res2.data.full_name ? res2.data.full_name : '';
           window._userName = name;
           var greetingEl = document.getElementById('greeting-text');
           if (greetingEl && greetingEl.parentElement.style.display !== 'none') {
@@ -5024,17 +5024,15 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
 }
 .iq-watermark-text {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-30deg);
-  font-size: 28px;
+  font-size: 16px;
   font-weight: 600;
-  color: rgba(0,0,0,0.06);
+  color: rgba(0,0,0,0.07);
   white-space: nowrap;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   font-family: 'DM Sans', sans-serif;
   user-select: none;
   pointer-events: none;
+  transform: rotate(-30deg);
 }
 /* Screenshot warning modal */
 #screenshot-warning {
@@ -5061,9 +5059,7 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
 </style>
 
 <!-- Watermark overlay -->
-<div class="iq-watermark" id="iqWatermark">
-  <div class="iq-watermark-text" id="iqWatermarkText">FORTROLIGT · IQSales</div>
-</div>
+<div class="iq-watermark" id="iqWatermark" aria-hidden="true"></div>
 
 <!-- Screenshot warning -->
 <div id="screenshot-warning">
@@ -5108,13 +5104,29 @@ function showScreenshotWarning() {
 function updateWatermark() {
   const resultEl = document.getElementById('result');
   const watermark = document.getElementById('iqWatermark');
-  const watermarkText = document.getElementById('iqWatermarkText');
   if (!resultEl || !watermark) return;
   const hasResults = resultEl.innerHTML.trim().length > 100;
-  watermark.style.display = hasResults ? 'block' : 'none';
-  const name = window._userName ? window._userName + ' · ' : '';
+  if (!hasResults) { watermark.style.display = 'none'; return; }
+  watermark.style.display = 'block';
+
+  // Build repeating grid pattern
+  const name = window._userName || 'IQSales';
   const dateStr = new Date().toLocaleDateString('da-DK');
-  watermarkText.textContent = 'FORTROLIGT · ' + name + dateStr + ' · IQSales';
+  const text = 'FORTROLIGT · ' + name + ' · ' + dateStr + ' · IQSales';
+
+  const W = window.innerWidth, H = window.innerHeight;
+  const cols = Math.ceil(W / 320) + 2;
+  const rows = Math.ceil(H / 180) + 2;
+
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * 300 - 60;
+      const y = r * 160 - 40;
+      html += '<div class="iq-watermark-text" style="left:' + x + 'px;top:' + y + 'px;">' + text + '</div>';
+    }
+  }
+  watermark.innerHTML = html;
 }
 
 // Intercept keyboard screenshot shortcuts
@@ -5122,26 +5134,75 @@ document.addEventListener('keydown', function(e) {
   const resultEl = document.getElementById('result');
   if (!resultEl || resultEl.innerHTML.trim().length < 100) return;
 
-  // PrtScr
+  // PrtScr (alle varianter - Samsung Fn+Insert, standard PrtScr)
   if (e.key === 'PrintScreen') {
     e.preventDefault();
     showScreenshotWarning();
     return;
   }
-  // Ctrl+P (print)
-  if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+  // Alt + PrtScr (aktivt vindue)
+  if (e.altKey && e.key === 'PrintScreen') {
     e.preventDefault();
     showScreenshotWarning();
     return;
   }
-  // Mac: Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5
-  if (e.metaKey && e.shiftKey && ['3','4','5','s'].includes(e.key)) {
+  // Win + PrtScr (gemmer direkte til Screenshots-mappe)
+  if (e.metaKey && e.key === 'PrintScreen') {
     e.preventDefault();
     showScreenshotWarning();
     return;
   }
-  // Win: Win+PrtScr, Alt+PrtScr
-  if (e.key === 'PrintScreen') {
+  // Win + Shift + S (Snipping Tool / Klippeværktøj)
+  if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Ctrl+P / Cmd+P (print/gem som PDF)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Ctrl+S / Cmd+S (gem siden)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+3 (fuld skærm)
+  if (e.metaKey && e.shiftKey && e.key === '3') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+4 (markeret område)
+  if (e.metaKey && e.shiftKey && e.key === '4') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+5 (skærmoptagelse)
+  if (e.metaKey && e.shiftKey && e.key === '5') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+6 (Touch Bar)
+  if (e.metaKey && e.shiftKey && e.key === '6') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Fn+F11 / Fn+Shift+F11 (Mac keyboard på Windows)
+  if (e.shiftKey && e.key === 'F11') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Ctrl+F (find/søg - kan bruges til at lokalisere indhold)
+  // Win+G (Game Bar - skærmoptagelse)
+  if (e.metaKey && e.key.toLowerCase() === 'g') {
     e.preventDefault();
     showScreenshotWarning();
     return;
@@ -5153,6 +5214,31 @@ document.addEventListener('contextmenu', function(e) {
   const resultEl = document.getElementById('result');
   if (resultEl && resultEl.contains(e.target) && resultEl.innerHTML.trim().length > 100) {
     e.preventDefault();
+  }
+});
+
+// Track focus_lost - stille logning uden advarsel
+document.addEventListener('visibilitychange', function() {
+  const resultEl = document.getElementById('result');
+  if (document.hidden && resultEl && resultEl.innerHTML.trim().length > 100) {
+    try {
+      const userId = getSupabaseUserId();
+      const name = window._userName || 'Ukendt';
+      fetch(SUPABASE_URL + '/rest/v1/analytics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          event_type: 'focus_lost',
+          user_id: userId,
+          metadata: JSON.stringify({ name: name, timestamp: new Date().toISOString() })
+        })
+      });
+    } catch(e) {}
   }
 });
 
