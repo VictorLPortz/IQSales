@@ -1204,15 +1204,16 @@
 
   async function loadProtectionData() {
     try {
-      const headers = { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY };
-      const [ssRes, focusRes, profilesRes] = await Promise.all([
-        fetch(SUPABASE_URL + '/rest/v1/analytics?event_type=eq.screenshot_attempt&select=user_id,metadata,created_at&order=created_at.desc', { headers }),
-        fetch(SUPABASE_URL + '/rest/v1/analytics?event_type=eq.focus_lost&select=user_id,metadata,created_at&order=created_at.desc', { headers }),
-        fetch(SUPABASE_URL + '/rest/v1/profiles?select=id,full_name', { headers })
+      const [ssResult, focusResult, profilesResult] = await Promise.all([
+        sb.from('analytics').select('user_id, metadata, timestamp').eq('event_type', 'screenshot_attempt').order('timestamp', { ascending: false }),
+        sb.from('analytics').select('user_id, metadata, timestamp').eq('event_type', 'focus_lost').order('timestamp', { ascending: false }),
+        sb.from('profiles').select('id, full_name')
       ]);
-      const [ssData, focusData, profiles] = await Promise.all([ssRes.json(), focusRes.json(), profilesRes.json()]);
+      const ssData = ssResult.data || [];
+      const focusData = focusResult.data || [];
+      const profiles = profilesResult.data || [];
       const profileMap = {};
-      if (Array.isArray(profiles)) profiles.forEach(p => { profileMap[p.id] = p.full_name || 'Ukendt'; });
+      profiles.forEach(p => { profileMap[p.id] = p.full_name || 'Ukendt'; });
 
       function buildCounts(data) {
         const counts = {}, lastSeen = {};
@@ -1221,7 +1222,7 @@
             try { return JSON.parse(item.metadata || '{}').name || 'Ukendt'; } catch(e) { return 'Ukendt'; }
           })();
           counts[name] = (counts[name] || 0) + 1;
-          if (!lastSeen[name] || item.created_at > lastSeen[name]) lastSeen[name] = item.created_at;
+          if (!lastSeen[name] || item.timestamp > lastSeen[name]) lastSeen[name] = item.timestamp;
         });
         return Object.entries(counts).map(([name, count]) => ({ name, count, lastSeen: lastSeen[name] }))
           .sort((a, b) => b.count - a.count);
