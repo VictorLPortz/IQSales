@@ -1690,13 +1690,15 @@ function showFeedbackBadge(type, count) {
 // Track events to analytics table
 async function trackEvent(eventType, data) {
   try {
-    const userId = getUserId();
+    const userId = getSupabaseUserId();
+    // Use user's access token for authenticated requests
+    const token = getAccessToken();
     
     await fetch(SUPABASE_URL + '/rest/v1/analytics', {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Authorization': 'Bearer ' + (token || SUPABASE_KEY),
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
@@ -2439,6 +2441,7 @@ function handleFileMulti(input){
 }
 
 function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+Math.random().toString(36).substring(2,10);localStorage.setItem('iqsales_uid',id);}return id;}
+function getAccessToken(){try{const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(raw){const p=JSON.parse(raw);return p.access_token||null;}}catch(e){}return null;}
 function getSupabaseUserId(){try{const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(raw){const p=JSON.parse(raw);return p.user?.id||null;}}catch(e){}return null;}
 async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getSupabaseUserId()})});}catch(e){}}
 
@@ -5078,12 +5081,13 @@ async function logScreenshotAttempt() {
   try {
     const userId = getSupabaseUserId();
     const name = window._userName || 'Ukendt';
+    const _ssToken = getAccessToken();
     await fetch(SUPABASE_URL + '/rest/v1/analytics', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Authorization': 'Bearer ' + (_ssToken || SUPABASE_KEY),
         'Prefer': 'return=minimal'
       },
       body: JSON.stringify({
@@ -5224,12 +5228,13 @@ document.addEventListener('visibilitychange', function() {
     try {
       const userId = getSupabaseUserId();
       const name = window._userName || 'Ukendt';
+      const _flToken = getAccessToken();
       fetch(SUPABASE_URL + '/rest/v1/analytics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Authorization': 'Bearer ' + (_flToken || SUPABASE_KEY),
           'Prefer': 'return=minimal'
         },
         body: JSON.stringify({
