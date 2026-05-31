@@ -5005,6 +5005,165 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 </script>
+
+<style>
+/* Prevent text selection on result area */
+#result {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+/* Watermark */
+.iq-watermark {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+  display: none;
+}
+.iq-watermark-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 28px;
+  font-weight: 600;
+  color: rgba(0,0,0,0.06);
+  white-space: nowrap;
+  letter-spacing: 2px;
+  font-family: 'DM Sans', sans-serif;
+  user-select: none;
+  pointer-events: none;
+}
+/* Screenshot warning modal */
+#screenshot-warning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+}
+#screenshot-warning.show { display: flex; }
+.screenshot-warning-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+.screenshot-warning-box h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #1A1A1A; }
+.screenshot-warning-box p { font-size: 14px; color: #6B7280; line-height: 1.6; margin-bottom: 1.5rem; }
+.screenshot-warning-btn { background: #1D9E75; color: #fff; border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+</style>
+
+<!-- Watermark overlay -->
+<div class="iq-watermark" id="iqWatermark">
+  <div class="iq-watermark-text" id="iqWatermarkText">FORTROLIGT · IQSales</div>
+</div>
+
+<!-- Screenshot warning -->
+<div id="screenshot-warning">
+  <div class="screenshot-warning-box">
+    <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+    <h3>Fortroligt indhold</h3>
+    <p>Dette materiale er til intern brug og må ikke deles eller gemmes. Adgang er logget.</p>
+    <button class="screenshot-warning-btn" onclick="document.getElementById('screenshot-warning').classList.remove('show')">Forstået</button>
+  </div>
+</div>
+
+<script>
+// ==================== SCREENSHOT BESKYTTELSE ====================
+
+async function logScreenshotAttempt() {
+  try {
+    const userId = getSupabaseUserId();
+    const name = window._userName || 'Ukendt';
+    await fetch(SUPABASE_URL + '/rest/v1/analytics', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        event_type: 'screenshot_attempt',
+        user_id: userId,
+        metadata: JSON.stringify({ name: name, url: window.location.href, timestamp: new Date().toISOString() })
+      })
+    });
+  } catch(e) {}
+}
+
+function showScreenshotWarning() {
+  document.getElementById('screenshot-warning').classList.add('show');
+  logScreenshotAttempt();
+}
+
+// Show watermark when results are visible
+function updateWatermark() {
+  const resultEl = document.getElementById('result');
+  const watermark = document.getElementById('iqWatermark');
+  const watermarkText = document.getElementById('iqWatermarkText');
+  if (!resultEl || !watermark) return;
+  const hasResults = resultEl.innerHTML.trim().length > 100;
+  watermark.style.display = hasResults ? 'block' : 'none';
+  const name = window._userName ? window._userName + ' · ' : '';
+  const dateStr = new Date().toLocaleDateString('da-DK');
+  watermarkText.textContent = 'FORTROLIGT · ' + name + dateStr + ' · IQSales';
+}
+
+// Intercept keyboard screenshot shortcuts
+document.addEventListener('keydown', function(e) {
+  const resultEl = document.getElementById('result');
+  if (!resultEl || resultEl.innerHTML.trim().length < 100) return;
+
+  // PrtScr
+  if (e.key === 'PrintScreen') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Ctrl+P (print)
+  if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5
+  if (e.metaKey && e.shiftKey && ['3','4','5','s'].includes(e.key)) {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Win: Win+PrtScr, Alt+PrtScr
+  if (e.key === 'PrintScreen') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+});
+
+// Also block context menu on results
+document.addEventListener('contextmenu', function(e) {
+  const resultEl = document.getElementById('result');
+  if (resultEl && resultEl.contains(e.target) && resultEl.innerHTML.trim().length > 100) {
+    e.preventDefault();
+  }
+});
+
+// Watch for result changes to update watermark
+const resultObserver = new MutationObserver(updateWatermark);
+window.addEventListener('DOMContentLoaded', function() {
+  const resultEl = document.getElementById('result');
+  if (resultEl) resultObserver.observe(resultEl, { childList: true, subtree: true });
+});
+</script>
+
 </body>
 </html>
 
