@@ -300,7 +300,11 @@ module.exports = async function handler(req, res) {
             winner,
             sales_tip: item.sales_tip || '',
             objection_tip: item.objection_tip || '',
-            customer_explanation: item.customer_explanation || ''
+            customer_explanation: item.customer_explanation || '',
+            page_a: item.page_a || null,
+            section_a: item.section_a || null,
+            page_b: item.page_b || null,
+            section_b: item.section_b || null
           };
         })
         // FIX 3: Remove items where both explicitly exclude (no vs no) - no difference to show
@@ -545,6 +549,14 @@ Når du skriver status og amount, skal de MATCHE:
 - ❌ DÅRLIGT: "Ukendt dækning", "Ekstra dækning", "Bygning" (uden specifikation)
 - Hvis du finder flere ting i samme kategori → differentier: "Bygning - Stormskade", "Bygning - Solceller"
 
+## 🔥 KRITISK: KILDEREFERENCER (page + section)
+- For HVERT coverage item: angiv PRÆCIS hvilken side og afsnit i betingelserne det stammer fra
+- page_a = sidenummer i selskab A's betingelser (heltal, fx 12)
+- section_a = afsnit/overskrift i selskab A's betingelser (fx "4.3 Stormskade" eller "Afsnit 6 - Selvrisiko")
+- Tilsvarende page_b og section_b for selskab B
+- Hvis du ikke kan finde præcis side/afsnit: sæt page til null og section til null
+- ALDRIG gæt eller opfind sidetal — kun hvad der faktisk står i dokumentet
+
 ## 🔥 KRITISK: AMOUNT FELTER SKAL ALTID VÆRE STRINGS
 - amount_a og amount_b SKAL ALTID være TEXT STRINGS — ALDRIG objekter!
 - ✅ KORREKT: "amount_a": "Dækker op til 50.000 kr med selvrisiko 2.500 kr"
@@ -555,6 +567,14 @@ Når du skriver status og amount, skal de MATCHE:
 - Hvis status er "no" → SKRIV hvad der IKKE dækkes som en TEXT STRING
 - Hvis status er "inib" → sæt amount til null
  
+## 🔥 KRITISK: KILDEREFERENCER (page + section)
+- For HVERT coverage item: angiv PRÆCIS hvilken side og afsnit i betingelserne det stammer fra
+- page_a = sidenummer i selskab A's betingelser (heltal, fx 12)
+- section_a = afsnit/overskrift i selskab A's betingelser (fx "4.3 Stormskade" eller "Afsnit 6 - Selvrisiko")
+- Tilsvarende page_b og section_b for selskab B
+- Hvis du ikke kan finde præcis side/afsnit: sæt page til null og section til null
+- ALDRIG gæt eller opfind sidetal — kun hvad der faktisk står i dokumentet
+
 ## 🔥 KRITISK: AMOUNT FELTER SKAL ALTID VÆRE STRINGS
 - amount_a og amount_b SKAL ALTID være TEXT STRINGS — ALDRIG objekter!
 - ✅ KORREKT: "amount_a": "Dækker op til 50.000 kr med selvrisiko 2.500 kr"
@@ -631,6 +651,10 @@ Returner KUN valid JSON uden markdown backticks:
       "status_b": "yes/no/inib",
       "amount_a": "Beløb eller beskrivelse (eller null hvis inib)",
       "amount_b": "Beløb eller beskrivelse (eller null hvis inib)",
+      "page_a": 12,
+      "section_a": "4.3 Stormskade",
+      "page_b": 8,
+      "section_b": "3.1 Naturskade",
       "winner": "a/b/equal",
       "reason": "Forklaring",
       "sales_tip": "Kort salgstip hvis winner=a",
