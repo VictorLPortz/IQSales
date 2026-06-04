@@ -76,6 +76,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 .cache-old .cache-btn-use{border-color:#E24B4A;color:#A32D2D}
 .cache-old .cache-btn-upload{background:#E24B4A;border-color:#E24B4A;color:#fff}
 .cache-old .cache-btn-upload:hover{background:#A32D2D;border-color:#A32D2D}
+.source-ref{display:flex;align-items:center;gap:5px;padding:4px 8px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border);margin-top:8px;font-size:11px;color:var(--muted);}
+.source-ref i{font-size:12px;flex-shrink:0;}
 .cache-missing .cache-status-badge{background:#DC2626;color:#fff}
 .cache-actions{display:flex;gap:6px;margin-top:8px;justify-content:center}
 .cache-btn{padding:6px 12px;font-size:11px;font-weight:500;border:1.5px solid;border-radius:var(--rs);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
@@ -3522,7 +3524,15 @@ async function retryType(type) {
     const btnBId = 'btn-' + idx + '-b';
     
     // Helper function to get detail text with INIB explanation
-    function getDetailText(amount, status) {
+    
+function buildSourceRef(page, section) {
+  if (!page && !section) return '';
+  var parts = [];
+  if (page) parts.push('Side ' + page);
+  if (section) parts.push('Afsnit ' + section);
+  return '<div class="source-ref"><i class="ti ti-file-text" aria-hidden="true"></i>' + parts.join(' · ') + '</div>';
+}
+function getDetailText(amount, status) {
       if (status === 'inib') {
         return 'Ikke nævnt i betingelserne. Selskabet kan vælge at dække eller afvise i tilfælde af skade – en gråzone du bør få afklaret med kunden, så kunden forstår risici.';
       }
@@ -3534,7 +3544,7 @@ async function retryType(type) {
     return '<div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
       '<div onclick="toggleCard(\'' + cardId + '\', \'' + chevronId + '\')" style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 10px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none;">' +
         '<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">' +
-          '<h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">' + c.category + '</h3>' +
+          '<h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">' + (c.category||'Ukendt dækning') + '</h3>' +
           (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
         '</div>' +
         '<span id="' + chevronId + '" style="font-size: 12px; color: #9CA3AF; transition: transform 0.2s; flex-shrink: 0; display: inline-block;">▼</span>' +
@@ -3553,6 +3563,7 @@ async function retryType(type) {
             '<div style="position: relative;">' +
               '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + getDetailText(c.amount_a, c.status_a) + '</p>' +
               ((c.amount_a && c.amount_a.length > 150) ? '<button onclick="toggleText(\'' + textAId + '\', \'' + btnAId + '\')" id="' + btnAId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+              buildSourceRef(c.page_a, c.section_a) +
             '</div>' +
             ((c.sales_tip && isWinner) ? 
               '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
@@ -3573,6 +3584,7 @@ async function retryType(type) {
             '<div style="position: relative;">' +
               '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + getDetailText(c.amount_b, c.status_b) + '</p>' +
               ((c.amount_b && c.amount_b.length > 150) ? '<button onclick="toggleText(\'' + textBId + '\', \'' + btnBId + '\')" id="' + btnBId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+              buildSourceRef(c.page_b, c.section_b) +
             '</div>' +
             ((c.objection_tip && isLoser) ? 
               '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
@@ -3812,7 +3824,7 @@ function generateCoverageHTML(data) {
       <div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         
         <div style="background: ${headerBg}; border: 2px solid ${headerBorder}; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
-          <h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">${c.category}</h3>
+          <h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">${c.category||'Ukendt dækning'}</h3>
           ${showBadge ? `<span style="font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor}; letter-spacing: 0.03em; text-transform: uppercase;">${badgeText}</span>` : ''}
         </div>
         
@@ -3830,6 +3842,7 @@ function generateCoverageHTML(data) {
               <div style="position: relative;">
                 <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_a, c.status_a)}</p>
                 ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                ${buildSourceRef(c.page_a, c.section_a)}
               </div>
               
               ${(c.sales_tip && isWinner) ? `
@@ -3843,7 +3856,7 @@ function generateCoverageHTML(data) {
                 </div>
               ` : ''}
               
-              <button onclick="openFb('${c.category.replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','a')" class="card-feedback-btn">⚑ Giv feedback</button>
+              <button onclick="openFb('${(c.category||'').replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','a')" class="card-feedback-btn">⚑ Giv feedback</button>
             </div>
             
             <div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">
@@ -3857,6 +3870,7 @@ function generateCoverageHTML(data) {
               <div style="position: relative;">
                 <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_b, c.status_b)}</p>
                 ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                ${buildSourceRef(c.page_b, c.section_b)}
               </div>
               
               ${(c.objection_tip && isLoser) ? `
@@ -3870,7 +3884,7 @@ function generateCoverageHTML(data) {
                 </div>
               ` : ''}
               
-              <button onclick="openFb('${c.category.replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','b')" class="card-feedback-btn">⚑ Giv feedback</button>
+              <button onclick="openFb('${(c.category||'').replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','b')" class="card-feedback-btn">⚑ Giv feedback</button>
             </div>
             
           </div>
@@ -4096,7 +4110,7 @@ function generateCoverageHTML(data) {
     return `
       <div class="${cardClass}">
         <div class="card-header" style="background: ${isTie ? '#FFFFFF' : (isWinner ? '#E1F5EE' : '#FAEEDA')};">
-          <h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">${c.category}</h3>
+          <h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">${c.category||'Ukendt dækning'}</h3>
           ${!isTie ? `<span style="font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor};">${badgeText}</span>` : ''}
         </div>
         
@@ -4249,8 +4263,8 @@ function buildResultHtml(d,prefs){
   const bW=d.coverage.filter(c=>c.winner==='b').length;
   const eq=d.coverage.filter(c=>c.winner==='equal').length;
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
-  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
-  const topRank=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));return r!==-1?r+1:null;};
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>(c.category||'').toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));};
+  const topRank=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));return r!==-1?r+1:null;};
 
   // Apply saved sort order and favorites
   let coverage=[...d.coverage];
@@ -4281,7 +4295,7 @@ function buildResultHtml(d,prefs){
     const aSalesTip=c.sales_tip&&(isTop||c.winner==='a')?`<div class="sales-hint"><span class="sales-hint-icon">→</span><p>${c.sales_tip}</p></div>`:'';
     const confBadge=window._isAdmin&&c.confidence&&c.confidence!=='high'?`<span class="conf-badge conf-${c.confidence}">${c.confidence==='medium'?'⚠ Middel':'⚠ Lav'}</span>`:'';
     const confTip=window._isAdmin&&c.confidence_reason?`<div style="font-size:11px;color:#92400E;margin-top:3px;font-style:italic">Admin: ${c.confidence_reason}</div>`:'';
-    const cat=c.category.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const cat=(c.category||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const coA=d.companyA.replace(/'/g,"\\'");const coB=d.companyB.replace(/'/g,"\\'");
     const fbBtn=`<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}')">⚑ Giv feedback</button>`;
     const isFav=window._prefs&&window._prefs.favorites&&window._prefs.favorites.includes(c.category);
@@ -4331,7 +4345,7 @@ function renderResult(d){window._d=d;document.getElementById('result').innerHTML
 
 function buildSelector(d){
   const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
-  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>(c.category||'').toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));};
   const grid=document.getElementById('sel-grid');
   if(!grid)return;
   grid.innerHTML=d.coverage.map((c,i)=>{const isTop=isTopA(c);return`<label class="sel-item${isTop?' selected':''}" id="sel-${i}" onclick="toggleSel(${i})"><input type="checkbox" id="chk-${i}"${isTop?' checked':''} onclick="event.stopPropagation();toggleSel(${i})"><div class="sel-item-text"><div class="sel-item-cat">${c.category}${isTop?` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">Top</span>`:''}</div><div class="sel-item-det">${(typeof c.amount_a==='string'?c.amount_a:(c.amount_a?.text||'')).substring(0,60)}${(typeof c.amount_a==='string'?c.amount_a:(c.amount_a?.text||'')).length>60?'...':''}</div></div></label>`;}).join('');
@@ -4340,7 +4354,7 @@ function buildSelector(d){
 
 function toggleSel(i){const chk=document.getElementById('chk-'+i);const lbl=document.getElementById('sel-'+i);chk.checked=!chk.checked;lbl.classList.toggle('selected',chk.checked);updateCustomerPreview();}
 function selAll(v){const d=window._d;d.coverage.forEach((_,i)=>{document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
-function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>c.category.toLowerCase().includes(t)||t.includes(c.category.toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
+function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>(c.category||'').toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
 
 function updateCustomerPreview(){
   const d=window._d;if(!d)return;
