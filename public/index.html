@@ -1245,6 +1245,149 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   });
   </script>
 </header>
+<!-- IQFACTS TICKER -->
+<div id="iqfacts-ticker" style="background:#1A3C2E;overflow:hidden;display:flex;align-items:center;height:34px;">
+  <div style="background:#1D9E75;color:#fff;font-size:11px;font-weight:500;padding:0 14px;height:100%;display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.15);">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect width="16" height="16" rx="4" fill="rgba(255,255,255,0.2)"/><path d="M8 3L9.2 5.5H11.8L9.8 7.1L10.5 9.5L8 8L5.5 9.5L6.2 7.1L4.2 5.5H6.8L8 3Z" fill="#9FE1CB"/></svg>
+    IQFacts
+  </div>
+  <div style="overflow:hidden;flex:1;">
+    <div id="iqfacts-track" style="display:flex;align-items:center;animation:iqfacts-scroll 18s linear infinite;white-space:nowrap;">
+      <span style="display:inline-flex;align-items:center;gap:7px;padding:0 24px;font-size:12px;color:rgba(255,255,255,0.85);"><span style="width:3px;height:3px;border-radius:50%;background:#5DCAA5;flex-shrink:0;display:inline-block;"></span>Indlæser statistikker...</span>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes iqfacts-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+#iqfacts-track:hover{animation-play-state:paused;}
+</style>
+
+<script>
+(function(){
+  async function loadTickerData() {
+    try {
+      const sb = window._sb;
+      if (!sb) return;
+
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const weekAgo = new Date(now - 7*24*60*60*1000).toISOString();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
+
+      const [
+        todayRes, totalRes, activeRes,
+        pairRes, typeRes,
+        weekDeptRes, monthDeptRes, yearDeptRes,
+        weekFbRes, monthFbRes, yearFbRes,
+        approvedFbRes
+      ] = await Promise.all([
+        sb.from('analytics').select('id').eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('id').eq('event_type','analysis_completed'),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('insurance_type, company_a, company_b').eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('insurance_type').eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', weekAgo),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', monthStart),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', yearStart),
+        sb.from('feedback').select('user_id').gte('created_at', weekAgo),
+        sb.from('feedback').select('user_id').gte('created_at', monthStart),
+        sb.from('feedback').select('user_id').gte('created_at', yearStart),
+        sb.from('feedback').select('id').eq('status','approved')
+      ]);
+
+      // Helper: top department
+      async function topDept(userIds) {
+        if (!userIds.length) return null;
+        const ids = [...new Set(userIds)];
+        const { data: profiles } = await sb.from('profiles').select('id, department').in('id', ids);
+        if (!profiles) return null;
+        const counts = {};
+        userIds.forEach(uid => {
+          const p = profiles.find(x => x.id === uid);
+          if (p && p.department) counts[p.department] = (counts[p.department]||0)+1;
+        });
+        const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+        return sorted[0]?.[0] || null;
+      }
+
+      // Helper: top item from array of objects
+      function topItem(arr, key) {
+        const counts = {};
+        arr.forEach(r => { if(r[key]) counts[r[key]] = (counts[r[key]]||0)+1; });
+        return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+      }
+      function topPair(arr) {
+        const counts = {};
+        arr.forEach(r => {
+          if(r.company_a && r.company_b) {
+            const key = r.company_a + ' vs ' + r.company_b;
+            counts[key] = (counts[key]||0)+1;
+          }
+        });
+        return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+      }
+
+      const todayCount = todayRes.data?.length || 0;
+      const totalCount = totalRes.data?.length || 0;
+      const activeToday = new Set((activeRes.data||[]).map(r=>r.user_id)).size;
+      const topPairToday = topPair(pairRes.data||[]);
+      const topTypeToday = topItem(typeRes.data||[], 'insurance_type');
+      const approvedFb = approvedFbRes.data?.length || 0;
+      const savedHours = Math.round(totalCount * 0.5);
+
+      const weekUserIds = (weekDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const monthUserIds = (monthDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const yearUserIds = (yearDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const weekFbUserIds = (weekFbRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const monthFbUserIds = (monthFbRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const yearFbUserIds = (yearFbRes.data||[]).map(r=>r.user_id).filter(Boolean);
+
+      const [weekDept, monthDept, yearDept, weekFbDept, monthFbDept, yearFbDept] = await Promise.all([
+        topDept(weekUserIds), topDept(monthUserIds), topDept(yearUserIds),
+        topDept(weekFbUserIds), topDept(monthFbUserIds), topDept(yearFbUserIds)
+      ]);
+
+      // Build ticker items
+      const items = [];
+      if (todayCount > 0) items.push(todayCount + ' analyser lavet i dag');
+      if (topPairToday) items.push('Mest analyseret i dag: ' + topPairToday);
+      if (topTypeToday) items.push('Mest brugte type i dag: ' + topTypeToday);
+      if (activeToday > 0) items.push(activeToday + ' kolleger aktive i dag');
+      if (weekDept) items.push('Flest analyser denne uge: ' + weekDept);
+      if (monthDept) items.push('Flest analyser denne måned: ' + monthDept);
+      if (yearDept) items.push('Flest analyser i år: ' + yearDept);
+      if (totalCount > 0) items.push(totalCount + ' analyser siden IQSales blev lanceret');
+      if (savedHours > 0) items.push('Ca. ' + savedHours + ' timer sparet i analysetid');
+      if (weekFbDept) items.push('Flest feedback denne uge: ' + weekFbDept);
+      if (monthFbDept) items.push('Flest feedback denne måned: ' + monthFbDept);
+      if (yearFbDept) items.push('Flest feedback i år: ' + yearFbDept);
+      if (approvedFb > 0) items.push(approvedFb + ' dækninger forbedret via jeres feedback');
+
+      if (!items.length) {
+        document.getElementById('iqfacts-ticker').style.display = 'none';
+        return;
+      }
+
+      // Double for seamless loop
+      const dot = '<span style="width:3px;height:3px;border-radius:50%;background:#5DCAA5;flex-shrink:0;display:inline-block;"></span>';
+      const html = [...items, ...items].map(function(txt){
+        return '<span style="display:inline-flex;align-items:center;gap:7px;padding:0 24px;font-size:12px;color:rgba(255,255,255,0.85);">' + dot + txt + '</span>';
+      }).join('');
+
+      document.getElementById('iqfacts-track').innerHTML = html;
+    } catch(e) {
+      console.error('IQFacts ticker error:', e);
+      document.getElementById('iqfacts-ticker').style.display = 'none';
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', function(){
+    setTimeout(loadTickerData, 1500);
+  });
+})();
+</script>
+
 <main>
 
   <!-- INTERN BRUG DISCLAIMER -->
