@@ -1260,14 +1260,14 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         weekFbRes, monthFbRes, yearFbRes,
         approvedFbRes
       ] = await Promise.all([
-        sb.from('analytics').select('id').eq('event_type','analysis_completed').gte('timestamp', todayStr),
-        sb.from('analytics').select('id').eq('event_type','analysis_completed'),
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed'),
         sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', todayStr),
         sb.from('analytics').select('insurance_type, company_a, company_b').eq('event_type','analysis_completed').gte('timestamp', todayStr),
         sb.from('analytics').select('insurance_type').eq('event_type','analysis_completed').gte('timestamp', todayStr),
-        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', weekAgo),
-        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', monthStart),
-        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', yearStart),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', weekAgo).limit(2000),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', monthStart).limit(2000),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', yearStart).limit(2000),
         sb.from('feedback').select('user_id').gte('created_at', weekAgo),
         sb.from('feedback').select('user_id').gte('created_at', monthStart),
         sb.from('feedback').select('user_id').gte('created_at', yearStart),
@@ -1306,8 +1306,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
       }
 
-      const todayCount = todayRes.data?.length || 0;
-      const totalCount = totalRes.data?.length || 0;
+      const todayCount = todayRes.count || 0;
+      const totalCount = totalRes.count || totalRes.data?.length || 0;
       const activeToday = new Set((activeRes.data||[]).map(r=>r.user_id)).size;
       const topPairToday = topPair(pairRes.data||[]);
       const topTypeToday = topItem(typeRes.data||[], 'insurance_type');
