@@ -874,11 +874,16 @@
           </div>
         </div>
 
-        <div class="stats" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="stats" style="grid-template-columns: repeat(4, 1fr);">
           <div class="stat-card">
             <div class="stat-label">Total omkostning</div>
             <div class="stat-value" id="apiCostTotal">— kr</div>
             <div class="stat-subtext" id="apiCostPeriod">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Analyser i perioden</div>
+            <div class="stat-value" id="analysesInPeriod">—</div>
+            <div class="stat-subtext" id="analysesInPeriodSub">analyser</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Cache hit rate</div>
@@ -1934,6 +1939,7 @@
         document.getElementById('successRate').textContent = '—%';
         document.getElementById('uniqueVisitors').textContent = '0';
       document.getElementById('screenshotAttempts').textContent = '0';
+      document.getElementById('analysesInPeriod').textContent = '—';
         
         const topTable = document.getElementById('topAnalysesTable');
         topTable.innerHTML = '<tr><td colspan="7"><div class="empty-state">Ingen analyser i denne periode</div></td></tr>';
@@ -1946,6 +1952,7 @@
 
       // Calculate stats
       const completed = analyses.filter(a => a.event_type === 'analysis_completed');
+      document.getElementById('analysesInPeriod').textContent = completed.length;
       const failed = analyses.filter(a => a.event_type === 'analysis_failed');
       const pageViews = analyses.filter(a => a.event_type === 'page_view');
 
