@@ -1154,13 +1154,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 </div>
 
 <!-- VELKOMSTBESKED -->
-<div id="greeting-bar" style="display:none;background:#fff;border-bottom:1px solid #E3E1D9;padding:10px 20px;align-items:center;gap:10px;">
-  <div style="width:7px;height:7px;border-radius:50%;background:#1D9E75;flex-shrink:0;"></div>
-  <p id="greeting-text" style="font-size:14px;color:#141412;margin:0;"></p>
-  <button onclick="document.getElementById('greeting-bar').style.display='none';localStorage.setItem('iqsales_greeting_closed_'+new Date().toDateString(),'1');" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#A09E96;padding:2px;display:flex;align-items:center;" aria-label="Luk besked">
-    <i class="ti ti-x" style="font-size:16px;" aria-hidden="true"></i>
-  </button>
-</div>
+
 
 <script>
 (function(){
@@ -1188,18 +1182,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       overlay.style.display = 'flex';
     }
 
-    // Velkomstbesked — vis kun én gang per dag
-    var todayKey = 'iqsales_greeting_closed_' + new Date().toDateString();
-    var greetingClosed = localStorage.getItem(todayKey);
-    if (!greetingClosed) {
-      var bar = document.getElementById('greeting-bar');
-      bar.style.display = 'flex';
-      // Sæt tekst med navn hvis tilgængeligt — opdateres nedenfor når session loades
-      document.getElementById('greeting-text').innerHTML =
-        '<strong>' + getGreeting('', new Date().getHours()) + '</strong>';
-    }
-
-    // Hent navn fra session og opdater begge steder
+    // Hent navn fra session til brug i quips
     if (window._sb) {
       window._sb.auth.getSession().then(function(res) {
         var session = res.data && res.data.session;
@@ -1207,11 +1190,6 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         window._sb.from('profiles').select('full_name').eq('id', session.user.id).single().then(function(res2) {
           var name = res2.data && res2.data.full_name ? res2.data.full_name : '';
           window._userName = name;
-          var greetingEl = document.getElementById('greeting-text');
-          if (greetingEl && greetingEl.parentElement.style.display !== 'none') {
-            greetingEl.innerHTML = '<strong>' + getGreeting(name, new Date().getHours()) + '</strong>';
-          }
-          // showDayQuip called from quip script's own DOMContentLoaded
         });
       });
     }
