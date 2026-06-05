@@ -151,21 +151,41 @@ module.exports = async function handler(req, res) {
       throw new Error('PDFs not found in database');
     }
  
-    // Fetch approved feedback for this insurance type
-    const feedbackResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(type)}&status=eq.approved&select=*`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      }
-    );
- 
+    // Fetch approved feedback + vigtig/ligegyldig ratings for this insurance type
+    const [feedbackResponse, importantResponse, irrelevantResponse] = await Promise.all([
+      fetch(
+        `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(type)}&status=eq.approved&select=*`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      ),
+      fetch(
+        `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(type)}&issue_type=eq.priority_high&select=category`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      ),
+      fetch(
+        `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(type)}&issue_type=eq.priority_low&select=category`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      )
+    ]);
+
     const feedbacks = feedbackResponse.ok ? await feedbackResponse.json() : [];
+    const importantRaw = importantResponse.ok ? await importantResponse.json() : [];
+    const irrelevantRaw = irrelevantResponse.ok ? await irrelevantResponse.json() : [];
+
+    // Count votes per category
+    const importantCounts = {};
+    importantRaw.forEach(f => { if(f.category) importantCounts[f.category] = (importantCounts[f.category]||0)+1; });
+    const irrelevantCounts = {};
+    irrelevantRaw.forEach(f => { if(f.category) irrelevantCounts[f.category] = (irrelevantCounts[f.category]||0)+1; });
+
+    // Top 5 vigtigste og top 5 mest ligegyldige
+    const topImportant = Object.entries(importantCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([cat])=>cat);
+    const topIrrelevant = Object.entries(irrelevantCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([cat])=>cat);
+
+    console.log(`📊 Vigtige dækninger: ${topImportant.join(', ')}`);
+    console.log(`📊 Ligegyldige dækninger: ${topIrrelevant.join(', ')}`);
  
     // Build prompt with type-specific instructions
-    let prompt = buildPrompt(companyA, companyB, type, pdfA.full_text, pdfB.full_text, feedbacks);
+    let prompt = buildPrompt(companyA, companyB, type, pdfA.full_text, pdfB.full_text, feedbacks, topImportant, topIrrelevant);
  
     console.log(`🔄 Starting analysis: ${companyA} vs ${companyB} for ${type}`);
  
@@ -399,7 +419,7 @@ module.exports = async function handler(req, res) {
 // PROMPT BUILDER WITH TYPE-SPECIFIC INSTRUCTIONS
 // ═══════════════════════════════════════════════════════════════
  
-function buildPrompt(companyA, companyB, type, textA, textB, feedbacks) {
+function buildPrompt(companyA, companyB, type, textA, textB, feedbacks, topImportant, topIrrelevant) {
   let prompt = `Sammenlign ${companyA} og ${companyB} for ${type}.
  
 SELSKAB A (${companyA}) BETINGELSER:
@@ -416,6 +436,23 @@ ${textB.substring(0, 100000)}
     });
   }
  
+  // Add vigtig/ligegyldig ratings
+  if (topImportant && topImportant.length > 0) {
+    prompt += `\n\nSÆLGERNES PRIORITETER (baseret på afstemninger):\n`;
+    prompt += `FREMHÆV SÆRLIGT disse dækninger - sælgerne finder dem vigtige for kunderne:\n`;
+    topImportant.forEach(function(cat, i) {
+      prompt += `${i+1}. ${cat}\n`;
+    });
+  }
+
+  if (topIrrelevant && topIrrelevant.length > 0) {
+    prompt += `\n\nNEDPRIORITÉR disse dækninger - sælgerne finder dem ligegyldige:\n`;
+    topIrrelevant.forEach(function(cat, i) {
+      prompt += `${i+1}. ${cat}\n`;
+    });
+    prompt += `(Medtag kun hvis der er en markant forskel)\n`;
+  }
+
   // Add type-specific instructions
   const typeGuide = getTypeSpecificGuide(type);
   if (typeGuide) {
