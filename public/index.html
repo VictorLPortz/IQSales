@@ -1254,13 +1254,15 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
 
       const [
-        todayRes, totalRes, activeRes,
+        todayRes, weekCountRes, monthCountRes, totalRes, activeRes,
         pairRes, typeRes,
         weekDeptRes, monthDeptRes, yearDeptRes,
         weekFbRes, monthFbRes, yearFbRes,
-        approvedFbRes
+        approvedFbRes, newTermsRes
       ] = await Promise.all([
         sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed').gte('timestamp', weekAgo),
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed').gte('timestamp', monthStart),
         sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed'),
         sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', todayStr),
         sb.from('analytics').select('insurance_type, company_a, company_b').eq('event_type','analysis_completed').gte('timestamp', todayStr),
@@ -1271,7 +1273,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         sb.from('feedback').select('user_id').gte('created_at', weekAgo),
         sb.from('feedback').select('user_id').gte('created_at', monthStart),
         sb.from('feedback').select('user_id').gte('created_at', yearStart),
-        sb.from('feedback').select('id').eq('status','approved')
+        sb.from('feedback').select('id').eq('status','approved'),
+        sb.from('insurance_terms').select('id', { count: 'exact', head: true }).gte('updated_at', weekAgo)
       ]);
 
       // Helper: top department
@@ -1307,7 +1310,10 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       }
 
       const todayCount = todayRes.count || 0;
+      const weekCount = weekCountRes.count || 0;
+      const monthCount = monthCountRes.count || 0;
       const totalCount = totalRes.count || totalRes.data?.length || 0;
+      const newTermsCount = newTermsRes.count || 0;
       const activeToday = new Set((activeRes.data||[]).map(r=>r.user_id)).size;
       const topPairToday = topPair(pairRes.data||[]);
       const topTypeToday = topItem(typeRes.data||[], 'insurance_type');
@@ -1329,6 +1335,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       // Build ticker items
       const items = [];
       if (todayCount > 0) items.push(todayCount + ' analyser lavet i dag');
+      if (weekCount > 0) items.push(weekCount + ' analyser lavet denne uge');
+      if (monthCount > 0) items.push(monthCount + ' analyser lavet denne måned');
       if (topPairToday) items.push('Mest analyseret i dag: ' + topPairToday);
       if (topTypeToday) items.push('Mest brugte type i dag: ' + topTypeToday);
       if (activeToday > 0) items.push(activeToday + ' kolleger aktive i dag');
@@ -1341,6 +1349,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       if (monthFbDept) items.push('Flest feedback denne måned: ' + monthFbDept);
       if (yearFbDept) items.push('Flest feedback i år: ' + yearFbDept);
       if (approvedFb > 0) items.push(approvedFb + ' dækninger forbedret via jeres feedback');
+      if (newTermsCount > 0) items.push(newTermsCount + ' nye betingelser uploadet denne uge');
 
       if (!items.length) {
         document.getElementById('iqfacts-ticker').style.display = 'none';
