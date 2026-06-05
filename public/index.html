@@ -1349,7 +1349,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
       // Double for seamless loop
       const dot = '<span style="width:3px;height:3px;border-radius:50%;background:#5DCAA5;flex-shrink:0;display:inline-block;"></span>';
-      const html = [...items, ...items].map(function(txt){
+      const html = [...items, ...items, ...items, ...items].map(function(txt){
         return '<span style="display:inline-flex;align-items:center;gap:7px;padding:0 24px;font-size:12px;color:rgba(255,255,255,0.85);">' + dot + txt + '</span>';
       }).join('');
 
