@@ -810,6 +810,42 @@
         <div id="feedbackList">
           <div class="empty-state">Indlæser feedback...</div>
         </div>
+
+        <!-- Dækningsvurderinger -->
+        <div style="margin-top:32px;">
+          <h3 style="font-size:18px;font-weight:600;color:var(--text);margin-bottom:4px;">Dækningsvurderinger</h3>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">Hvad sælgerne finder vigtigst og mest ligegyldigt i analyserne</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+              <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">👍</span>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:var(--text);">Vigtigste dækninger</div>
+                  <div style="font-size:12px;color:var(--muted);">Flest "Vigtig"-stemmer</div>
+                </div>
+                <div style="margin-left:auto;font-size:22px;font-weight:700;color:#1D9E75;" id="importantTotal">—</div>
+              </div>
+              <div id="importantList" style="padding:8px 0;">
+                <div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">Indlæser...</div>
+              </div>
+            </div>
+
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+              <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">👎</span>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:var(--text);">Mest ligegyldige dækninger</div>
+                  <div style="font-size:12px;color:var(--muted);">Flest "Ligegyldig"-stemmer</div>
+                </div>
+                <div style="margin-left:auto;font-size:22px;font-weight:700;color:#A32D2D;" id="irrelevantTotal">—</div>
+              </div>
+              <div id="irrelevantList" style="padding:8px 0;">
+                <div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">Indlæser...</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- SUBTAB: API Økonomi -->
@@ -1177,7 +1213,7 @@
 
     if (tabName === 'stats') {
       loadStats();
-      if (currentSubtab === 'feedback') loadFeedback();
+      if (currentSubtab === 'feedback') { loadFeedback(); loadCoverageRatings(); }
       if (currentSubtab === 'api') loadAPIStats();
     }
     if (tabName === 'pdfs') loadPDFStatus();
@@ -1192,7 +1228,7 @@
     document.querySelectorAll('.subtab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(`subtab-${subtabName}`).classList.add('active');
 
-    if (subtabName === 'feedback') loadFeedback();
+    if (subtabName === 'feedback') { loadFeedback(); loadCoverageRatings(); }
     if (subtabName === 'api') loadAPIStats();
     if (subtabName === 'protection') loadProtectionData();
   }
@@ -1600,6 +1636,57 @@
 
     displayedCount = filtered.length; // Show all filtered results
     renderEmployees(filtered);
+  }
+
+  async function loadCoverageRatings() {
+    try {
+      const [impRes, irrRes] = await Promise.all([
+        sb.from('feedback').select('category, insurance_type').eq('issue_type', 'priority_high'),
+        sb.from('feedback').select('category, insurance_type').eq('issue_type', 'priority_low')
+      ]);
+
+      function buildTopList(data) {
+        const counts = {};
+        (data || []).forEach(item => {
+          const category = item.category || 'Ukendt';
+          counts[category] = (counts[category] || 0) + 1;
+        });
+        return Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+      }
+
+      const impData = impRes.data || [];
+      const irrData = irrRes.data || [];
+      const impTop = buildTopList(impData);
+      const irrTop = buildTopList(irrData);
+
+      document.getElementById('importantTotal').textContent = impData.length;
+      document.getElementById('irrelevantTotal').textContent = irrData.length;
+
+      function renderList(items, elId, color) {
+        const el = document.getElementById(elId);
+        if (!items.length) {
+          el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">Ingen stemmer endnu</div>';
+          return;
+        }
+        const max = items[0][1];
+        el.innerHTML = items.map(([cat, count], i) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 18px;border-bottom:1px solid var(--border);">
+            <div style="width:20px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);">${i+1}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</div>
+              <div style="height:4px;background:#E8E6DF;border-radius:2px;margin-top:4px;overflow:hidden;">
+                <div style="height:100%;width:${Math.round(count/max*100)}%;background:${color};border-radius:2px;"></div>
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:${color};background:${color}22;padding:2px 8px;border-radius:6px;flex-shrink:0;">${count}x</div>
+          </div>`).join('');
+      }
+
+      renderList(impTop, 'importantList', '#1D9E75');
+      renderList(irrTop, 'irrelevantList', '#A32D2D');
+    } catch(e) {
+      console.error('Coverage ratings error:', e);
+    }
   }
 
   async function loadFeedback() {
