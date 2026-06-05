@@ -1211,7 +1211,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
           if (greetingEl && greetingEl.parentElement.style.display !== 'none') {
             greetingEl.innerHTML = '<strong>' + getGreeting(name, new Date().getHours()) + '</strong>';
           }
-          if (typeof showDayQuip === 'function') showDayQuip(name);
+          // showDayQuip called from quip script's own DOMContentLoaded
         });
       });
     }
