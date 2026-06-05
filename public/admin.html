@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IQSales — Admin</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -617,7 +618,7 @@
         <p>Opret og administrer adgang til IQSales</p>
       </div>
 
-      <div class="stats">
+      <div class="stats" style="grid-template-columns: repeat(5, 1fr);">
         <div class="stat-card">
           <div class="stat-label">Aktive brugere</div>
           <div class="stat-value" id="statTotal">—</div>
@@ -633,6 +634,10 @@
         <div class="stat-card">
           <div class="stat-label">Logins i dag</div>
           <div class="stat-value" id="statLogins">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Analyser i dag</div>
+          <div class="stat-value" id="statAnalysesToday">—</div>
         </div>
       </div>
 
@@ -1323,6 +1328,14 @@
       .select('id')
       .gte('logged_in_at', today);
     document.getElementById('statLogins').textContent = logins?.length || 0;
+
+    // Analyses today
+    const { data: analysesToday } = await sb
+      .from('analytics')
+      .select('id')
+      .eq('event_type', 'analysis_completed')
+      .gte('timestamp', today);
+    document.getElementById('statAnalysesToday').textContent = analysesToday?.length || 0;
 
     document.getElementById('userCount').textContent = `${profiles.length} bruger${profiles.length !== 1 ? 'e' : ''}`;
 
