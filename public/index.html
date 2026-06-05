@@ -5526,16 +5526,21 @@ function showDayQuip(name){
 }
 
 window.addEventListener('DOMContentLoaded',function(){
-  if(window._sb){
-    window._sb.auth.getSession().then(function(res){
-      var session=res.data&&res.data.session;if(!session)return;
-      window._sb.from('profiles').select('full_name').eq('id',session.user.id).single().then(function(res2){
-        var name=res2.data&&res2.data.full_name?res2.data.full_name.split(' ')[0]:'';
-        window._userName=name;
-        showDayQuip(name);
+  setTimeout(function(){
+    var name = window._userName || '';
+    if(name) {
+      showDayQuip(name.split(' ')[0]);
+    } else if(window._sb){
+      window._sb.auth.getSession().then(function(res){
+        var session=res.data&&res.data.session;if(!session)return;
+        window._sb.from('profiles').select('full_name').eq('id',session.user.id).single().then(function(res2){
+          var name=res2.data&&res2.data.full_name?res2.data.full_name.split(' ')[0]:'';
+          window._userName = window._userName || name;
+          showDayQuip(name);
+        });
       });
-    });
-  }
+    }
+  }, 500);
 });
 
 var _quipToggleDone=false;
