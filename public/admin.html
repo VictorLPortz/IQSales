@@ -1922,12 +1922,13 @@
     // Calculate date range
     let startDate, endDate;
     const now = new Date();
-    endDate = now.toISOString();
+    endDate = '2099-12-31T23:59:59.999Z'; // default: no upper limit
 
     if (filter === 'today') {
       const todayStart = new Date(now);
       todayStart.setHours(0, 0, 0, 0);
       startDate = todayStart.toISOString();
+      endDate = now.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'i dag';
     } else if (filter === 'yesterday') {
       const yesterdayStart = new Date(now);
@@ -1939,22 +1940,21 @@
       endDate = yesterdayEnd.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'i går';
     } else if (filter === 'week') {
-      // Start from Monday this week
       const weekStart = new Date(now);
-      const day = weekStart.getDay(); // 0=Sun, 1=Mon...
-      const diff = day === 0 ? -6 : 1 - day; // Monday
+      const day = weekStart.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
       weekStart.setDate(weekStart.getDate() + diff);
       weekStart.setHours(0, 0, 0, 0);
       startDate = weekStart.toISOString();
+      endDate = now.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'denne uge';
     } else if (filter === 'month') {
-      // Start from 1st of current month
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       monthStart.setHours(0, 0, 0, 0);
       startDate = monthStart.toISOString();
+      endDate = now.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'denne måned';
     } else if (filter === 'lastweek') {
-      // Entire previous week (Mon–Sun)
       const lastWeekEnd = new Date(now);
       const dayOfWeek = lastWeekEnd.getDay();
       const diffToLastSun = dayOfWeek === 0 ? -7 : -(dayOfWeek);
@@ -1967,7 +1967,6 @@
       endDate = lastWeekEnd.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'sidste uge';
     } else if (filter === 'lastmonth') {
-      // Entire previous month
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       lastMonthStart.setHours(0, 0, 0, 0);
       const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -1976,13 +1975,10 @@
       endDate = lastMonthEnd.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'sidste måned';
     } else if (filter === 'year') {
-      // From Jan 1st of current year
-      const yearStart = new Date(now.getFullYear(), 0, 1);
-      yearStart.setHours(0, 0, 0, 0);
-      startDate = yearStart.toISOString();
+      startDate = now.getFullYear() + '-01-01T00:00:00.000Z';
+      endDate = now.toISOString();
       document.getElementById('apiCostPeriod').textContent = 'dette år';
     } else if (filter === 'lastyear') {
-      // Entire previous year
       const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
       lastYearStart.setHours(0, 0, 0, 0);
       const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31);
@@ -1992,6 +1988,7 @@
       document.getElementById('apiCostPeriod').textContent = 'sidste år';
     } else if (filter === 'all') {
       startDate = '2020-01-01T00:00:00.000Z';
+      endDate = '2099-12-31T23:59:59.999Z';
       document.getElementById('apiCostPeriod').textContent = 'altid';
     } else if (filter === 'custom') {
       const from = document.getElementById('dateFrom').value;
