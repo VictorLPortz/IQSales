@@ -1230,14 +1230,14 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     IQFacts
   </div>
   <div style="overflow:hidden;flex:1;">
-    <div id="iqfacts-track" style="display:flex;align-items:center;animation:iqfacts-scroll 18s linear infinite;white-space:nowrap;">
+    <div id="iqfacts-track" style="display:flex;align-items:center;animation:iqfacts-scroll 25s linear infinite;white-space:nowrap;">
       <span style="display:inline-flex;align-items:center;gap:7px;padding:0 24px;font-size:12px;color:rgba(255,255,255,0.85);"><span style="width:3px;height:3px;border-radius:50%;background:#5DCAA5;flex-shrink:0;display:inline-block;"></span>Indlæser statistikker...</span>
     </div>
   </div>
 </div>
 <style>
 @keyframes iqfacts-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-#iqfacts-track:hover{animation-play-state:paused;}
+#iqfacts-track:hover{animation-play-state:paused !important;}
 </style>
 
 <script>
@@ -1284,7 +1284,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const ids = [...new Set(userIds)].filter(id => uuidRegex.test(id));
         if (!ids.length) return null;
-        const { data: profiles } = await sb.from('profiles').select('id, department').in('id', ids);
+        // Exclude admins - only count sælgere
+        const { data: profiles } = await sb.from('profiles').select('id, department').in('id', ids).neq('role', 'admin');
         if (!profiles) return null;
         const counts = {};
         userIds.forEach(uid => {
@@ -1321,7 +1322,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       const topPairToday = topPair(pairRes.data||[]);
       const topTypeToday = topItem(typeRes.data||[], 'insurance_type');
       const approvedFb = approvedFbRes.data?.length || 0;
-      const savedHours = Math.round(totalCount * 0.5);
+      const savedHours = Math.round(totalCount * 5 / 60);
 
       const weekUserIds = (weekDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
       const monthUserIds = (monthDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
