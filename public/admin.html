@@ -1349,7 +1349,7 @@
       .from('analytics')
       .select('id')
       .eq('event_type', 'analysis_completed')
-      .gte('timestamp', today);
+      .gte('created_at', today);
     document.getElementById('statAnalysesToday').textContent = analysesToday?.length || 0;
 
     document.getElementById('userCount').textContent = `${profiles.length} bruger${profiles.length !== 1 ? 'e' : ''}`;
@@ -1591,8 +1591,8 @@
       const { data: analytics, error } = await sb
         .from('analytics')
         .select('user_id, event_type, cost_estimate')
-        .gte('timestamp', startDate)
-        .lte('timestamp', endDate)
+        .gte('created_at', startDate)
+        .lte('created_at', endDate)
         .eq('event_type', 'analysis_completed');
 
       if (error) throw error;
@@ -2004,9 +2004,9 @@
       const { data: analyses, error } = await sb
         .from('analytics')
         .select('*')
-        .gte('timestamp', startDate)
-        .lte('timestamp', endDate)
-        .order('timestamp', { ascending: true });
+        .gte('created_at', startDate)
+        .lte('created_at', endDate)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
 
@@ -2083,7 +2083,7 @@
         const { data: last30Data } = await sb
           .from('analytics')
           .select('timestamp, cost_estimate, event_type, user_id')
-          .gte('timestamp', thirtyDaysAgo.toISOString())
+          .gte('created_at', thirtyDaysAgo.toISOString())
           .eq('event_type', 'analysis_completed');
         if (last30Data && last30Data.length > 0) forecastBase = last30Data;
       } catch(e) { /* fallback til valgt periode */ }
@@ -2132,7 +2132,7 @@
       const perAnalysisCost = forecastCompleted.length > 0 ? forecastTotalCost / forecastCompleted.length : 0;
       const forecastUsers = new Set(forecastCompleted.map(a => a.user_id).filter(Boolean));
       const totalUsers = forecastUsers.size || 1;
-      const daysWithData = new Set(forecastCompleted.map(a => (a.timestamp||'').substring(0,10)).filter(Boolean)).size;
+      const daysWithData = new Set(forecastCompleted.map(a => (a.created_at||'').substring(0,10)).filter(Boolean)).size;
 
       document.getElementById('forecastMonthly').textContent = monthlyForecast.toFixed(2) + ' kr';
       document.getElementById('forecastDaily').textContent = dailyAvgCost.toFixed(2) + ' kr';
@@ -2143,7 +2143,7 @@
       // Daily cost chart
       const dailyCosts = {};
       completed.forEach(a => {
-        const date = new Date(a.timestamp).toLocaleDateString('da-DK');
+        const date = new Date(a.created_at).toLocaleDateString('da-DK');
         dailyCosts[date] = (dailyCosts[date] || 0) + (a.cost_estimate || 0);
       });
 
@@ -2181,7 +2181,7 @@
       const dailyCache = {};
       const dailyTotal = {};
       completed.forEach(a => {
-        const date = new Date(a.timestamp).toLocaleDateString('da-DK');
+        const date = new Date(a.created_at).toLocaleDateString('da-DK');
         dailyTotal[date] = (dailyTotal[date] || 0) + 1;
         if (a.cache_used) {
           dailyCache[date] = (dailyCache[date] || 0) + 1;
@@ -2239,7 +2239,7 @@
             <td style="font-weight:600;">${((a.cost_estimate || 0) * 7).toFixed(2)} kr</td>
             <td>${a.response_time_ms ? (a.response_time_ms / 1000).toFixed(1) + 's' : '—'}</td>
             <td>${a.cache_used ? '<span class="badge badge-ready">Cache</span>' : '—'}</td>
-            <td style="font-size:12px;color:var(--muted)">${formatDate(a.timestamp)}</td>
+            <td style="font-size:12px;color:var(--muted)">${formatDate(a.created_at)}</td>
           </tr>
         `).join('');
       }
