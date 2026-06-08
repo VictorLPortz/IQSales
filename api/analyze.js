@@ -75,7 +75,8 @@ module.exports = async function handler(req, res) {
     }
  
     // Check cache first
-    const cacheKey = `${type}-${companyA}-${companyB}`;
+    const CACHE_VERSION = 'v2'; // bump this to invalidate cache (e.g. when prompt changes)
+    const cacheKey = `${CACHE_VERSION}-${type}-${companyA}-${companyB}`;
     const cacheResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/analysis_cache?insurance_type=eq.${encodeURIComponent(type)}&company_a=eq.${encodeURIComponent(companyA)}&company_b=eq.${encodeURIComponent(companyB)}&select=*`,
       {
@@ -90,7 +91,15 @@ module.exports = async function handler(req, res) {
       const cacheData = await cacheResponse.json();
       if (cacheData && cacheData.length > 0) {
         const cached = cacheData[0];
-        
+
+        // Invalidate cache if result lacks source references (old format without page_a/section_a)
+        const firstItem = cached.result?.coverage?.[0];
+        const hasSourceRefs = firstItem && ('page_a' in firstItem);
+        if (!hasSourceRefs) {
+          console.log('🔄 Cache stale: missing source refs, re-analyzing...');
+          // Fall through to fresh analysis below
+        } else {
+
         // Log cache hit
         if (userId) {
           await fetch(`${SUPABASE_URL}/rest/v1/analytics`, {
@@ -116,6 +125,7 @@ module.exports = async function handler(req, res) {
         }
  
         return res.status(200).json(cached.result);
+        }
       }
     }
  
