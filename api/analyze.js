@@ -54,26 +54,58 @@ module.exports = async function handler(req, res) {
     const startTime = Date.now();
     let userId = null;
     
-    // Get user ID from auth header
+    // Get user ID from auth header — REQUIRED
     const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      try {
-        const verifyResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (verifyResponse.ok) {
-          const userData = await verifyResponse.json();
-          userId = userData.id;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Ikke autoriseret. Log ind for at bruge IQSales.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    try {
+      const verifyResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${token}`
         }
-      } catch (error) {
-        console.error('Auth verification failed:', error);
+      });
+      if (!verifyResponse.ok) {
+        return res.status(401).json({ error: 'Ugyldig session. Log ind igen.' });
       }
+      const userData = await verifyResponse.json();
+      if (!userData.id) {
+        return res.status(401).json({ error: 'Ugyldig session. Log ind igen.' });
+      }
+      userId = userData.id;
+    } catch (error) {
+      console.error('Auth verification failed:', error);
+      return res.status(401).json({ error: 'Kunne ikke verificere login. Prøv igen.' });
     }
  
+    // Rate limit: maks 50 analyser pr. bruger pr. dag (150 for admins)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [rateLimitResponse, profileResponse] = await Promise.all([
+      fetch(
+        `${SUPABASE_URL}/rest/v1/analytics?user_id=eq.${userId}&event_type=eq.analysis_completed&timestamp=gte.${todayStart.toISOString()}&select=id`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      ),
+      fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      )
+    ]);
+
+    if (rateLimitResponse.ok && profileResponse.ok) {
+      const todayAnalyses = await rateLimitResponse.json();
+      const profileData = await profileResponse.json();
+      const isAdmin = profileData?.[0]?.role === 'admin';
+      const dailyLimit = isAdmin ? 150 : 50;
+      if (todayAnalyses.length >= dailyLimit) {
+        return res.status(429).json({ error: `Daglig grænse på ${dailyLimit} analyser nået. Prøv igen i morgen.` });
+      }
+    }
+
     // Check cache first
     const CACHE_VERSION = 'v2'; // bump this to invalidate cache (e.g. when prompt changes)
     const cacheKey = `${CACHE_VERSION}-${type}-${companyA}-${companyB}`;
