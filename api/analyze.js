@@ -210,7 +210,7 @@ module.exports = async function handler(req, res) {
         console.log(`🔄 API attempt ${attempt}/${maxAttempts}`);
         message = await anthropic.messages.create({
           model: 'claude-sonnet-4-6',
-          max_tokens: 8000,
+          max_tokens: 16000,
           system: getSystemPrompt(type),
           messages: [{
             role: 'user',
@@ -556,7 +556,7 @@ Hvis A dækker (selv med begrænsninger) OG B eksplicit undtager → winner=a
 Eksempel:
 - A: "Dækket op til 10% - dog ikke fra ubeboet bolig" → status_a=yes
 - B: "Ikke dækket - huset anses ubeboet ved weekendophold" → status_b=no
-→ winner=a ← A dækker, B undtager!
+→ winner=a (A dækker, B undtager!)
  
 ## 📊 Status-definitioner (brug KUN disse 4):
 - **yes**: Dækkes eksplicit med konkrete vilkår
@@ -659,13 +659,13 @@ Når du skriver status og amount, skal de MATCHE:
 ## 📍 KILDEREFERENCER (page_a, section_a, page_b, section_b)
 For HVER coverage item skal du angive præcis hvor i betingelserne du fandt informationen:
 - **page_a / page_b**: Sidenummer som heltal (f.eks. 12). Sæt null hvis ikke angivet i dokumentet.
-- **section_a / section_b**: Det præcise afsnits- eller paragrafnavn (f.eks. "§ 4.2 Stormskade" eller "Afsnit 3 - Branddækning"). Sæt null hvis ikke tydeligt angivet.
+- **section_a / section_b**: Det præcise afsnits- eller paragrafnavn (f.eks. "Afsnit 4.2 - Stormskade" eller "Afsnit 3 - Branddækning"). Sæt null hvis ikke tydeligt angivet.
 
 ✅ KORREKT eksempel:
 {
   "category": "Stormskade",
   "page_a": 8,
-  "section_a": "§ 4 Naturfænomener",
+  "section_a": "Afsnit 4 - Naturfaenomener",
   "page_b": 12,
   "section_b": "Afsnit 6.1 Storm og orkan"
 }
@@ -690,10 +690,10 @@ Returner KUN valid JSON uden markdown backticks:
       "sales_tip": "Kort salgstip hvis winner=a",
       "objection_tip": "Håndtering hvis winner=b",
       "customer_explanation": "Simpel forklaring",
-      "page_a": "Sidenummer i Selskab A betingelser (eller null)",
-      "section_a": "Afsnits-/paragrafnavn i Selskab A betingelser (eller null)",
-      "page_b": "Sidenummer i Selskab B betingelser (eller null)",
-      "section_b": "Afsnits-/paragrafnavn i Selskab B betingelser (eller null)"
+      "page_a": 8,
+      "section_a": "Afsnit 4 - Stormskade",
+      "page_b": 12,
+      "section_b": "Afsnit 6.1 Storm og orkan"
     }
   ],
   "pitch": {
