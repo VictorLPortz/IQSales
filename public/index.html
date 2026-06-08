@@ -1280,7 +1280,10 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       // Helper: top department
       async function topDept(userIds) {
         if (!userIds.length) return null;
-        const ids = [...new Set(userIds)];
+        // Filter out non-UUID IDs (e.g. u_xxxx from localStorage) - only keep valid UUIDs
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const ids = [...new Set(userIds)].filter(id => uuidRegex.test(id));
+        if (!ids.length) return null;
         const { data: profiles } = await sb.from('profiles').select('id, department').in('id', ids);
         if (!profiles) return null;
         const counts = {};
@@ -2574,7 +2577,7 @@ function handleFileMulti(input){
       
       // Use Supabase UPSERT: will INSERT if new, UPDATE if exists
       // The unique constraint on (selskab, produkt_type) handles conflict resolution
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/insurance_terms`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/insurance_terms?on_conflict=selskab,produkt_type`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
