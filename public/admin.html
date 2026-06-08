@@ -1593,7 +1593,8 @@
         .select('user_id, event_type, cost_estimate')
         .gte('timestamp', startDate)
         .lte('timestamp', endDate)
-        .eq('event_type', 'analysis_completed');
+        .eq('event_type', 'analysis_completed')
+        .limit(10000);
 
       if (error) throw error;
 
@@ -2006,7 +2007,8 @@
         .select('*')
         .gte('timestamp', startDate)
         .lte('timestamp', endDate)
-        .order('timestamp', { ascending: true });
+        .order('timestamp', { ascending: true })
+        .limit(10000);
 
       if (error) throw error;
 
@@ -2084,7 +2086,8 @@
           .from('analytics')
           .select('timestamp, cost_estimate, event_type, user_id')
           .gte('timestamp', thirtyDaysAgo.toISOString())
-          .eq('event_type', 'analysis_completed');
+          .eq('event_type', 'analysis_completed')
+          .limit(10000);
         if (last30Data && last30Data.length > 0) forecastBase = last30Data;
       } catch(e) { /* fallback til valgt periode */ }
 
