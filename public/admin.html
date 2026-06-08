@@ -1588,15 +1588,25 @@
 
     try {
       // Fetch all analytics data for the period
-      const { data: analytics, error } = await sb
-        .from('analytics')
-        .select('user_id, event_type, cost_estimate')
-        .gte('timestamp', startDate)
-        .lte('timestamp', endDate)
-        .eq('event_type', 'analysis_completed')
-        .limit(10000);
-
-      if (error) throw error;
+      let analytics = [];
+      let _from2 = 0;
+      const _pageSize2 = 1000;
+      while (true) {
+        const { data: _page2, error: _err2 } = await sb
+          .from('analytics')
+          .select('user_id, event_type, cost_estimate')
+          .gte('timestamp', startDate)
+          .lte('timestamp', endDate)
+          .eq('event_type', 'analysis_completed')
+          .range(_from2, _from2 + _pageSize2 - 1);
+        if (_err2) throw _err2;
+        if (!_page2 || _page2.length === 0) break;
+        analytics = analytics.concat(_page2);
+        if (_page2.length < _pageSize2) break;
+        _from2 += _pageSize2;
+      }
+      const error = null;
+      if (false) throw error;
 
       // Fetch all profiles
       const { data: profiles } = await sb
@@ -2000,17 +2010,28 @@
       document.getElementById('apiCostPeriod').textContent = 'valgt periode';
     }
 
-    // Fetch analytics data
+    // Fetch analytics data (paginated - Supabase max 1000 rows per request)
     try {
-      const { data: analyses, error } = await sb
-        .from('analytics')
-        .select('*')
-        .gte('timestamp', startDate)
-        .lte('timestamp', endDate)
-        .order('timestamp', { ascending: true })
-        .limit(10000);
+      let analyses = [];
+      let _from = 0;
+      const _pageSize = 1000;
+      while (true) {
+        const { data: _page, error: _err } = await sb
+          .from('analytics')
+          .select('*')
+          .gte('timestamp', startDate)
+          .lte('timestamp', endDate)
+          .order('timestamp', { ascending: true })
+          .range(_from, _from + _pageSize - 1);
+        if (_err) throw _err;
+        if (!_page || _page.length === 0) break;
+        analyses = analyses.concat(_page);
+        if (_page.length < _pageSize) break;
+        _from += _pageSize;
+      }
+      const error = null;
 
-      if (error) throw error;
+      if (false) throw error;
 
       if (!analyses || analyses.length === 0) {
         document.getElementById('apiCostTotal').textContent = '0,00 kr';
