@@ -110,7 +110,8 @@ module.exports = async function handler(req, res) {
               cache_used: true,
               response_time_ms: Date.now() - startTime,
               tokens_used: 0,
-              cost_estimate: 0
+              cost_estimate: 0,
+              timestamp: new Date().toISOString()
             })
           });
         }
@@ -379,7 +380,8 @@ module.exports = async function handler(req, res) {
           cache_used: false,
           response_time_ms: responseTime,
           tokens_used: tokensUsed,
-          cost_estimate: costEstimate
+          cost_estimate: costEstimate,
+          timestamp: new Date().toISOString()
         })
       });
     }
