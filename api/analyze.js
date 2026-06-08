@@ -75,8 +75,7 @@ module.exports = async function handler(req, res) {
     }
  
     // Check cache first
-    const CACHE_VERSION = 'v2'; // bump this to invalidate cache (e.g. when prompt changes)
-    const cacheKey = `${CACHE_VERSION}-${type}-${companyA}-${companyB}`;
+    const cacheKey = `${type}-${companyA}-${companyB}`;
     const cacheResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/analysis_cache?insurance_type=eq.${encodeURIComponent(type)}&company_a=eq.${encodeURIComponent(companyA)}&company_b=eq.${encodeURIComponent(companyB)}&select=*`,
       {
@@ -91,15 +90,7 @@ module.exports = async function handler(req, res) {
       const cacheData = await cacheResponse.json();
       if (cacheData && cacheData.length > 0) {
         const cached = cacheData[0];
-
-        // Invalidate cache if result lacks source references (old format without page_a/section_a)
-        const firstItem = cached.result?.coverage?.[0];
-        const hasSourceRefs = firstItem && ('page_a' in firstItem);
-        if (!hasSourceRefs) {
-          console.log('🔄 Cache stale: missing source refs, re-analyzing...');
-          // Fall through to fresh analysis below
-        } else {
-
+        
         // Log cache hit
         if (userId) {
           await fetch(`${SUPABASE_URL}/rest/v1/analytics`, {
@@ -119,13 +110,13 @@ module.exports = async function handler(req, res) {
               cache_used: true,
               response_time_ms: Date.now() - startTime,
               tokens_used: 0,
-              cost_estimate: 0
+              cost_estimate: 0,
+              timestamp: new Date().toISOString()
             })
           });
         }
  
         return res.status(200).json(cached.result);
-        }
       }
     }
  
@@ -389,7 +380,8 @@ module.exports = async function handler(req, res) {
           cache_used: false,
           response_time_ms: responseTime,
           tokens_used: tokensUsed,
-          cost_estimate: costEstimate
+          cost_estimate: costEstimate,
+          timestamp: new Date().toISOString()
         })
       });
     }
@@ -656,22 +648,6 @@ Når du skriver status og amount, skal de MATCHE:
   "reason": "Selskab A dækker blæsevejr, Selskab B undtager det eksplicit"
 }
  
-## 📍 KILDEREFERENCER (page_a, section_a, page_b, section_b)
-For HVER coverage item skal du angive præcis hvor i betingelserne du fandt informationen:
-- **page_a / page_b**: Sidenummer som heltal (f.eks. 12). Sæt null hvis ikke angivet i dokumentet.
-- **section_a / section_b**: Det præcise afsnits- eller paragrafnavn (f.eks. "§ 4.2 Stormskade" eller "Afsnit 3 - Branddækning"). Sæt null hvis ikke tydeligt angivet.
-
-✅ KORREKT eksempel:
-{
-  "category": "Stormskade",
-  "page_a": 8,
-  "section_a": "§ 4 Naturfænomener",
-  "page_b": 12,
-  "section_b": "Afsnit 6.1 Storm og orkan"
-}
-
-❌ FORKERT: Lad være med at opfinde sidenumre — skriv null hvis du er i tvivl.
-
 # OUTPUT FORMAT
 Returner KUN valid JSON uden markdown backticks:
 {
@@ -689,11 +665,7 @@ Returner KUN valid JSON uden markdown backticks:
       "reason": "Forklaring",
       "sales_tip": "Kort salgstip hvis winner=a",
       "objection_tip": "Håndtering hvis winner=b",
-      "customer_explanation": "Simpel forklaring",
-      "page_a": "Sidenummer i Selskab A betingelser (eller null)",
-      "section_a": "Afsnits-/paragrafnavn i Selskab A betingelser (eller null)",
-      "page_b": "Sidenummer i Selskab B betingelser (eller null)",
-      "section_b": "Afsnits-/paragrafnavn i Selskab B betingelser (eller null)"
+      "customer_explanation": "Simpel forklaring"
     }
   ],
   "pitch": {
