@@ -1858,7 +1858,8 @@ async function trackEvent(eventType, data) {
         cost_estimate: data.cost_estimate || null,
         cache_used: data.cache_used || false,
         response_time_ms: data.response_time_ms || null,
-        metadata: data.metadata || null
+        metadata: data.metadata || null,
+        timestamp: new Date().toISOString()
       })
     });
   } catch(e) {
