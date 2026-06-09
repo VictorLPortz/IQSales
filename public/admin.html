@@ -2395,41 +2395,41 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Sender...';
 
-    const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-    const { data, error } = await sb.auth.signUp({
-      email,
-      password: tempPassword,
-      options: {
-        data: { full_name: name },
-        emailRedirectTo: 'https://iqsales.dk/login.html'
-      }
-    });
+    try {
+      const session = JSON.parse(localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token') || '{}');
+      const token = session.access_token;
 
-    if (error) {
-      showToast('Fejl: ' + error.message, 'error');
+      const res = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, name, department: dept || null })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast('Fejl: ' + (data.error || 'Ukendt fejl'), 'error');
+        btn.disabled = false;
+        btn.innerHTML = 'Opret bruger';
+        return;
+      }
+
+      showToast(`✅ ${name} oprettet — invitationsmail sendt`, 'success');
+      document.getElementById('inviteName').value = '';
+      document.getElementById('inviteEmail').value = '';
+      document.getElementById('inviteDept').value = '';
       btn.disabled = false;
       btn.innerHTML = 'Opret bruger';
-      return;
+      await loadUsers();
+
+    } catch (e) {
+      showToast('Netværksfejl: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Opret bruger';
     }
-
-    if (data.user) {
-      await sb.from('profiles').upsert({
-        id: data.user.id,
-        email,
-        full_name: name,
-        department: dept || null,
-        role: 'seller'
-      });
-    }
-
-    showToast(`✅ ${name} oprettet`, 'success');
-    document.getElementById('inviteName').value = '';
-    document.getElementById('inviteEmail').value = '';
-    document.getElementById('inviteDept').value = '';
-    btn.disabled = false;
-    btn.innerHTML = 'Opret bruger';
-
-    await loadUsers();
   }
 
   let editingUserId = null;
