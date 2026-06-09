@@ -2487,11 +2487,27 @@
   async function deleteUser(id, name) {
     if (!confirm(`Slet ${name}? Brugeren mister adgang til IQSales.`)) return;
 
-    const { error } = await sb.from('profiles').delete().eq('id', id);
-    if (error) { showToast('Kunne ikke slette bruger', 'error'); return; }
+    try {
+      const session = JSON.parse(localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token') || '{}');
+      const token = session.access_token;
 
-    showToast(`${name} er slettet`, 'success');
-    await loadUsers();
+      const res = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: id })
+      });
+
+      const data = await res.json();
+      if (!res.ok) { showToast('Fejl: ' + (data.error || 'Ukendt fejl'), 'error'); return; }
+
+      showToast(`${name} er slettet`, 'success');
+      await loadUsers();
+    } catch (e) {
+      showToast('Netværksfejl: ' + e.message, 'error');
+    }
   }
 
   async function logout() {
