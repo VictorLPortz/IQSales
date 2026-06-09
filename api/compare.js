@@ -11,6 +11,25 @@ export default async function handler(req, res) {
 
   try {
     const { prompt } = req.body;
+
+  // Auth check — kræv gyldigt login
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Ikke autoriseret. Log ind for at bruge IQSales.' });
+  }
+  const token = authHeader.replace('Bearer ', '');
+  try {
+    const verifyResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+    });
+    if (!verifyResponse.ok) return res.status(401).json({ error: 'Ugyldig session. Log ind igen.' });
+    const userData = await verifyResponse.json();
+    if (!userData.id) return res.status(401).json({ error: 'Ugyldig session. Log ind igen.' });
+  } catch (e) {
+    return res.status(401).json({ error: 'Kunne ikke verificere login.' });
+  }
+
+
     
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt required' });
