@@ -4863,7 +4863,7 @@ async function sendGlobalCoachMessage(companyA, companyB, types) {
   try {
     const resp = await fetch('/api/coach', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
         system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB}. Analysen dækker: ${types}. ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
         message: question,
@@ -4916,7 +4916,7 @@ async function generateGlobalSection(section, companyA, companyB, types) {
   try {
     const response = await fetch('/api/coach', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
         message: prompts[section],
         max_tokens: 1000,
@@ -5015,7 +5015,7 @@ async function generateCoachSection(shortName, section) {
   try {
     const response = await fetch('/api/coach', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
         message: prompts[section],
         max_tokens: 1000,
@@ -5174,7 +5174,7 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
   try {
     const resp = await fetch('/api/coach', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
         system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB} (${type}). ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
         message: question,
