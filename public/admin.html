@@ -724,7 +724,7 @@
       <!-- Sub-tabs -->
       <div class="subtabs">
         <button class="subtab-button active" onclick="switchSubtab('overview')">📊 Overblik</button>
-        <button class="subtab-button" onclick="switchSubtab('feedback')">✅ Feedback Godkendelse</button>
+        <button class="subtab-button" onclick="switchSubtab('feedback')" id="feedbackTabBtn">✅ Feedback <span id="unknownCacheBadge" style="display:none; background:#FEF2F2; color:#DC2626; font-size:11px; font-weight:600; padding:1px 7px; border-radius:999px; margin-left:4px;">0</span></button>
         <button class="subtab-button" onclick="switchSubtab('api')">💰 API Økonomi</button>
         <button class="subtab-button" onclick="switchSubtab('protection')">🔒 Beskyttelse & overvågning</button>
       </div>
@@ -807,6 +807,18 @@
             <div class="stat-label">Afvist</div>
             <div class="stat-value" id="feedbackRejected">—</div>
           </div>
+        </div>
+
+        <!-- Cache-kvalitetsfejl -->
+        <div id="cacheIssuesSection" style="display:none; background:#fff; border:0.5px solid #E5E7EB; border-radius:12px; padding:20px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div>
+              <div style="font-size:15px; font-weight:600; color:#1A1A1A;">Ukendt dækning i cache</div>
+              <div style="font-size:13px; color:#6B7280; margin-top:2px;">Disse analyser bør re-analyseres — slet cache så det sker automatisk næste gang</div>
+            </div>
+            <button onclick="clearAllUnknownCache()" style="padding:7px 14px; background:#FEF2F2; color:#DC2626; border:0.5px solid #FECACA; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Ryd alle</button>
+          </div>
+          <div id="cacheIssuesList" style="display:flex; flex-direction:column; gap:8px;"></div>
         </div>
 
         <!-- Filter -->
@@ -1770,6 +1782,7 @@
   }
 
   async function loadFeedback() {
+    loadUnknownCacheIssues();
     const { data: feedback, error } = await sb
       .from('feedback')
       .select('*')
@@ -2508,6 +2521,82 @@
     } catch (e) {
       showToast('Netværksfejl: ' + e.message, 'error');
     }
+  }
+
+  async function loadUnknownCacheIssues() {
+    try {
+      const { data: entries, error } = await sb
+        .from('analysis_cache')
+        .select('id, insurance_type, company_a, company_b, result');
+      if (error || !entries) return;
+
+      const issues = entries.filter(e => {
+        const coverage = e.result?.coverage;
+        if (!Array.isArray(coverage)) return false;
+        return coverage.some(c =>
+          c.category === 'Ukendt dækning' || c.category === 'Ukendt' || c.category === 'Unknown'
+        );
+      }).map(e => ({
+        id: e.id,
+        label: `${e.insurance_type} — ${e.company_a} vs ${e.company_b}`,
+        count: e.result.coverage.filter(c =>
+          c.category === 'Ukendt dækning' || c.category === 'Ukendt' || c.category === 'Unknown'
+        ).length
+      }));
+
+      const badge = document.getElementById('unknownCacheBadge');
+      const section = document.getElementById('cacheIssuesSection');
+      const list = document.getElementById('cacheIssuesList');
+
+      if (issues.length === 0) {
+        if (badge) badge.style.display = 'none';
+        if (section) section.style.display = 'none';
+        return;
+      }
+
+      if (badge) { badge.textContent = issues.length; badge.style.display = 'inline'; }
+      if (section) section.style.display = 'block';
+      if (list) {
+        list.innerHTML = issues.map(issue => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#F8F6F1; border-radius:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="color:#D97706; font-size:16px;">⚠️</span>
+              <div>
+                <div style="font-size:13px; font-weight:500; color:#1A1A1A;">${issue.label}</div>
+                <div style="font-size:12px; color:#6B7280;">${issue.count} ukendt${issue.count > 1 ? 'e' : ''} dækning${issue.count > 1 ? 'er' : ''}</div>
+              </div>
+            </div>
+            <button onclick="deleteCacheEntry('${issue.id}')" style="padding:5px 12px; background:#fff; border:0.5px solid #E5E7EB; border-radius:8px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif;">Slet cache</button>
+          </div>
+        `).join('');
+      }
+    } catch(e) { console.error('Cache issues load failed:', e); }
+  }
+
+  async function deleteCacheEntry(id) {
+    const { error } = await sb.from('analysis_cache').delete().eq('id', id);
+    if (error) { showToast('Kunne ikke slette cache-entry', 'error'); return; }
+    showToast('Cache-entry slettet — re-analyseres næste gang', 'success');
+    loadUnknownCacheIssues();
+  }
+
+  async function clearAllUnknownCache() {
+    if (!confirm('Slet alle cache-entries med ukendt dækning?')) return;
+    try {
+      const { data: entries } = await sb.from('analysis_cache').select('id, result');
+      const ids = (entries || []).filter(e => {
+        const coverage = e.result?.coverage;
+        return Array.isArray(coverage) && coverage.some(c =>
+          c.category === 'Ukendt dækning' || c.category === 'Ukendt' || c.category === 'Unknown'
+        );
+      }).map(e => e.id);
+
+      for (const id of ids) {
+        await sb.from('analysis_cache').delete().eq('id', id);
+      }
+      showToast(`${ids.length} cache-entries slettet`, 'success');
+      loadUnknownCacheIssues();
+    } catch(e) { showToast('Fejl: ' + e.message, 'error'); }
   }
 
   async function logout() {
