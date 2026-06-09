@@ -1,82 +1,93 @@
-export default async function handler(req, res) {
-  // Only allow POST
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Verify the caller is authenticated and is an admin
+  // Verify caller is an admin
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Ikke autoriseret' });
   }
 
-  const userToken = authHeader.replace('Bearer ', '');
-  const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
-  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
+  const token = authHeader.replace('Bearer ', '');
+  try {
+    const verifyResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+    });
+    if (!verifyResponse.ok) return res.status(401).json({ error: 'Ugyldig session' });
 
-  // Verify caller is admin
-  const profileRes = await fetch(SUPABASE_URL + '/rest/v1/profiles?select=role', {
-    headers: {
-      'apikey': ANON_KEY,
-      'Authorization': 'Bearer ' + userToken
+    const userData = await verifyResponse.json();
+
+    // Check admin role
+    const profileRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userData.id}&select=role`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const profiles = await profileRes.json();
+    if (!profiles?.[0] || profiles[0].role !== 'admin') {
+      return res.status(403).json({ error: 'Kun admins kan oprette brugere' });
     }
-  });
-  const profiles = await profileRes.json();
-  if (!Array.isArray(profiles) || profiles.length === 0 || profiles[0].role !== 'admin') {
-    return res.status(403).json({ error: 'Forbidden — kun admins kan oprette brugere' });
+  } catch (e) {
+    return res.status(401).json({ error: 'Auth fejl' });
   }
 
-  const { email, password, full_name, department, role } = req.body;
-  if (!email || !password || !full_name) {
-    return res.status(400).json({ error: 'Email, kodeord og navn er påkrævet' });
-  }
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Kodeord skal være mindst 6 tegn' });
+  const { email, name, department } = req.body;
+  if (!email || !name) {
+    return res.status(400).json({ error: 'Email og navn er påkrævet' });
   }
 
   try {
-    // Create user in Supabase Auth using service role key
-    const createRes = await fetch(SUPABASE_URL + '/auth/v1/admin/users', {
+    // Create user via Admin API — bypasses email confirmation
+    const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'apikey': SERVICE_KEY,
-        'Authorization': 'Bearer ' + SERVICE_KEY
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         email,
-        password,
         email_confirm: true,
-        user_metadata: { full_name }
+        user_metadata: { full_name: name },
+        // Send invite email so user can set their own password
+        invite: true
       })
     });
 
-    const userData = await createRes.json();
+    const createData = await createRes.json();
+
     if (!createRes.ok) {
-      return res.status(400).json({ error: userData.message || 'Kunne ikke oprette bruger' });
+      const msg = createData.msg || createData.message || JSON.stringify(createData);
+      return res.status(400).json({ error: msg });
     }
 
-    // Create profile
-    await fetch(SUPABASE_URL + '/rest/v1/profiles', {
+    const userId = createData.id;
+
+    // Insert profile
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
-        'apikey': SERVICE_KEY,
-        'Authorization': 'Bearer ' + SERVICE_KEY,
-        'Prefer': 'return=minimal'
+        'Prefer': 'resolution=merge-duplicates'
       },
       body: JSON.stringify({
-        id: userData.id,
+        id: userId,
         email,
-        full_name,
+        full_name: name,
         department: department || null,
-        role: role || 'seller'
+        role: 'seller'
       })
     });
 
-    return res.status(200).json({ success: true, id: userData.id });
-  } catch (err) {
-    return res.status(500).json({ error: 'Serverfejl: ' + err.message });
+    return res.status(200).json({ success: true, userId });
+
+  } catch (error) {
+    console.error('Create user failed:', error);
+    return res.status(500).json({ error: error.message || 'Oprettelse fejlede' });
   }
-}
+};
