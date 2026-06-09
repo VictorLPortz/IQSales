@@ -52,8 +52,8 @@ module.exports = async function handler(req, res) {
         email,
         email_confirm: true,
         user_metadata: { full_name: name },
-        // Send invite email so user can set their own password
-        invite: true
+        invite: true,
+        redirect_to: 'https://iqsales.dk/signup.html'
       })
     });
 
