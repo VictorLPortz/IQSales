@@ -1041,26 +1041,20 @@
         <p>Administrer forsikringsbetingelser fra selskaberne</p>
       </div>
 
-      <!-- Refresh control -->
+      <!-- Ryd cache med ukendt dækning -->
       <div class="card">
         <div class="card-header">
           <div>
-            <h2>Opdater betingelser</h2>
-            <p>Hent de nyeste forsikringsbetingelser fra selskaberne</p>
+            <h2>Cache-vedligeholdelse</h2>
+            <p>Ryd analyser der indeholder fejl eller ukendte dækninger</p>
           </div>
         </div>
         <div class="card-body">
           <div style="display: flex; align-items: center; gap: 16px;">
-            <button class="btn-primary" id="refreshBtn" onclick="refreshPDFs()" style="font-size: 15px; padding: 12px 24px;">
-              🔄 Refresh alle PDFs
+            <button class="btn-primary" onclick="clearUnknownCacheFromBetingelser()" style="font-size: 15px; padding: 12px 24px; background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
+              🗑️ Ryd cache med ukendt dækning
             </button>
-            <div id="refreshStatus" style="font-size: 13px; color: var(--muted);"></div>
-          </div>
-          <div id="refreshProgress" style="margin-top: 20px; display: none;">
-            <div style="background: #F3F4F6; border-radius: 8px; height: 8px; overflow: hidden;">
-              <div id="progressBar" style="background: var(--green); height: 100%; width: 0%; transition: width 0.3s;"></div>
-            </div>
-            <div style="margin-top: 8px; font-size: 12px; color: var(--muted);" id="progressText"></div>
+            <div id="cacheCleanStatus" style="font-size: 13px; color: var(--muted);"></div>
           </div>
         </div>
       </div>
@@ -2597,6 +2591,35 @@
       showToast(`${ids.length} cache-entries slettet`, 'success');
       loadUnknownCacheIssues();
     } catch(e) { showToast('Fejl: ' + e.message, 'error'); }
+  }
+
+  async function clearUnknownCacheFromBetingelser() {
+    if (!confirm('Ryd alle cache-entries med ukendt dækning?')) return;
+    const statusEl = document.getElementById('cacheCleanStatus');
+    statusEl.textContent = 'Søger...';
+    try {
+      const { data: entries } = await sb.from('analysis_cache').select('id, result');
+      const ids = (entries || []).filter(e => {
+        const coverage = e.result?.coverage;
+        return Array.isArray(coverage) && coverage.some(c =>
+          c.category === 'Ukendt dækning' || c.category === 'Ukendt' || c.category === 'Unknown'
+        );
+      }).map(e => e.id);
+
+      if (ids.length === 0) {
+        statusEl.textContent = '✅ Ingen cache-entries med ukendt dækning fundet';
+        return;
+      }
+
+      for (const id of ids) {
+        await sb.from('analysis_cache').delete().eq('id', id);
+      }
+      statusEl.textContent = `✅ ${ids.length} cache-entr${ids.length === 1 ? 'y' : 'ies'} slettet`;
+      showToast(`${ids.length} cache-entries slettet`, 'success');
+      loadUnknownCacheIssues();
+    } catch(e) {
+      statusEl.textContent = '❌ Fejl: ' + e.message;
+    }
   }
 
   async function logout() {
