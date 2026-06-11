@@ -809,6 +809,18 @@
           </div>
         </div>
 
+        <!-- Implementer feedback knap -->
+        <div id="implementFeedbackSection" style="background:#F0FDF4; border:0.5px solid #BBF7D0; border-radius:12px; padding:20px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:15px; font-weight:600; color:#1A1A1A;">Implementer godkendt feedback</div>
+              <div style="font-size:13px; color:#6B7280; margin-top:2px;">Rydder cache for forsikringstyper med ny feedback — sælgerne får friske analyser næste gang de åbner dem</div>
+            </div>
+            <button onclick="previewImplementFeedback()" style="padding:8px 16px; background:#1A3C2E; color:#fff; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif; white-space:nowrap;">Implementer feedback</button>
+          </div>
+          <div id="implementFeedbackStatus" style="font-size:13px; color:#6B7280; margin-top:10px; display:none;"></div>
+        </div>
+
         <!-- Cache-kvalitetsfejl -->
         <div id="cacheIssuesSection" style="display:none; background:#fff; border:0.5px solid #E5E7EB; border-radius:12px; padding:20px; margin-bottom:20px;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
@@ -1845,8 +1857,12 @@
           ${formatDate(f.created_at)} • ${f.issue_type || 'Ikke angivet'}
         </div>
         <div class="feedback-category">📌 Dækning: ${f.category || 'Ikke angivet'}</div>
-        <div class="feedback-comment">"${f.comment || 'Ingen kommentar'}"</div>
+        <div class="feedback-comment" id="comment-display-${f.id}">"${f.comment || 'Ingen kommentar'}"</div>
         ${f.status === 'pending' ? `
+          <div style="margin-top:10px;">
+            <textarea id="comment-edit-${f.id}" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid #E3E1D9;border-radius:8px;resize:vertical;min-height:70px;color:#141412;background:var(--surface);outline:none;display:none;" onfocus="this.style.borderColor='#1A3C2E'" onblur="this.style.borderColor='#E3E1D9'">${f.comment || ''}</textarea>
+            <button id="edit-btn-${f.id}" onclick="toggleEditComment('${f.id}')" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;margin-top:4px;">✏️ Rediger kommentar</button>
+          </div>
           <div class="feedback-actions">
             <button class="btn-success" onclick="approveFeedback('${f.id}')">✅ Godkend</button>
             <button class="btn-secondary" onclick="rejectFeedback('${f.id}')">❌ Afvis</button>
@@ -1856,23 +1872,93 @@
     `}).join('');
   }
 
-  async function approveFeedback(id) {
-    // Hent feedback først for at få insurance_type
-    const { data: feedback, error: fetchError } = await sb
-      .from('feedback')
-      .select('*')
-      .eq('id', id)
-      .single();
+  function toggleEditComment(id) {
+    const display = document.getElementById('comment-display-' + id);
+    const textarea = document.getElementById('comment-edit-' + id);
+    const btn = document.getElementById('edit-btn-' + id);
+    const isEditing = textarea.style.display !== 'none';
+    if (isEditing) {
+      display.textContent = '"' + textarea.value + '"';
+      textarea.style.display = 'none';
+      btn.textContent = '✏️ Rediger kommentar';
+    } else {
+      textarea.style.display = 'block';
+      textarea.focus();
+      btn.textContent = '💾 Gem ændring';
+    }
+  }
 
-    if (fetchError) {
-      showToast('Kunne ikke hente feedback', 'error');
-      return;
+  async function previewImplementFeedback() {
+    const statusEl = document.getElementById('implementFeedbackStatus');
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Beregner omkostning...';
+
+    // Find forsikringstyper med godkendt feedback
+    const { data: approvedFeedback } = await sb
+      .from('feedback')
+      .select('insurance_type')
+      .eq('status', 'approved');
+
+    const types = [...new Set((approvedFeedback || []).map(f => f.insurance_type).filter(Boolean))];
+
+    // Hent antal cache-entries per type
+    const { data: cacheEntries } = await sb
+      .from('analysis_cache')
+      .select('insurance_type');
+
+    const typeCounts = {};
+    (cacheEntries || []).forEach(e => {
+      typeCounts[e.insurance_type] = (typeCounts[e.insurance_type] || 0) + 1;
+    });
+
+    const avgCost = { 'Indboforsikring':2.20,'Husforsikring':2.00,'Bilforsikring':1.82,'Rejseforsikring':1.79,'Fritidshusforsikring':1.75,'Sundhedsforsikring':1.73,'Ulykkesforsikring':1.59,'Motorcykelforsikring':1.17,'Hundeforsikring':1.12,'Campingvognsforsikring':1.12,'Lystfartøjsforsikring':1.11 };
+
+    let totalCombinations = 0;
+    let estimatedCost = 0;
+    types.forEach(t => {
+      const count = typeCounts[t] || 0;
+      totalCombinations += count;
+      estimatedCost += count * (avgCost[t] || 1.50);
+    });
+
+    const msg = `${types.length} forsikringstyper · ${totalCombinations} kombinationer · estimeret maks. ${estimatedCost.toFixed(0)} kr\n\nVil du fortsætte?`;
+    
+    if (confirm(msg)) {
+      await implementFeedback(types);
+    } else {
+      statusEl.style.display = 'none';
+    }
+  }
+
+  async function implementFeedback(types) {
+    const statusEl = document.getElementById('implementFeedbackStatus');
+    statusEl.textContent = 'Rydder cache...';
+
+    let deleted = 0;
+    for (const type of types) {
+      const { error } = await sb
+        .from('analysis_cache')
+        .delete()
+        .eq('insurance_type', type);
+      if (!error) deleted++;
     }
 
-    // Godkend feedback
+    statusEl.textContent = `✅ Cache ryddet for ${deleted} forsikringstyper — sælgerne får friske analyser næste gang`;
+    showToast(`Cache ryddet for ${deleted} forsikringstyper`, 'success');
+    loadUnknownCacheIssues();
+  }
+
+  async function approveFeedback(id) {
+    // Gem evt. redigeret kommentar
+    const textarea = document.getElementById('comment-edit-' + id);
+    const editedComment = textarea && textarea.style.display !== 'none' ? textarea.value.trim() : null;
+
+    const updateData = { status: 'approved' };
+    if (editedComment) updateData.comment = editedComment;
+
     const { error } = await sb
       .from('feedback')
-      .update({ status: 'approved' })
+      .update(updateData)
       .eq('id', id);
 
     if (error) {
@@ -1881,10 +1967,6 @@
     }
 
     showToast('✅ Feedback godkendt!', 'success');
-    
-    // Start background regeneration
-    regenerateAnalysesInBackground(feedback.insurance_type);
-    
     await loadFeedback();
   }
 
