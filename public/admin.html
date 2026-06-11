@@ -1114,63 +1114,80 @@
 
         </div>
 
-        <!-- Forecast box -->
-        <div style="margin-top: 16px; background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-          <div>
-            <div style="font-size: 12px; font-weight: 600; color: #166534; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">🔮 Forventet månedlig omkostning</div>
-            <div style="font-size: 28px; font-weight: 600; color: #166534;" id="forecastMonthly">—</div>
-            <div style="font-size: 12px; color: #4B7A5E; margin-top: 4px;" id="forecastBasis">Beregnes ud fra seneste 30 dage</div>
+        <!-- Forecast + Coach + Salgscoach i ét grid -->
+        <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:14px;">
+
+          <div class="card">
+            <div class="card-header"><div><h2>Forventet månedlig omk.</h2><p id="forecastBasis">Beregnes ud fra seneste 30 dage</p></div></div>
+            <div class="card-body">
+              <div style="font-size:28px;font-weight:600;color:#166534;margin-bottom:12px;" id="forecastMonthly">—</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                  <span style="color:var(--muted);">Pr. dag</span>
+                  <span style="font-weight:500;" id="forecastDaily">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                  <span style="color:var(--muted);">Pr. bruger/md</span>
+                  <span style="font-weight:500;" id="forecastPerUser">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                  <span style="color:var(--muted);">Pr. analyse</span>
+                  <span style="font-weight:500;" id="forecastPerAnalysis">—</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-            <div style="text-align: center;">
-              <div style="font-size: 11px; color: #4B7A5E; margin-bottom: 2px;">Pr. dag</div>
-              <div style="font-size: 18px; font-weight: 500; color: #166534;" id="forecastDaily">—</div>
-            </div>
-            <div style="text-align: center;">
-              <div style="font-size: 11px; color: #4B7A5E; margin-bottom: 2px;">Pr. bruger/md</div>
-              <div style="font-size: 18px; font-weight: 500; color: #166534;" id="forecastPerUser">—</div>
-            </div>
-            <div style="text-align: center;">
-              <div style="font-size: 11px; color: #4B7A5E; margin-bottom: 2px;">Pr. analyse</div>
-              <div style="font-size: 18px; font-weight: 500; color: #166534;" id="forecastPerAnalysis">—</div>
+
+          <div class="card">
+            <div class="card-header"><div><h2>Salgscoach omkostning</h2><p>Chat, møde, indvendinger, remotivering</p></div></div>
+            <div class="card-body">
+              <div style="font-size:28px;font-weight:600;color:#1A3C2E;margin-bottom:12px;" id="coachCostDisplay">—</div>
+              <div style="font-size:13px;color:var(--muted);" id="coachCostSub">i valgt periode</div>
             </div>
           </div>
+
+          <div class="card">
+            <div class="card-header"><div><h2>Analyse vs. coach split</h2><p>Fordeling af total omkostning</p></div></div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;gap:16px;">
+                <div style="position:relative;width:100px;height:100px;flex-shrink:0;">
+                  <canvas id="costSplitDonut" width="100" height="100"></canvas>
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                    <div style="font-size:14px;font-weight:600;color:var(--green);" id="costSplitPct">—</div>
+                    <div style="font-size:10px;color:var(--muted);">analyse</div>
+                  </div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#1A3C2E;flex-shrink:0;display:inline-block;"></span>
+                    <span style="color:var(--muted);">Analyser</span>
+                    <span style="margin-left:auto;font-weight:500;" id="costSplitAnalysis">—</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#95D5B2;flex-shrink:0;display:inline-block;"></span>
+                    <span style="color:var(--muted);">Salgscoach</span>
+                    <span style="margin-left:auto;font-weight:500;" id="costSplitCoach">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Salgscoach omkostninger -->
-        <div style="margin-top: 12px; background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 12px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <div style="font-size: 12px; font-weight: 600; color: #1E40AF; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">🤖 Salgscoach omkostning</div>
-            <div style="font-size: 24px; font-weight: 600; color: #1E40AF;" id="coachCostDisplay">—</div>
-            <div style="font-size: 12px; color: #3B5EA6; margin-top: 2px;" id="coachCostSub">i valgt periode</div>
-          </div>
-          <div style="font-size: 13px; color: #3B5EA6; max-width: 300px; line-height: 1.5;">
-            Chat-spørgsmål, mødeforberedelse, indvendingsbehandling og remotivering tæller med her.
-          </div>
-        </div>
-
-        <!-- Charts -->
-        <div class="card" style="margin-top: 24px;">
-          <div class="card-header">
-            <div>
-              <h2>Omkostning over tid</h2>
-              <p>Daglig omkostning i valgt periode</p>
+        <!-- Charts side om side -->
+        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:14px;">
+          <div class="card">
+            <div class="card-header"><div><h2>Omkostning over tid</h2><p>Daglig omkostning i valgt periode</p></div></div>
+            <div class="card-body">
+              <canvas id="costChart" style="max-height:200px;"></canvas>
             </div>
           </div>
-          <div class="card-body">
-            <canvas id="costChart" style="max-height: 250px;"></canvas>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>Cache hit rate trend</h2>
-              <p>Performance over tid</p>
+          <div class="card">
+            <div class="card-header"><div><h2>Cache hit rate trend</h2><p>Performance over tid</p></div></div>
+            <div class="card-body">
+              <canvas id="cacheChart" style="max-height:200px;"></canvas>
             </div>
-          </div>
-          <div class="card-body">
-            <canvas id="cacheChart" style="max-height: 250px;"></canvas>
           </div>
         </div>
 
@@ -1702,6 +1719,14 @@
   async function loadOverview() {
     const { startDate, endDate } = getOverviewDateRange();
 
+    // Hent profiles til navne hvis ikke allerede loaded
+    if (!window._feedbackProfileMap || Object.keys(window._feedbackProfileMap).length === 0) {
+      const { data: profiles } = await sb.from('profiles').select('id, full_name');
+      const pm = {};
+      if (profiles) profiles.forEach(p => { pm[p.id] = p.full_name; });
+      window._feedbackProfileMap = pm;
+    }
+
     let analyses = [], from = 0;
     while (true) {
       const { data: page } = await sb.from('analytics').select('*').gte('timestamp', startDate).lte('timestamp', endDate).order('timestamp', { ascending: true }).range(from, from + 999);
@@ -1807,18 +1832,21 @@
     if (!container) return;
     const max = sellers[0]?.[field] || 1;
     container.innerHTML = sellers.length ? sellers.map(s => {
-      const name = pMap[s.userId] || s.userId?.slice(0,8) || '?';
+      const name = pMap[s.userId] || null;
+      if (!name) return '';
       const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
       const val = s[field];
+      const displayVal = field === 'cost' ? (val * 7).toFixed(2) + ' kr' : val + ' analyser';
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div style="width:26px;height:26px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#0F6E56;flex-shrink:0;">${initials}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
           <div style="height:5px;background:var(--surface);border-radius:3px;margin-top:3px;"><div style="width:${Math.round(val/max*100)}%;height:100%;background:#1A3C2E;border-radius:3px;"></div></div>
         </div>
-        <span style="font-size:12px;color:var(--muted);width:40px;text-align:right;flex-shrink:0;">${typeof val === 'number' && val < 10 ? val.toFixed(2)+' kr' : val}</span>
+        <span style="font-size:12px;color:var(--muted);width:70px;text-align:right;flex-shrink:0;">${displayVal}</span>
       </div>`;
-    }).join('') : '<div class="empty-state">Ingen data</div>';
+    }).filter(Boolean).join('') || '<div class="empty-state">Ingen data</div>'
+    : '<div class="empty-state">Ingen data</div>';
   }
 
   function renderWeekdayChart(containerId, labels, counts) {
@@ -2306,6 +2334,14 @@
   let cacheChart = null;
 
   async function loadAPIStats() {
+    // Hent profiles til navne hvis ikke allerede loaded
+    if (!window._feedbackProfileMap || Object.keys(window._feedbackProfileMap).length === 0) {
+      const { data: profiles } = await sb.from('profiles').select('id, full_name');
+      const pm = {};
+      if (profiles) profiles.forEach(p => { pm[p.id] = p.full_name; });
+      window._feedbackProfileMap = pm;
+    }
+
     // Show custom date range if selected
     const filter = document.getElementById('timeFilter').value;
     const customRange = document.getElementById('customDateRange');
@@ -2481,6 +2517,19 @@
         coachEl.textContent = (coachCost * 7).toFixed(2) + ' kr';
         const coachSub = document.getElementById('coachCostSub');
         if (coachSub) coachSub.textContent = coachAnalyses.length + ' coach-kald';
+
+        // Cost split donut
+        const analysisCost = totalCost;
+        const combinedCost = analysisCost + coachCost;
+        const analysisPct = combinedCost > 0 ? Math.round(analysisCost / combinedCost * 100) : 100;
+        const splitPctEl = document.getElementById('costSplitPct');
+        if (splitPctEl) splitPctEl.textContent = analysisPct + '%';
+        const splitAEl = document.getElementById('costSplitAnalysis');
+        if (splitAEl) splitAEl.textContent = (analysisCost * 7).toFixed(2) + ' kr';
+        const splitCEl = document.getElementById('costSplitCoach');
+        if (splitCEl) splitCEl.textContent = (coachCost * 7).toFixed(2) + ' kr';
+        drawDonut('costSplitDonut', analysisPct, '#1A3C2E', '#95D5B2');
+      }
       }
 
       // 🔮 Forecast - altid baseret på seneste 30 dage uanset valgt periode
