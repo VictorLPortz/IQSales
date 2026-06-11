@@ -1175,20 +1175,55 @@
 
         </div>
 
-        <!-- Charts side om side -->
+        <!-- Sparkline charts side om side -->
         <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:14px;">
+
           <div class="card">
             <div class="card-header"><div><h2>Omkostning over tid</h2><p>Daglig omkostning i valgt periode</p></div></div>
             <div class="card-body">
-              <canvas id="costChart" style="max-height:200px;"></canvas>
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px;">
+                <div>
+                  <div style="font-size:26px;font-weight:500;color:var(--text);" id="sparkCostTotal">— kr</div>
+                  <div style="margin-top:4px;" id="sparkCostTrend"></div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:12px;color:var(--muted);">Dagsnit</div>
+                  <div style="font-size:15px;font-weight:500;color:var(--text);" id="sparkCostAvg">—</div>
+                </div>
+              </div>
+              <div style="position:relative;height:70px;">
+                <canvas id="costChart" role="img" aria-label="Daglig omkostning over tid" style="width:100%;height:70px;"></canvas>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;">
+                <span id="sparkCostDateFrom">—</span>
+                <span id="sparkCostDateTo">—</span>
+              </div>
             </div>
           </div>
+
           <div class="card">
             <div class="card-header"><div><h2>Cache hit rate trend</h2><p>Performance over tid</p></div></div>
             <div class="card-body">
-              <canvas id="cacheChart" style="max-height:200px;"></canvas>
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px;">
+                <div>
+                  <div style="font-size:26px;font-weight:500;color:var(--text);" id="sparkCacheRate">—%</div>
+                  <div style="margin-top:4px;" id="sparkCacheTrend"></div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:12px;color:var(--muted);">Sparet</div>
+                  <div style="font-size:15px;font-weight:500;color:#166534;" id="sparkCacheSaved">— kr</div>
+                </div>
+              </div>
+              <div style="position:relative;height:70px;">
+                <canvas id="cacheChart" role="img" aria-label="Cache hit rate over tid" style="width:100%;height:70px;"></canvas>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;">
+                <span id="sparkCacheDateFrom">—</span>
+                <span id="sparkCacheDateTo">—</span>
+              </div>
             </div>
           </div>
+
         </div>
 
         <!-- Top analyses -->
@@ -2530,7 +2565,6 @@
         if (splitCEl) splitCEl.textContent = (coachCost * 7).toFixed(2) + ' kr';
         drawDonut('costSplitDonut', analysisPct, '#1A3C2E', '#95D5B2');
       }
-      }
 
       // 🔮 Forecast - altid baseret på seneste 30 dage uanset valgt periode
       let forecastBase = analyses; // fallback til valgt periode
@@ -2606,7 +2640,19 @@
       });
 
       const costLabels = Object.keys(dailyCosts);
-      const costData = Object.values(dailyCosts).map(v => parseFloat(v.toFixed(2)));
+      const costData = Object.values(dailyCosts).map(v => parseFloat((v * 7).toFixed(2)));
+
+      // Sparkline metadata
+      const costTotal = costData.reduce((s,v)=>s+v,0);
+      const costAvg = costData.length ? costTotal/costData.length : 0;
+      const scEl = document.getElementById('sparkCostTotal');
+      if (scEl) scEl.textContent = costTotal.toFixed(2) + ' kr';
+      const scAvgEl = document.getElementById('sparkCostAvg');
+      if (scAvgEl) scAvgEl.textContent = costAvg.toFixed(2) + ' kr/dag';
+      const scFromEl = document.getElementById('sparkCostDateFrom');
+      if (scFromEl && costLabels.length) scFromEl.textContent = costLabels[0];
+      const scToEl = document.getElementById('sparkCostDateTo');
+      if (scToEl && costLabels.length) scToEl.textContent = costLabels[costLabels.length-1];
 
       if (costChart) costChart.destroy();
       const costCtx = document.getElementById('costChart').getContext('2d');
@@ -2615,22 +2661,25 @@
         data: {
           labels: costLabels,
           datasets: [{
-            label: 'Omkostning (DKK)',
             data: costData,
             borderColor: '#1A3C2E',
-            backgroundColor: 'rgba(26, 60, 46, 0.1)',
+            backgroundColor: 'rgba(26,60,46,0.08)',
+            borderWidth: 2,
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 3
           }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: { display: false }
-          },
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: {
+            callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + ' kr' }
+          }},
           scales: {
-            y: { beginAtZero: true, ticks: { callback: v => v.toFixed(2) + ' kr' } }
+            x: { display: false },
+            y: { display: false, beginAtZero: true }
           }
         }
       });
@@ -2641,17 +2690,24 @@
       completed.forEach(a => {
         const date = new Date(a.timestamp).toLocaleDateString('da-DK');
         dailyTotal[date] = (dailyTotal[date] || 0) + 1;
-        if (a.cache_used) {
-          dailyCache[date] = (dailyCache[date] || 0) + 1;
-        }
+        if (a.cache_used) dailyCache[date] = (dailyCache[date] || 0) + 1;
       });
 
       const cacheLabels = Object.keys(dailyTotal);
       const cacheData = cacheLabels.map(date => {
         const hits = dailyCache[date] || 0;
         const total = dailyTotal[date] || 1;
-        return (hits / total * 100).toFixed(0);
+        return parseFloat((hits / total * 100).toFixed(0));
       });
+
+      // Cache sparkline metadata
+      const avgCacheRate = cacheData.length ? Math.round(cacheData.reduce((s,v)=>s+v,0)/cacheData.length) : 0;
+      const scrEl = document.getElementById('sparkCacheRate');
+      if (scrEl) scrEl.textContent = avgCacheRate + '%';
+      const scrFromEl = document.getElementById('sparkCacheDateFrom');
+      if (scrFromEl && cacheLabels.length) scrFromEl.textContent = cacheLabels[0];
+      const scrToEl = document.getElementById('sparkCacheDateTo');
+      if (scrToEl && cacheLabels.length) scrToEl.textContent = cacheLabels[cacheLabels.length-1];
 
       if (cacheChart) cacheChart.destroy();
       const cacheCtx = document.getElementById('cacheChart').getContext('2d');
@@ -2660,22 +2716,25 @@
         data: {
           labels: cacheLabels,
           datasets: [{
-            label: 'Cache Hit Rate (%)',
             data: cacheData,
             borderColor: '#52B788',
-            backgroundColor: 'rgba(82, 183, 136, 0.1)',
+            backgroundColor: 'rgba(82,183,136,0.08)',
+            borderWidth: 2,
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 3
           }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: { display: false }
-          },
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: {
+            callbacks: { label: ctx => ctx.parsed.y + '%' }
+          }},
           scales: {
-            y: { beginAtZero: true, max: 100 }
+            x: { display: false },
+            y: { display: false, beginAtZero: true, max: 100 }
           }
         }
       });
