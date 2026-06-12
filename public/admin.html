@@ -2511,15 +2511,21 @@
       return;
     }
 
-    // Gruppér per forsikringstype
+    // Gruppér per forsikringstype — "Generel" feedback handler om appen generelt, ikke analyser
     const byType = {};
     approvedFeedback.forEach(f => {
-      const type = f.insurance_type || 'Generel';
+      const type = f.insurance_type;
+      if (!type || type.trim().toLowerCase() === 'generel') return;
       byType[type] = byType[type] || [];
       byType[type].push(f);
     });
 
     const types = Object.keys(byType);
+
+    if (types.length === 0) {
+      statusEl.textContent = 'Ingen godkendt feedback knyttet til forsikringstyper at implementere';
+      return;
+    }
 
     // Hent antal cache-entries per type
     const { data: cacheEntries } = await sb
