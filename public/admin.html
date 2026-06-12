@@ -828,18 +828,9 @@
           <div class="card">
             <div class="card-header">
               <div><h2>Top sælgere</h2><p>Analyser i perioden</p></div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input type="text" id="employeeSearch" placeholder="Søg..." style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;width:120px;" oninput="filterEmployees()">
-                <select id="employeePeriod" onchange="loadActiveEmployees()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;display:none;">
-                  <option value="month" selected>Denne måned</option>
-                </select>
-              </div>
             </div>
             <div class="card-body" id="ovSellerChart">
               <div class="empty-state">Indlæser...</div>
-            </div>
-            <div id="showMoreContainer" style="text-align:center;margin-top:8px;display:none;">
-              <button class="btn-secondary" onclick="showMoreEmployees()" id="showMoreBtn" style="padding:8px 20px;font-size:13px;">↓ Vis flere</button>
             </div>
           </div>
 
@@ -1923,7 +1914,6 @@
     Object.entries(deptCost).forEach(([k,v]) => { deptCostKr[k] = Math.round(v * usdToDkk() * 100) / 100; });
     renderBarChartCurrency('ovDeptCostChart', deptCostKr, '#BA7517');
 
-    await loadActiveEmployees();
   }
 
   function drawDonut(canvasId, pct, color1, color2) {
@@ -2180,203 +2170,6 @@
   }
 
 
-  let allEmployeeData = [];
-  let displayedCount = 5;
-
-  async function loadActiveEmployees() {
-    const period = document.getElementById('employeePeriod').value;
-    
-    let startDate, endDate;
-    const now = new Date();
-    endDate = now.toISOString();
-    
-    if (period === 'today') {
-      const todayStart = new Date(now);
-      todayStart.setHours(0, 0, 0, 0);
-      startDate = todayStart.toISOString();
-    } else if (period === 'yesterday') {
-      const yStart = new Date(now);
-      yStart.setDate(yStart.getDate() - 1);
-      yStart.setHours(0, 0, 0, 0);
-      const yEnd = new Date(yStart);
-      yEnd.setHours(23, 59, 59, 999);
-      startDate = yStart.toISOString();
-      endDate = yEnd.toISOString();
-    } else if (period === 'week') {
-      const weekStart = new Date(now);
-      const day = weekStart.getDay();
-      const diff = day === 0 ? -6 : 1 - day;
-      weekStart.setDate(weekStart.getDate() + diff);
-      weekStart.setHours(0, 0, 0, 0);
-      startDate = weekStart.toISOString();
-    } else if (period === 'lastweek') {
-      const lastWeekEnd = new Date(now);
-      const dayOfWeek = lastWeekEnd.getDay();
-      const diffToLastSun = dayOfWeek === 0 ? -7 : -dayOfWeek;
-      lastWeekEnd.setDate(lastWeekEnd.getDate() + diffToLastSun);
-      lastWeekEnd.setHours(23, 59, 59, 999);
-      const lastWeekStart = new Date(lastWeekEnd);
-      lastWeekStart.setDate(lastWeekStart.getDate() - 6);
-      lastWeekStart.setHours(0, 0, 0, 0);
-      startDate = lastWeekStart.toISOString();
-      endDate = lastWeekEnd.toISOString();
-    } else if (period === 'month') {
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      monthStart.setHours(0, 0, 0, 0);
-      startDate = monthStart.toISOString();
-    } else if (period === 'lastmonth') {
-      const lmStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      lmStart.setHours(0, 0, 0, 0);
-      const lmEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-      lmEnd.setHours(23, 59, 59, 999);
-      startDate = lmStart.toISOString();
-      endDate = lmEnd.toISOString();
-    } else if (period === 'year') {
-      const yearStart = new Date(now.getFullYear(), 0, 1);
-      yearStart.setHours(0, 0, 0, 0);
-      startDate = yearStart.toISOString();
-    } else if (period === 'lastyear') {
-      const lyStart = new Date(now.getFullYear() - 1, 0, 1);
-      lyStart.setHours(0, 0, 0, 0);
-      const lyEnd = new Date(now.getFullYear() - 1, 11, 31);
-      lyEnd.setHours(23, 59, 59, 999);
-      startDate = lyStart.toISOString();
-      endDate = lyEnd.toISOString();
-    } else {
-      startDate = '2020-01-01T00:00:00.000Z'; // All time
-    }
-
-    try {
-      // Fetch all analytics data for the period
-      let analytics = [];
-      let _from2 = 0;
-      const _pageSize2 = 1000;
-      while (true) {
-        const { data: _page2, error: _err2 } = await sb
-          .from('analytics')
-          .select('user_id, event_type, cost_estimate')
-          .gte('timestamp', startDate)
-          .lte('timestamp', endDate)
-          .eq('event_type', 'analysis_completed')
-          .range(_from2, _from2 + _pageSize2 - 1);
-        if (_err2) throw _err2;
-        if (!_page2 || _page2.length === 0) break;
-        analytics = analytics.concat(_page2);
-        if (_page2.length < _pageSize2) break;
-        _from2 += _pageSize2;
-      }
-      const error = null;
-      if (false) throw error;
-
-      // Fetch all profiles
-      const { data: profiles } = await sb
-        .from('profiles')
-        .select('id, full_name, department');
-
-      if (!profiles) return;
-
-      // Group by user
-      const userStats = {};
-      
-      (analytics || []).forEach(a => {
-        if (!a.user_id) return;
-        if (!userStats[a.user_id]) {
-          userStats[a.user_id] = { analyses: 0, cost: 0 };
-        }
-        userStats[a.user_id].analyses++;
-        userStats[a.user_id].cost += (a.cost_estimate || 0);
-      });
-
-      // Combine with profile data
-      allEmployeeData = profiles
-        .map(p => ({
-          id: p.id,
-          name: p.full_name || p.email || 'Ukendt',
-          department: p.department || 'Ingen afdeling',
-          analyses: userStats[p.id]?.analyses || 0,
-          cost: userStats[p.id]?.cost || 0
-        }))
-        .filter(e => e.analyses > 0) // Only show users with analyses
-        .sort((a, b) => b.analyses - a.analyses); // Sort by analyses desc
-
-      displayedCount = 5;
-      renderEmployees();
-
-    } catch (error) {
-      console.error('Error loading active employees:', error);
-      document.getElementById('employeeList').innerHTML = '<div class="empty-state">Kunne ikke indlæse medarbejdere</div>';
-    }
-  }
-
-  function renderEmployees(filteredData = null) {
-    const data = filteredData || allEmployeeData;
-    const container = document.getElementById('employeeList');
-    const showMoreContainer = document.getElementById('showMoreContainer');
-    const showMoreBtn = document.getElementById('showMoreBtn');
-
-    if (data.length === 0) {
-      container.innerHTML = '<div class="empty-state">Ingen aktive medarbejdere i denne periode</div>';
-      showMoreContainer.style.display = 'none';
-      return;
-    }
-
-    const toShow = data.slice(0, displayedCount);
-    
-    container.innerHTML = toShow.map((emp, index) => `
-      <div class="employee-card">
-        <div class="employee-rank">${index + 1}</div>
-        <div class="employee-info">
-          <div class="employee-name">${emp.name}</div>
-          <div class="employee-dept">${emp.department}</div>
-        </div>
-        <div class="employee-stats">
-          <div class="employee-analyses">${emp.analyses} analyser</div>
-          <div class="employee-cost">${(emp.cost * usdToDkk()).toFixed(2)} kr</div>
-        </div>
-      </div>
-    `).join('');
-
-    // Show/hide "Show more" button
-    if (displayedCount < data.length) {
-      showMoreContainer.style.display = 'block';
-      const remaining = data.length - displayedCount;
-      showMoreBtn.textContent = `↓ Vis ${Math.min(5, remaining)} mere`;
-    } else {
-      showMoreContainer.style.display = 'none';
-    }
-  }
-
-  function showMoreEmployees() {
-    displayedCount += 5;
-    const searchTerm = document.getElementById('employeeSearch').value.toLowerCase();
-    if (searchTerm) {
-      const filtered = allEmployeeData.filter(e => 
-        e.name.toLowerCase().includes(searchTerm) || 
-        e.department.toLowerCase().includes(searchTerm)
-      );
-      renderEmployees(filtered);
-    } else {
-      renderEmployees();
-    }
-  }
-
-  function filterEmployees() {
-    const searchTerm = document.getElementById('employeeSearch').value.toLowerCase();
-    
-    if (!searchTerm) {
-      displayedCount = 5;
-      renderEmployees();
-      return;
-    }
-
-    const filtered = allEmployeeData.filter(e => 
-      e.name.toLowerCase().includes(searchTerm) || 
-      e.department.toLowerCase().includes(searchTerm)
-    );
-
-    displayedCount = filtered.length; // Show all filtered results
-    renderEmployees(filtered);
-  }
 
   async function loadCoverageRatings() {
     try {
