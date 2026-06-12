@@ -1013,6 +1013,7 @@
             <div class="stat-label">Total omkostning</div>
             <div class="stat-value" id="apiCostTotal">— kr</div>
             <div class="stat-subtext" id="apiCostPeriod">—</div>
+            <div class="stat-subtext" id="usdRateDisplay" style="margin-top:2px;"></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Analyser i perioden</div>
@@ -1456,7 +1457,44 @@
   let currentFeedbackFilter = 'pending';
   let allFeedback = [];
 
+  // USD → DKK kurs: hentes dagligt, cachet i localStorage, fallback til 7
+  let _usdToDkk = 7;
+  function usdToDkk() { return _usdToDkk; }
+
+  async function initExchangeRate() {
+    try {
+      const cached = JSON.parse(localStorage.getItem('iqsales_usd_dkk') || 'null');
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      if (cached && cached.rate && (Date.now() - cached.fetchedAt) < oneDayMs) {
+        _usdToDkk = cached.rate;
+        updateRateDisplay();
+        return;
+      }
+      const res = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data = await res.json();
+      const rate = data?.rates?.DKK;
+      if (rate && rate > 0) {
+        _usdToDkk = rate;
+        localStorage.setItem('iqsales_usd_dkk', JSON.stringify({ rate, fetchedAt: Date.now() }));
+      } else if (cached && cached.rate) {
+        _usdToDkk = cached.rate; // brug forrige kendte kurs hvis API'et fejler
+      }
+    } catch (e) {
+      console.error('Kunne ikke hente USD/DKK kurs, bruger fallback 7:', e);
+      const cached = JSON.parse(localStorage.getItem('iqsales_usd_dkk') || 'null');
+      if (cached && cached.rate) _usdToDkk = cached.rate;
+    }
+    updateRateDisplay();
+  }
+
+  function updateRateDisplay() {
+    const el = document.getElementById('usdRateDisplay');
+    if (el) el.textContent = `kurs: ${_usdToDkk.toFixed(2)} kr/USD`;
+  }
+
   async function init() {
+    await initExchangeRate();
+
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { window.location.href = '/login.html'; return; }
 
@@ -1816,14 +1854,14 @@
     document.getElementById('ovActiveUsers').textContent = uniqueUsers;
     document.getElementById('ovActiveUsersSub').textContent = 'unikke brugere';
     document.getElementById('ovCacheRate').textContent = cacheRate + '%';
-    document.getElementById('ovCacheSaved').textContent = (savedCost * 7).toFixed(0) + ' kr sparet';
+    document.getElementById('ovCacheSaved').textContent = (savedCost * usdToDkk()).toFixed(0) + ' kr sparet';
     document.getElementById('ovAvgTime').textContent = avgTime + 's';
 
     // Donut
     document.getElementById('ovDonutPct').textContent = cacheRate + '%';
     document.getElementById('ovCacheCount').textContent = cached.length + ' analyser · 0 kr';
-    document.getElementById('ovNewCount').textContent = fresh.length + ' analyser · ' + (totalCost * 7).toFixed(0) + ' kr';
-    document.getElementById('ovSaved').textContent = (savedCost * 7).toFixed(0) + ' kr';
+    document.getElementById('ovNewCount').textContent = fresh.length + ' analyser · ' + (totalCost * usdToDkk()).toFixed(0) + ' kr';
+    document.getElementById('ovSaved').textContent = (savedCost * usdToDkk()).toFixed(0) + ' kr';
     drawDonut('ovDonutChart', cacheRate, '#1A3C2E', '#95D5B2');
 
     // Analyser per forsikringstype
@@ -1882,7 +1920,7 @@
     });
     renderBarChart('ovDeptAnalysesChart', deptAnalyses, '#1A3C2E');
     const deptCostKr = {};
-    Object.entries(deptCost).forEach(([k,v]) => { deptCostKr[k] = Math.round(v * 7 * 100) / 100; });
+    Object.entries(deptCost).forEach(([k,v]) => { deptCostKr[k] = Math.round(v * usdToDkk() * 100) / 100; });
     renderBarChartCurrency('ovDeptCostChart', deptCostKr, '#BA7517');
 
     await loadActiveEmployees();
@@ -1933,7 +1971,7 @@
       const name = pMap[s.userId] || ('Bruger ' + (s.userId?.slice(0,8) || '?'));
       const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
       const val = s[field];
-      const displayVal = field === 'cost' ? (val * 7).toFixed(2) + ' kr' : val + ' analyser';
+      const displayVal = field === 'cost' ? (val * usdToDkk()).toFixed(2) + ' kr' : val + ' analyser';
       return `<div onclick="${clickFn ? clickFn + "('" + s.userId + "')" : ''}" style="${clickFn?'cursor:pointer;':''}display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div style="width:26px;height:26px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#0F6E56;flex-shrink:0;">${initials}</div>
         <div style="flex:1;min-width:0;">
@@ -2293,7 +2331,7 @@
         </div>
         <div class="employee-stats">
           <div class="employee-analyses">${emp.analyses} analyser</div>
-          <div class="employee-cost">${(emp.cost * 7).toFixed(2)} kr</div>
+          <div class="employee-cost">${(emp.cost * usdToDkk()).toFixed(2)} kr</div>
         </div>
       </div>
     `).join('');
@@ -2945,7 +2983,7 @@
 
       // Total cost
       const totalCost = completed.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
-      document.getElementById('apiCostTotal').textContent = (totalCost * 7).toFixed(2) + ' kr';
+      document.getElementById('apiCostTotal').textContent = (totalCost * usdToDkk()).toFixed(2) + ' kr';
 
       // Cache hit rate
       const cacheHits = completed.filter(a => a.cache_used).length;
@@ -2955,7 +2993,7 @@
       // Cache savings (estimated)
       const avgCostPerAnalysis = completed.length > 0 ? totalCost / completed.length : 0;
       const savings = cacheHits * avgCostPerAnalysis;
-      document.getElementById('cacheSavings').textContent = (savings * 7).toFixed(2) + ' kr';
+      document.getElementById('cacheSavings').textContent = (savings * usdToDkk()).toFixed(2) + ' kr';
 
       // Avg response time
       const responseTimes = completed.filter(a => a.response_time_ms).map(a => a.response_time_ms);
@@ -2978,7 +3016,7 @@
       const coachCost = coachAnalyses.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
       const coachEl = document.getElementById('coachCostDisplay');
       if (coachEl) {
-        coachEl.textContent = (coachCost * 7).toFixed(2) + ' kr';
+        coachEl.textContent = (coachCost * usdToDkk()).toFixed(2) + ' kr';
         const coachSub = document.getElementById('coachCostSub');
         if (coachSub) coachSub.textContent = coachAnalyses.length + ' coach-kald';
 
@@ -2990,28 +3028,31 @@
         const splitPctEl = document.getElementById('costSplitPct');
         if (splitPctEl) splitPctEl.textContent = (analysisPct % 1 === 0 ? analysisPct : analysisPct.toFixed(1)) + '%';
         const splitAEl = document.getElementById('costSplitAnalysis');
-        if (splitAEl) splitAEl.textContent = (analysisCost * 7).toFixed(2) + ' kr';
+        if (splitAEl) splitAEl.textContent = (analysisCost * usdToDkk()).toFixed(2) + ' kr';
         const splitCEl = document.getElementById('costSplitCoach');
-        if (splitCEl) splitCEl.textContent = (coachCost * 7).toFixed(2) + ' kr';
+        if (splitCEl) splitCEl.textContent = (coachCost * usdToDkk()).toFixed(2) + ' kr';
         drawDonut('costSplitDonut', analysisPct, '#1A3C2E', '#95D5B2');
       }
 
-      // 🔮 Forecast - altid baseret på seneste 30 dage uanset valgt periode
-      let forecastBase = analyses; // fallback til valgt periode
+      // 🔮 Forecast — baseret på seneste 30 dages ugedagsmønstre + denne måneds faktiske forbrug
+      let last30Data = [];
       try {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const { data: last30Data } = await sb
-          .from('analytics')
-          .select('timestamp, cost_estimate, event_type, user_id')
-          .gte('timestamp', thirtyDaysAgo.toISOString())
-          .eq('event_type', 'analysis_completed')
-          .limit(10000);
-        if (last30Data && last30Data.length > 0) forecastBase = last30Data;
-      } catch(e) { /* fallback til valgt periode */ }
-
-      const forecastCompleted = forecastBase.filter(a => a.event_type === 'analysis_completed');
-      const forecastTotalCost = forecastCompleted.reduce((sum, a) => sum + (a.cost_estimate || 0), 0);
+        let _from30 = 0;
+        while (true) {
+          const { data: _page30 } = await sb
+            .from('analytics')
+            .select('timestamp, cost_estimate, event_type, user_id')
+            .gte('timestamp', thirtyDaysAgo.toISOString())
+            .eq('event_type', 'analysis_completed')
+            .range(_from30, _from30 + 999);
+          if (!_page30 || _page30.length === 0) break;
+          last30Data = last30Data.concat(_page30);
+          if (_page30.length < 1000) break;
+          _from30 += 1000;
+        }
+      } catch(e) { /* ignorer, falder tilbage til tom */ }
 
       // Helper: check if a date is a Danish workday (mon-fri, no holiday)
       function isDanishHolidayAdmin(d) {
@@ -3027,40 +3068,52 @@
         const dow = d.getDay();
         return dow >= 1 && dow <= 5 && !isDanishHolidayAdmin(d);
       }
-      function countWorkdays(from, to) {
-        let count = 0;
-        const cur = new Date(from);
-        cur.setHours(0,0,0,0);
-        const end = new Date(to);
-        end.setHours(0,0,0,0);
-        while (cur <= end) { if (isWorkday(cur)) count++; cur.setDate(cur.getDate()+1); }
-        return Math.max(1, count);
-      }
 
-      // Elapsed workdays since 1st of month up to today
+      // Gns. omkostning pr. ugedag baseret på seneste 30 dage (DKK)
+      const weekdayCostSum = [0,0,0,0,0,0,0];
+      const weekdayDayCount = [0,0,0,0,0,0,0]; // antal forekomster af hver ugedag i datasættet
+      const seenDates = new Set();
+      last30Data.forEach(a => {
+        const dt = new Date(a.timestamp);
+        const dow = dt.getDay();
+        weekdayCostSum[dow] += (a.cost_estimate || 0) * usdToDkk();
+        const dateKey = dt.toISOString().substring(0,10);
+        if (!seenDates.has(dateKey + '|' + dow)) { seenDates.add(dateKey + '|' + dow); weekdayDayCount[dow]++; }
+      });
+      const weekdayAvg = weekdayCostSum.map((sum,i) => weekdayDayCount[i] > 0 ? sum / weekdayDayCount[i] : 0);
+
+      // Denne måneds faktiske forbrug til dato (DKK) — fra det allerede hentede analyses-sæt for "month"-perioden hvis valgt, ellers separat beregning
       const now30 = new Date();
       const monthStart30 = new Date(now30.getFullYear(), now30.getMonth(), 1);
-      const elapsedWorkdays = countWorkdays(monthStart30, now30);
+      const monthToDateData = last30Data.filter(a => new Date(a.timestamp) >= monthStart30 && new Date(a.timestamp) <= now30);
+      const monthToDateCost = monthToDateData.reduce((sum,a) => sum + (a.cost_estimate||0) * usdToDkk(), 0);
+      const monthToDateAnalyses = monthToDateData.length;
 
-      // Remaining workdays from tomorrow to end of month
-      const tomorrow30 = new Date(now30); tomorrow30.setDate(tomorrow30.getDate()+1);
+      // Fremtidige dage i resten af måneden, summeret med ugedags-gennemsnit
       const monthEnd30 = new Date(now30.getFullYear(), now30.getMonth()+1, 0);
-      const remainingWorkdays = countWorkdays(tomorrow30, monthEnd30);
-      const totalWorkdaysInMonth = elapsedWorkdays + remainingWorkdays;
+      const tomorrow30 = new Date(now30); tomorrow30.setDate(tomorrow30.getDate()+1); tomorrow30.setHours(0,0,0,0);
+      let remainingForecast = 0;
+      let remainingWorkdays = 0;
+      const cur30 = new Date(tomorrow30);
+      while (cur30 <= monthEnd30) {
+        if (isWorkday(cur30)) {
+          remainingForecast += weekdayAvg[cur30.getDay()];
+          remainingWorkdays++;
+        }
+        cur30.setDate(cur30.getDate()+1);
+      }
 
-      const dailyAvgCost = forecastTotalCost / elapsedWorkdays;
-      // Projected end-of-month = already spent + daily average × remaining workdays
-      const monthlyForecast = forecastTotalCost + (dailyAvgCost * remainingWorkdays);
-      const perAnalysisCost = forecastCompleted.length > 0 ? forecastTotalCost / forecastCompleted.length : 0;
-      const forecastUsers = new Set(forecastCompleted.map(a => a.user_id).filter(Boolean));
+      const monthlyForecast = monthToDateCost + remainingForecast;
+      const dailyAvgCost = monthToDateAnalyses > 0 ? monthToDateCost / Math.max(1, new Set(monthToDateData.map(a=>(a.timestamp||'').substring(0,10))).size) : 0;
+      const perAnalysisCost = monthToDateAnalyses > 0 ? monthToDateCost / monthToDateAnalyses : 0;
+      const forecastUsers = new Set(monthToDateData.map(a => a.user_id).filter(Boolean));
       const totalUsers = forecastUsers.size || 1;
-      const daysWithData = new Set(forecastCompleted.map(a => (a.timestamp||'').substring(0,10)).filter(Boolean)).size;
 
       document.getElementById('forecastMonthly').textContent = monthlyForecast.toFixed(2) + ' kr';
       document.getElementById('forecastDaily').textContent = dailyAvgCost.toFixed(2) + ' kr';
       document.getElementById('forecastPerUser').textContent = (monthlyForecast / totalUsers).toFixed(2) + ' kr';
       document.getElementById('forecastPerAnalysis').textContent = perAnalysisCost.toFixed(3) + ' kr';
-      document.getElementById('forecastBasis').textContent = `${forecastTotalCost.toFixed(2)} kr brugt · dagsnit ${dailyAvgCost.toFixed(2)} kr · ${remainingWorkdays} hverdage tilbage · ${forecastCompleted.length} analyser`;
+      document.getElementById('forecastBasis').textContent = `${monthToDateCost.toFixed(2)} kr brugt · dagsnit ${dailyAvgCost.toFixed(2)} kr · ${remainingWorkdays} hverdage tilbage · ${monthToDateAnalyses} analyser · baseret på ugedagsmønstre fra seneste 30 dage`;
 
       // Daily cost chart
       const dailyCosts = {};
@@ -3070,7 +3123,7 @@
       });
 
       const costLabels = Object.keys(dailyCosts);
-      const costData = Object.values(dailyCosts).map(v => parseFloat((v * 7).toFixed(2)));
+      const costData = Object.values(dailyCosts).map(v => parseFloat((v * usdToDkk()).toFixed(2)));
 
       // Sparkline metadata
       const costTotal = costData.reduce((s,v)=>s+v,0);
@@ -3183,7 +3236,7 @@
             <td>${a.insurance_type || '—'}</td>
             <td style="font-size:13px;">${a.company_a || '?'} vs ${a.company_b || '?'}</td>
             <td>${(a.tokens_used || 0).toLocaleString()}</td>
-            <td style="font-weight:600;">${((a.cost_estimate || 0) * 7).toFixed(2)} kr</td>
+            <td style="font-weight:600;">${((a.cost_estimate || 0) * usdToDkk()).toFixed(2)} kr</td>
             <td>${a.response_time_ms ? (a.response_time_ms / 1000).toFixed(1) + 's' : '—'}</td>
             <td>${a.cache_used ? '<span class="badge badge-ready">Cache</span>' : '—'}</td>
             <td style="font-size:12px;color:var(--muted)">${formatDate(a.timestamp)}</td>
