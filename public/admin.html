@@ -917,6 +917,7 @@
             <button onclick="previewImplementFeedback()" style="padding:8px 16px; background:#1A3C2E; color:#fff; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif; white-space:nowrap;">Implementer feedback</button>
           </div>
           <div id="implementFeedbackStatus" style="font-size:13px; color:#6B7280; margin-top:10px; display:none;"></div>
+          <div id="implementFeedbackPreview" style="margin-top:12px; display:none;"></div>
         </div>
 
         <!-- Cache-kvalitetsfejl -->
@@ -2493,16 +2494,32 @@
 
   async function previewImplementFeedback() {
     const statusEl = document.getElementById('implementFeedbackStatus');
+    const previewEl = document.getElementById('implementFeedbackPreview');
     statusEl.style.display = 'block';
-    statusEl.textContent = 'Beregner omkostning...';
+    statusEl.textContent = 'Henter godkendt feedback...';
+    previewEl.style.display = 'none';
 
-    // Find forsikringstyper med godkendt feedback
+    // Hent al godkendt feedback med indhold
     const { data: approvedFeedback } = await sb
       .from('feedback')
-      .select('insurance_type')
-      .eq('status', 'approved');
+      .select('id, insurance_type, category, comment, created_at')
+      .eq('status', 'approved')
+      .order('insurance_type');
 
-    const types = [...new Set((approvedFeedback || []).map(f => f.insurance_type).filter(Boolean))];
+    if (!approvedFeedback || approvedFeedback.length === 0) {
+      statusEl.textContent = 'Ingen godkendt feedback at implementere';
+      return;
+    }
+
+    // Gruppér per forsikringstype
+    const byType = {};
+    approvedFeedback.forEach(f => {
+      const type = f.insurance_type || 'Generel';
+      byType[type] = byType[type] || [];
+      byType[type].push(f);
+    });
+
+    const types = Object.keys(byType);
 
     // Hent antal cache-entries per type
     const { data: cacheEntries } = await sb
@@ -2524,17 +2541,39 @@
       estimatedCost += count * (avgCost[t] || 1.50);
     });
 
-    const msg = `${types.length} forsikringstyper · ${totalCombinations} kombinationer · estimeret maks. ${estimatedCost.toFixed(0)} kr\n\nVil du fortsætte?`;
-    
-    if (confirm(msg)) {
-      await implementFeedback(types);
-    } else {
-      statusEl.style.display = 'none';
-    }
+    statusEl.style.display = 'none';
+    previewEl.style.display = 'block';
+    previewEl.innerHTML = `
+      <div style="background:#fff; border:0.5px solid #E5E7EB; border-radius:10px; padding:16px;">
+        <div style="font-size:13px; font-weight:600; color:#1A1A1A; margin-bottom:10px;">Dette implementeres:</div>
+        ${types.map(type => `
+          <div style="margin-bottom:14px;">
+            <div style="font-size:13px; font-weight:600; color:#1A3C2E; margin-bottom:6px;">${type} <span style="color:#6B7280; font-weight:400;">— ${byType[type].length} feedback · ${typeCounts[type]||0} kombinationer á ${(avgCost[type]||1.50).toFixed(2)} kr</span></div>
+            ${byType[type].map(f => `
+              <div style="background:#F8F6F1; border-radius:8px; padding:8px 12px; margin-bottom:6px; font-size:12px;">
+                ${f.category ? `<div style="font-weight:500; color:#1A1A1A; margin-bottom:2px;">${f.category}</div>` : ''}
+                <div style="color:#6B7280;">"${f.comment || 'Ingen kommentar'}"</div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+        <div style="border-top:0.5px solid #E5E7EB; padding-top:10px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:13px; color:#1A1A1A;">
+            <strong>${types.length}</strong> forsikringstyper · <strong>${totalCombinations}</strong> kombinationer ryddes · estimeret maks. <strong>${estimatedCost.toFixed(0)} kr</strong>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button onclick="document.getElementById('implementFeedbackPreview').style.display='none'" style="padding:7px 14px; background:#fff; color:#6B7280; border:0.5px solid #E5E7EB; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Annuller</button>
+            <button onclick="implementFeedback(${JSON.stringify(types).replace(/"/g,'&quot;')})" style="padding:7px 14px; background:#1A3C2E; color:#fff; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Bekræft og implementer</button>
+          </div>
+        </div>
+      </div>`;
   }
 
   async function implementFeedback(types) {
     const statusEl = document.getElementById('implementFeedbackStatus');
+    const previewEl = document.getElementById('implementFeedbackPreview');
+    previewEl.style.display = 'none';
+    statusEl.style.display = 'block';
     statusEl.textContent = 'Rydder cache...';
 
     let deleted = 0;
