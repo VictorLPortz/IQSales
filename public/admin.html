@@ -3163,13 +3163,13 @@
     if (!terms || terms.length === 0) {
       grid.innerHTML = '<div class="empty-state">Ingen PDFs hentet endnu. Klik "Refresh alle PDFs" for at starte.</div>';
       document.getElementById('pdfStatusCount').textContent = '0 PDFs';
-      document.getElementById('refreshStatus').textContent = 'Systemet er klart til første refresh';
+      // Refresh-knap fjernet, intet at vise her
     } else {
       document.getElementById('pdfStatusCount').textContent = `${terms.length} PDFs loaded`;
       
       const latest = terms[0]?.parsed_at;
       if (latest) {
-        document.getElementById('refreshStatus').textContent = `Sidst opdateret: ${formatDate(latest)}`;
+        // (sidst opdateret vises ikke længere her)
       }
 
       grid.innerHTML = terms.map(t => `
