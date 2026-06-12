@@ -1843,6 +1843,7 @@
       hourCounts[dt.getHours()]++;
     });
     const peakDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
+    window._overviewCompleted = completed;
     renderWeekdayChart('ovWeekdayChart', dayNames, dayCounts, hourCounts, peakDayIdx, completed.length);
 
     // Top kombinationer
@@ -1919,8 +1920,7 @@
     if (!container) return;
     const max = sellers[0]?.[field] || 1;
     container.innerHTML = sellers.length ? sellers.map(s => {
-      const name = pMap[s.userId] || null;
-      if (!name) return '';
+      const name = pMap[s.userId] || ('Bruger ' + (s.userId?.slice(0,8) || '?'));
       const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
       const val = s[field];
       const displayVal = field === 'cost' ? (val * 7).toFixed(2) + ' kr' : val + ' analyser';
@@ -1936,34 +1936,50 @@
     : '<div class="empty-state">Ingen data</div>';
   }
 
-  function renderWeekdayChart(containerId, labels, counts, hourCounts, peakDayIdx, total) {
+  function renderWeekdayChart(containerId, labels, counts, hourCounts, peakDayIdx, total, selectedDay) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const max = Math.max(...counts) || 1;
     const maxH = 70;
     const peakDayLabel = (typeof peakDayIdx === 'number' && total > 0) ? labels[peakDayIdx] : '—';
 
-    // Hourly mini chart (24 timer)
-    const hMax = Math.max(...hourCounts) || 1;
-    const peakHourIdx = hourCounts.indexOf(hMax);
-    const peakHourLabel = total > 0 ? `${peakHourIdx}:00–${peakHourIdx+1}:00` : '—';
+    // Hvis en dag er valgt, vis time-fordeling kun for den dag
+    let displayHourCounts = hourCounts;
+    let hourTitle = 'Aktivitet pr. time (00–23) · alle dage';
+    if (typeof selectedDay === 'number') {
+      const dayHours = new Array(24).fill(0);
+      (window._overviewCompleted || []).forEach(a => {
+        const dt = new Date(a.timestamp);
+        if (dt.getDay() === selectedDay) dayHours[dt.getHours()]++;
+      });
+      displayHourCounts = dayHours;
+      hourTitle = `Aktivitet pr. time (00–23) · ${labels[selectedDay]}`;
+    }
+
+    const hMax = Math.max(...displayHourCounts) || 1;
+    const peakHourIdx = displayHourCounts.indexOf(hMax);
+    const dayTotal = typeof selectedDay === 'number' ? counts[selectedDay] : total;
+    const peakHourLabel = dayTotal > 0 ? `${peakHourIdx}:00–${peakHourIdx+1}:00` : '—';
     const hMaxH = 36;
-    const hourBars = hourCounts.map((c,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${hMaxH}px;" title="${i}:00 – ${c} analyser">
+    const hourBars = displayHourCounts.map((c,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${hMaxH}px;" title="${i}:00 – ${c} analyser">
         <div style="width:100%;background:${c>0?'#1A3C2E':'var(--surface)'};border-radius:1px;height:${Math.max(2,Math.round(c/hMax*hMaxH))}px;opacity:${c>0?0.5+0.5*(c/hMax):1};"></div>
       </div>`).join('');
 
     container.innerHTML = `<div style="display:flex;align-items:flex-end;gap:6px;height:${maxH+40}px;padding-bottom:4px;">
-      ${labels.map((l,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%;">
+      ${labels.map((l,i) => `<div onclick="selectWeekday(${i})" style="cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%;${selectedDay===i?'background:var(--surface);border-radius:6px;':''}">
         <span style="font-size:11px;font-weight:500;color:var(--text);">${counts[i] > 0 ? counts[i] : ''}</span>
-        <div style="width:100%;background:${counts[i]>0?'#1A3C2E':'var(--surface)'};border-radius:3px 3px 0 0;height:${Math.max(4,Math.round(counts[i]/max*maxH))}px;opacity:${counts[i]>0?0.7+0.3*(counts[i]/max):1};"></div>
-        <span style="font-size:11px;color:var(--muted);">${l}</span>
+        <div style="width:100%;background:${counts[i]>0?(selectedDay===i?'#52B788':'#1A3C2E'):'var(--surface)'};border-radius:3px 3px 0 0;height:${Math.max(4,Math.round(counts[i]/max*maxH))}px;opacity:${counts[i]>0?0.7+0.3*(counts[i]/max):1};"></div>
+        <span style="font-size:11px;color:${selectedDay===i?'var(--text)':'var(--muted)'};font-weight:${selectedDay===i?'600':'400'};">${l}</span>
       </div>`).join('')}
     </div>
 
     <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:11px;color:var(--muted);">Aktivitet pr. time (00–23)</span>
-        <span style="font-size:11px;font-weight:500;color:var(--text);">Peak: ${peakHourLabel}</span>
+        <span style="font-size:11px;color:var(--muted);">${hourTitle}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;font-weight:500;color:var(--text);">Peak: ${peakHourLabel}</span>
+          ${typeof selectedDay === 'number' ? `<button onclick="selectWeekday(null)" style="font-size:11px;color:var(--green-mid);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;">Vis alle dage</button>` : ''}
+        </div>
       </div>
       <div style="display:flex;align-items:flex-end;gap:2px;height:${hMaxH}px;">${hourBars}</div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px;">
@@ -1977,11 +1993,28 @@
         <div style="font-size:13px;font-weight:500;color:var(--text);">${peakDayLabel}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:11px;color:var(--muted);">Mest aktive tidspunkt</div>
+        <div style="font-size:11px;color:var(--muted);">Mest aktive tidspunkt${typeof selectedDay === 'number' ? ' (' + labels[selectedDay] + ')' : ''}</div>
         <div style="font-size:13px;font-weight:500;color:var(--text);">${peakHourLabel}</div>
       </div>
     </div>`;
   }
+
+  let _selectedWeekday = null;
+  function selectWeekday(dayIdx) {
+    _selectedWeekday = dayIdx;
+    const dayNames = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
+    const completed = window._overviewCompleted || [];
+    const dayCounts = [0,0,0,0,0,0,0];
+    const hourCounts = new Array(24).fill(0);
+    completed.forEach(a => {
+      const dt = new Date(a.timestamp);
+      dayCounts[dt.getDay()]++;
+      hourCounts[dt.getHours()]++;
+    });
+    const peakDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
+    renderWeekdayChart('ovWeekdayChart', dayNames, dayCounts, hourCounts, peakDayIdx, completed.length, dayIdx === null ? undefined : dayIdx);
+  }
+
 
   let allEmployeeData = [];
   let displayedCount = 5;
