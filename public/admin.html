@@ -2548,7 +2548,7 @@
         <div style="font-size:13px; font-weight:600; color:#1A1A1A; margin-bottom:10px;">Dette implementeres:</div>
         ${types.map(type => `
           <div style="margin-bottom:14px;">
-            <div style="font-size:13px; font-weight:600; color:#1A3C2E; margin-bottom:6px;">${type} <span style="color:#6B7280; font-weight:400;">— ${byType[type].length} feedback · ${typeCounts[type]||0} kombinationer á ${(avgCost[type]||1.50).toFixed(2)} kr</span></div>
+            <div style="font-size:13px; font-weight:600; color:#1A3C2E; margin-bottom:6px;">${type} <span style="color:#6B7280; font-weight:400;">— ${byType[type].length} feedback</span></div>
             ${byType[type].map(f => `
               <div style="background:#F8F6F1; border-radius:8px; padding:8px 12px; margin-bottom:6px; font-size:12px;">
                 ${f.category ? `<div style="font-weight:500; color:#1A1A1A; margin-bottom:2px;">${f.category}</div>` : ''}
@@ -2557,9 +2557,10 @@
             `).join('')}
           </div>
         `).join('')}
-        <div style="border-top:0.5px solid #E5E7EB; padding-top:10px; display:flex; align-items:center; justify-content:space-between;">
-          <div style="font-size:13px; color:#1A1A1A;">
-            <strong>${types.length}</strong> forsikringstyper · <strong>${totalCombinations}</strong> kombinationer ryddes · estimeret maks. <strong>${estimatedCost.toFixed(0)} kr</strong>
+        <div style="border-top:0.5px solid #E5E7EB; padding-top:12px; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <div style="font-size:12px; color:#6B7280;">${types.length} forsikringstyper · ${totalCombinations} kombinationer ryddes</div>
+            <div style="font-size:18px; font-weight:600; color:#1A3C2E; margin-top:2px;">ca. ${estimatedCost.toFixed(0)} kr</div>
           </div>
           <div style="display:flex; gap:8px;">
             <button onclick="document.getElementById('implementFeedbackPreview').style.display='none'" style="padding:7px 14px; background:#fff; color:#6B7280; border:0.5px solid #E5E7EB; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Annuller</button>
