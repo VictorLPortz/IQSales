@@ -2545,16 +2545,131 @@
     previewEl.style.display = 'block';
     previewEl.innerHTML = `
       <div style="background:#fff; border:0.5px solid #E5E7EB; border-radius:10px; padding:16px;">
-        <div style="font-size:13px; font-weight:600; color:#1A1A1A; margin-bottom:10px;">Dette implementeres:</div>
+        <div style="font-size:13px; font-weight:600; color:#1A1A1A; margin-bottom:10px;">Vælg hvilke forsikringstyper der skal implementeres:</div>
         ${types.map(type => `
           <div style="margin-bottom:14px;">
-            <div style="font-size:13px; font-weight:600; color:#1A3C2E; margin-bottom:6px;">${type} <span style="color:#6B7280; font-weight:400;">— ${byType[type].length} feedback</span></div>
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#1A3C2E; margin-bottom:6px; cursor:pointer;">
+              <input type="checkbox" class="feedback-type-checkbox" value="${type.replace(/"/g,'&quot;')}" checked style="width:16px;height:16px;cursor:pointer;">
+              ${type} <span style="color:#6B7280; font-weight:400;">— ${byType[type].length} feedback</span>
+            </label>
             ${byType[type].map(f => `
-              <div style="background:#F8F6F1; border-radius:8px; padding:8px 12px; margin-bottom:6px; font-size:12px;">
+              <div style="background:#F8F6F1; border-radius:8px; padding:8px 12px; margin-bottom:6px; margin-left:24px; font-size:12px;">
                 ${f.category ? `<div style="font-weight:500; color:#1A1A1A; margin-bottom:2px;">${f.category}</div>` : ''}
                 <div style="color:#6B7280;">"${f.comment || 'Ingen kommentar'}"</div>
               </div>
             `).join('')}
+          </div>
+        `).join('')}
+        <div style="border-top:0.5px solid #E5E7EB; padding-top:12px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:12px; color:#6B7280;" id="implementCostEstimate"></div>
+          <div style="display:flex; gap:8px;">
+            <button onclick="document.getElementById('implementFeedbackPreview').style.display='none'" style="padding:7px 14px; background:#fff; color:#6B7280; border:0.5px solid #E5E7EB; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Annuller</button>
+            <button onclick="startMergeFeedback()" style="padding:7px 14px; background:#1A3C2E; color:#fff; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Saml feedback med AI →</button>
+          </div>
+        </div>
+      </div>`;
+
+    // Gem data til senere brug
+    window._feedbackByType = byType;
+    window._feedbackTypeCounts = typeCounts;
+    window._feedbackAvgCost = avgCost;
+    updateImplementCostEstimate();
+
+    // Lyt på checkbox-ændringer
+    previewEl.querySelectorAll('.feedback-type-checkbox').forEach(cb => {
+      cb.addEventListener('change', updateImplementCostEstimate);
+    });
+  }
+
+  function updateImplementCostEstimate() {
+    const checked = Array.from(document.querySelectorAll('.feedback-type-checkbox:checked')).map(cb => cb.value);
+    const typeCounts = window._feedbackTypeCounts || {};
+    const avgCost = window._feedbackAvgCost || {};
+    let totalCombinations = 0, estimatedCost = 0;
+    checked.forEach(t => {
+      const count = typeCounts[t] || 0;
+      totalCombinations += count;
+      estimatedCost += count * (avgCost[t] || 1.50);
+    });
+    const el = document.getElementById('implementCostEstimate');
+    if (el) el.innerHTML = `<strong>${checked.length}</strong> forsikringstyper · <strong>${totalCombinations}</strong> kombinationer · ca. <strong>${estimatedCost.toFixed(0)} kr</strong>`;
+  }
+
+  async function startMergeFeedback() {
+    const checked = Array.from(document.querySelectorAll('.feedback-type-checkbox:checked')).map(cb => cb.value);
+    if (checked.length === 0) { showToast('Vælg mindst én forsikringstype', 'error'); return; }
+
+    const statusEl = document.getElementById('implementFeedbackStatus');
+    const previewEl = document.getElementById('implementFeedbackPreview');
+    previewEl.style.display = 'none';
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Samler feedback med AI — dette kan tage et øjeblik...';
+
+    try {
+      const session = JSON.parse(localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token') || '{}');
+      const token = session.access_token;
+
+      const res = await fetch('/api/merge-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ types: checked })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        statusEl.textContent = '';
+        showToast('Fejl: ' + (data.error || 'Ukendt fejl'), 'error');
+        previewEl.style.display = 'block';
+        return;
+      }
+
+      renderMergePreview(checked, data.results || []);
+    } catch (e) {
+      statusEl.textContent = '';
+      showToast('Netværksfejl: ' + e.message, 'error');
+      previewEl.style.display = 'block';
+    }
+  }
+
+  function renderMergePreview(types, results) {
+    const statusEl = document.getElementById('implementFeedbackStatus');
+    const previewEl = document.getElementById('implementFeedbackPreview');
+    statusEl.style.display = 'none';
+    previewEl.style.display = 'block';
+
+    const byType = {};
+    results.forEach(r => { byType[r.type] = byType[r.type] || []; byType[r.type].push(r); });
+
+    const typeCounts = window._feedbackTypeCounts || {};
+    const avgCost = window._feedbackAvgCost || {};
+    let totalCombinations = 0, estimatedCost = 0;
+    types.forEach(t => {
+      const count = typeCounts[t] || 0;
+      totalCombinations += count;
+      estimatedCost += count * (avgCost[t] || 1.50);
+    });
+
+    let idx = 0;
+    previewEl.innerHTML = `
+      <div style="background:#fff; border:0.5px solid #E5E7EB; border-radius:10px; padding:16px;">
+        <div style="font-size:13px; font-weight:600; color:#1A1A1A; margin-bottom:4px;">Samlet feedback — gennemse og redigér</div>
+        <div style="font-size:12px; color:#6B7280; margin-bottom:10px;">Duplikater er samlet til én kommentar per dækning. Konflikter er markeret — redigér hvis nødvendigt.</div>
+        ${types.map(type => `
+          <div style="margin-bottom:14px;">
+            <div style="font-size:13px; font-weight:600; color:#1A3C2E; margin-bottom:6px;">${type}</div>
+            ${(byType[type] || []).map(r => {
+              const i = idx++;
+              return `
+              <div style="background:${r.conflict ? '#FFFBEB' : '#F8F6F1'}; border:${r.conflict ? '1px solid #FDE68A' : 'none'}; border-radius:8px; padding:8px 12px; margin-bottom:6px; font-size:12px;">
+                <div style="font-weight:500; color:#1A1A1A; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                  ${r.category}
+                  ${r.original_count > 1 ? `<span style="color:#6B7280; font-weight:400; font-size:11px;">(${r.original_count} samlet)</span>` : ''}
+                  ${r.conflict ? `<span style="background:#FEF3C7; color:#92400E; font-size:11px; padding:1px 6px; border-radius:999px;">⚠ Uenighed</span>` : ''}
+                </div>
+                ${r.conflict && r.note ? `<div style="color:#92400E; font-size:11px; margin-bottom:4px;">${r.note}</div>` : ''}
+                ${r.original_count > 1 ? `<div style="color:#9CA3AF; font-size:11px; margin-bottom:4px;">Original: ${r.original_comments.map(c => '"'+(c||'')+'"').join(' · ')}</div>` : ''}
+                <textarea id="merged-${i}" data-ids="${r.ids.join(',')}" data-type="${type.replace(/"/g,'&quot;')}" data-category="${(r.category||'').replace(/"/g,'&quot;')}" style="width:100%; font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 8px; border:1px solid #E5E7EB; border-radius:6px; resize:vertical; min-height:40px; background:#fff;">${r.merged}</textarea>
+              </div>`;
+            }).join('')}
           </div>
         `).join('')}
         <div style="border-top:0.5px solid #E5E7EB; padding-top:12px; display:flex; align-items:center; justify-content:space-between;">
@@ -2564,17 +2679,39 @@
           </div>
           <div style="display:flex; gap:8px;">
             <button onclick="document.getElementById('implementFeedbackPreview').style.display='none'" style="padding:7px 14px; background:#fff; color:#6B7280; border:0.5px solid #E5E7EB; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Annuller</button>
-            <button onclick="implementFeedback(${JSON.stringify(types).replace(/"/g,'&quot;')})" style="padding:7px 14px; background:#1A3C2E; color:#fff; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Bekræft og implementer</button>
+            <button onclick="implementMergedFeedback(${JSON.stringify(types).replace(/"/g,'&quot;')})" style="padding:7px 14px; background:#1A3C2E; color:#fff; border:none; border-radius:8px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Bekræft og implementer</button>
           </div>
         </div>
       </div>`;
   }
 
-  async function implementFeedback(types) {
+  async function implementMergedFeedback(types) {
     const statusEl = document.getElementById('implementFeedbackStatus');
     const previewEl = document.getElementById('implementFeedbackPreview');
-    previewEl.style.display = 'none';
+
+    // Anvend redigerede tekster: opdater "kept" række med merged tekst, marker resten som 'merged'
+    const textareas = previewEl.querySelectorAll('textarea[id^="merged-"]');
     statusEl.style.display = 'block';
+    previewEl.style.display = 'none';
+    statusEl.textContent = 'Gemmer samlet feedback...';
+
+    for (const ta of textareas) {
+      const ids = ta.dataset.ids.split(',').filter(Boolean);
+      const mergedText = ta.value.trim();
+      if (ids.length === 0) continue;
+
+      const keepId = ids[0];
+      const restIds = ids.slice(1);
+
+      // Opdater den bevarede række med den samlede tekst
+      await sb.from('feedback').update({ comment: mergedText }).eq('id', keepId);
+
+      // Marker resten som 'merged' så de ikke længere er 'approved'
+      for (const rid of restIds) {
+        await sb.from('feedback').update({ status: 'merged' }).eq('id', rid);
+      }
+    }
+
     statusEl.textContent = 'Rydder cache...';
 
     let deleted = 0;
@@ -2586,10 +2723,12 @@
       if (!error) deleted++;
     }
 
-    statusEl.textContent = `✅ Cache ryddet for ${deleted} forsikringstyper — sælgerne får friske analyser næste gang`;
-    showToast(`Cache ryddet for ${deleted} forsikringstyper`, 'success');
+    statusEl.textContent = `✅ Feedback samlet og cache ryddet for ${deleted} forsikringstyper — sælgerne får friske analyser næste gang`;
+    showToast(`Feedback implementeret for ${deleted} forsikringstyper`, 'success');
     loadUnknownCacheIssues();
+    await loadFeedback();
   }
+
 
   async function approveFeedback(id) {
     // Gem evt. redigeret kommentar
