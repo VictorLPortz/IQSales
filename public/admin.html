@@ -853,6 +853,15 @@
 
         </div>
 
+        <!-- Detalje-panel for drill-down -->
+        <div id="ovDetailPanel" class="card" style="display:none; margin-bottom:14px;">
+          <div class="card-header">
+            <div><h2 id="ovDetailTitle">Detaljer</h2><p id="ovDetailSub">—</p></div>
+            <button onclick="closeDetailPanel()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--green-mid);text-decoration:underline;">Luk</button>
+          </div>
+          <div class="card-body" id="ovDetailBody"></div>
+        </div>
+
         <!-- Top kombinationer -->
         <div class="card" style="margin-bottom:14px;">
           <div class="card-header"><div><h2>Mest brugte selskabskombinationer</h2><p>Top 5 i perioden</p></div></div>
@@ -1819,7 +1828,7 @@
     // Analyser per forsikringstype
     const typeCounts = {};
     completed.forEach(a => { if (a.insurance_type) typeCounts[a.insurance_type] = (typeCounts[a.insurance_type]||0)+1; });
-    renderBarChart('ovTypeChart', typeCounts, '#1A3C2E');
+    renderBarChart('ovTypeChart', typeCounts, '#1A3C2E', 'showTypeDetail');
 
     // Top sælgere
     const sellerData = {};
@@ -1831,7 +1840,7 @@
     });
     const pMap = window._feedbackProfileMap || {};
     const sellers = Object.values(sellerData).sort((a,b) => b.count - a.count).slice(0, 8);
-    renderSellerChart('ovSellerChart', sellers, pMap, 'count');
+    renderSellerChart('ovSellerChart', sellers, pMap, 'count', 'showSellerDetail');
 
     // Aktivitet per ugedag
     const dayNames = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
@@ -1889,13 +1898,13 @@
     ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI/2 + angle1, -Math.PI/2 + Math.PI*2); ctx.strokeStyle = color2; ctx.lineWidth = lineW; ctx.lineCap = 'round'; ctx.stroke();
   }
 
-  function renderBarChart(containerId, data, color) {
+  function renderBarChart(containerId, data, color, clickFn) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const sorted = Object.entries(data).sort((a,b) => b[1]-a[1]).slice(0, 8);
     const max = sorted[0]?.[1] || 1;
     container.innerHTML = sorted.length ? sorted.map(([k,v]) =>
-      `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+      `<div onclick="${clickFn ? clickFn + "('" + k.replace(/'/g, "\\\\'") + "')" : ''}" style="${clickFn?'cursor:pointer;':''}display:flex;align-items:center;gap:8px;margin-bottom:7px;">
         <span style="font-size:12px;color:var(--muted);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${k}</span>
         <div style="flex:1;height:7px;background:var(--surface);border-radius:4px;overflow:hidden;"><div style="width:${Math.round(v/max*100)}%;height:100%;background:${color};border-radius:4px;"></div></div>
         <span style="font-size:12px;color:var(--muted);width:30px;text-align:right;">${v}</span>
@@ -1915,7 +1924,7 @@
       </div>`).join('') : '<div class="empty-state">Ingen data</div>';
   }
 
-  function renderSellerChart(containerId, sellers, pMap, field) {
+  function renderSellerChart(containerId, sellers, pMap, field, clickFn) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const max = sellers[0]?.[field] || 1;
@@ -1924,7 +1933,7 @@
       const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
       const val = s[field];
       const displayVal = field === 'cost' ? (val * 7).toFixed(2) + ' kr' : val + ' analyser';
-      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      return `<div onclick="${clickFn ? clickFn + "('" + s.userId + "')" : ''}" style="${clickFn?'cursor:pointer;':''}display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <div style="width:26px;height:26px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#0F6E56;flex-shrink:0;">${initials}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
@@ -1997,6 +2006,122 @@
         <div style="font-size:13px;font-weight:500;color:var(--text);">${peakHourLabel}</div>
       </div>
     </div>`;
+  }
+
+  function closeDetailPanel() {
+    document.getElementById('ovDetailPanel').style.display = 'none';
+  }
+
+  function showTypeDetail(type) {
+    const completed = window._overviewCompleted || [];
+    const pMap = window._feedbackProfileMap || {};
+    const filtered = completed.filter(a => a.insurance_type === type);
+
+    // Top sælgere for denne type
+    const sellerData = {};
+    filtered.forEach(a => {
+      if (!a.user_id) return;
+      sellerData[a.user_id] = sellerData[a.user_id] || { count: 0, userId: a.user_id };
+      sellerData[a.user_id].count++;
+    });
+    const sellers = Object.values(sellerData).sort((a,b)=>b.count-a.count).slice(0,5);
+    const maxS = sellers[0]?.count || 1;
+    const sellerHtml = sellers.length ? sellers.map(s => {
+      const name = pMap[s.userId] || ('Bruger ' + (s.userId?.slice(0,8) || '?'));
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:12px;color:var(--text);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
+        <div style="flex:1;height:7px;background:var(--surface);border-radius:4px;overflow:hidden;"><div style="width:${Math.round(s.count/maxS*100)}%;height:100%;background:#1A3C2E;border-radius:4px;"></div></div>
+        <span style="font-size:12px;color:var(--muted);width:60px;text-align:right;">${s.count} analyser</span>
+      </div>`;
+    }).join('') : '<div class="empty-state">Ingen data</div>';
+
+    // Top kombinationer for denne type
+    const comboCounts = {};
+    filtered.forEach(a => {
+      if (!a.company_a || !a.company_b) return;
+      const key = a.company_a + ' vs ' + a.company_b;
+      comboCounts[key] = (comboCounts[key]||0)+1;
+    });
+    const combos = Object.entries(comboCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxC = combos[0]?.[1] || 1;
+    const comboHtml = combos.length ? combos.map(([k,v]) =>
+      `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:12px;color:var(--text);width:180px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${k}</span>
+        <div style="flex:1;height:7px;background:var(--surface);border-radius:4px;overflow:hidden;"><div style="width:${Math.round(v/maxC*100)}%;height:100%;background:#BA7517;border-radius:4px;"></div></div>
+        <span style="font-size:12px;color:var(--muted);width:60px;text-align:right;">${v} analyser</span>
+      </div>`).join('') : '<div class="empty-state">Ingen data</div>';
+
+    // Cache rate for denne type
+    const cached = filtered.filter(a => a.cache_used).length;
+    const cacheRate = filtered.length ? Math.round(cached/filtered.length*100) : 0;
+    const totalCostType = filtered.filter(a=>!a.cache_used).reduce((s,a)=>s+(a.cost_estimate||0),0);
+
+    document.getElementById('ovDetailTitle').textContent = type;
+    document.getElementById('ovDetailSub').textContent = `${filtered.length} analyser i perioden · ${cacheRate}% cache · ${(totalCostType*7).toFixed(2)} kr`;
+    document.getElementById('ovDetailBody').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;">
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px;">Top sælgere for ${type}</div>
+          ${sellerHtml}
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px;">Top selskabskombinationer</div>
+          ${comboHtml}
+        </div>
+      </div>`;
+    document.getElementById('ovDetailPanel').style.display = 'block';
+    document.getElementById('ovDetailPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function showSellerDetail(userId) {
+    const completed = window._overviewCompleted || [];
+    const pMap = window._feedbackProfileMap || {};
+    const filtered = completed.filter(a => a.user_id === userId);
+    const name = pMap[userId] || ('Bruger ' + (userId?.slice(0,8) || '?'));
+
+    // Forsikringstyper for denne sælger
+    const typeCounts = {};
+    filtered.forEach(a => { if (a.insurance_type) typeCounts[a.insurance_type] = (typeCounts[a.insurance_type]||0)+1; });
+    const types = Object.entries(typeCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxT = types[0]?.[1] || 1;
+    const typeHtml = types.length ? types.map(([k,v]) =>
+      `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:12px;color:var(--text);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${k}</span>
+        <div style="flex:1;height:7px;background:var(--surface);border-radius:4px;overflow:hidden;"><div style="width:${Math.round(v/maxT*100)}%;height:100%;background:#1A3C2E;border-radius:4px;"></div></div>
+        <span style="font-size:12px;color:var(--muted);width:60px;text-align:right;">${v} analyser</span>
+      </div>`).join('') : '<div class="empty-state">Ingen data</div>';
+
+    // Ugedagsfordeling for denne sælger
+    const dayNames = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
+    const dayCounts = [0,0,0,0,0,0,0];
+    filtered.forEach(a => { dayCounts[new Date(a.timestamp).getDay()]++; });
+    const maxD = Math.max(...dayCounts) || 1;
+    const dayHtml = `<div style="display:flex;align-items:flex-end;gap:6px;height:90px;">
+      ${dayNames.map((l,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%;">
+        <span style="font-size:11px;font-weight:500;color:var(--text);">${dayCounts[i]>0?dayCounts[i]:''}</span>
+        <div style="width:100%;background:${dayCounts[i]>0?'#1A3C2E':'var(--surface)'};border-radius:3px 3px 0 0;height:${Math.max(4,Math.round(dayCounts[i]/maxD*60))}px;opacity:${dayCounts[i]>0?0.7+0.3*(dayCounts[i]/maxD):1};"></div>
+        <span style="font-size:11px;color:var(--muted);">${l}</span>
+      </div>`).join('')}
+    </div>`;
+
+    const cached = filtered.filter(a=>a.cache_used).length;
+    const cost = filtered.filter(a=>!a.cache_used).reduce((s,a)=>s+(a.cost_estimate||0),0);
+
+    document.getElementById('ovDetailTitle').textContent = name;
+    document.getElementById('ovDetailSub').textContent = `${filtered.length} analyser i perioden · ${(cost*7).toFixed(2)} kr · ${cached} fra cache`;
+    document.getElementById('ovDetailBody').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;">
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px;">Forsikringstyper</div>
+          ${typeHtml}
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px;">Ugedagsfordeling</div>
+          ${dayHtml}
+        </div>
+      </div>`;
+    document.getElementById('ovDetailPanel').style.display = 'block';
+    document.getElementById('ovDetailPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   let _selectedWeekday = null;
