@@ -861,6 +861,18 @@
           </div>
         </div>
 
+        <!-- Afdelinger -->
+        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:14px;">
+          <div class="card">
+            <div class="card-header"><div><h2>Analyser per afdeling</h2><p>Antal i perioden</p></div></div>
+            <div class="card-body" id="ovDeptAnalysesChart"><div class="empty-state">Indlæser...</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><h2>Omkostning per afdeling</h2><p>Total i perioden</p></div></div>
+            <div class="card-body" id="ovDeptCostChart"><div class="empty-state">Indlæser...</div></div>
+          </div>
+        </div>
+
       </div>
 
       <!-- SUBTAB: Feedback Godkendelse -->
@@ -1085,16 +1097,23 @@
             <div class="card-header"><div><h2>ROI-estimat for ABG</h2><p>Rediger inputs nedenfor</p></div></div>
             <div class="card-body">
               <div style="display:flex;flex-direction:column;gap:10px;">
-                <div>
-                  <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Konverteringsrate (%)</div>
-                  <input type="number" id="roiConvRate" value="15" min="1" max="100" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;" oninput="updateROI()">
+                <div style="display:flex;gap:8px;">
+                  <div style="flex:1;">
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Konv.rate uden IQSales (%)</div>
+                    <input type="number" id="roiBaseRate" value="25" min="0" max="100" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;" oninput="updateROI()">
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Konv.rate med IQSales (%)</div>
+                    <input type="number" id="roiConvRate" value="40" min="0" max="100" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;" oninput="updateROI()">
+                  </div>
                 </div>
                 <div>
                   <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Gns. præmie per kunde (kr/år)</div>
                   <input type="number" id="roiPremium" value="8000" min="100" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;" oninput="updateROI()">
                 </div>
                 <div style="border-top:0.5px solid var(--border);padding-top:10px;">
-                  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--muted);">Estimerede nye kunder</span><span style="font-weight:500;" id="roiCustomers">—</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--muted);">Forbedring i konvertering</span><span style="font-weight:500;" id="roiUplift">—</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--muted);">Ekstra kunder pga. IQSales</span><span style="font-weight:500;" id="roiCustomers">—</span></div>
                   <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--muted);">Estimeret merindtægt/år</span><span style="font-weight:500;color:#166534;" id="roiRevenue">—</span></div>
                   <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;"><span style="color:var(--muted);">IQSales-omkostning/år</span><span style="font-weight:500;color:#991B1B;" id="roiCost">—</span></div>
                   <div style="text-align:center;">
@@ -1494,7 +1513,7 @@
       const [ssResult, focusResult, profilesResult] = await Promise.all([
         sb.from('analytics').select('user_id, metadata, timestamp').eq('event_type', 'screenshot_attempt').order('timestamp', { ascending: false }),
         sb.from('analytics').select('user_id, metadata, timestamp').eq('event_type', 'focus_lost').order('timestamp', { ascending: false }),
-        sb.from('profiles').select('id, full_name')
+        sb.from('profiles').select('id, full_name, department')
       ]);
       const ssData = ssResult.data || [];
       const focusData = focusResult.data || [];
@@ -1756,10 +1775,11 @@
 
     // Hent profiles til navne hvis ikke allerede loaded
     if (!window._feedbackProfileMap || Object.keys(window._feedbackProfileMap).length === 0) {
-      const { data: profiles } = await sb.from('profiles').select('id, full_name');
-      const pm = {};
-      if (profiles) profiles.forEach(p => { pm[p.id] = p.full_name; });
+      const { data: profiles } = await sb.from('profiles').select('id, full_name, department');
+      const pm = {}, dm = {};
+      if (profiles) profiles.forEach(p => { pm[p.id] = p.full_name; dm[p.id] = p.department || 'Ukendt afdeling'; });
       window._feedbackProfileMap = pm;
+      window._departmentMap = dm;
     }
 
     let analyses = [], from = 0;
@@ -1822,9 +1842,8 @@
       dayCounts[dt.getDay()]++;
       hourCounts[dt.getHours()]++;
     });
-    const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
     const peakDayIdx = dayCounts.indexOf(Math.max(...dayCounts));
-    renderWeekdayChart('ovWeekdayChart', dayNames, dayCounts, peakHour, peakDayIdx, completed.length);
+    renderWeekdayChart('ovWeekdayChart', dayNames, dayCounts, hourCounts, peakDayIdx, completed.length);
 
     // Top kombinationer
     const comboCounts = {};
@@ -1841,6 +1860,19 @@
         <div style="flex:1;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;"><div style="width:${Math.round(v/maxCombo*100)}%;height:100%;background:#1A3C2E;border-radius:4px;"></div></div>
         <span style="font-size:12px;color:var(--muted);width:80px;text-align:right;">${v} analyser</span>
       </div>`).join('') : '<div class="empty-state">Ingen data i perioden</div>';
+
+    // Per afdeling: analyser og omkostning
+    const deptMap = window._departmentMap || {};
+    const deptAnalyses = {}, deptCost = {};
+    completed.forEach(a => {
+      const dept = (a.user_id && deptMap[a.user_id]) || 'Ukendt afdeling';
+      deptAnalyses[dept] = (deptAnalyses[dept] || 0) + 1;
+      if (!a.cache_used) deptCost[dept] = (deptCost[dept] || 0) + (a.cost_estimate || 0);
+    });
+    renderBarChart('ovDeptAnalysesChart', deptAnalyses, '#1A3C2E');
+    const deptCostKr = {};
+    Object.entries(deptCost).forEach(([k,v]) => { deptCostKr[k] = Math.round(v * 7 * 100) / 100; });
+    renderBarChartCurrency('ovDeptCostChart', deptCostKr, '#BA7517');
 
     await loadActiveEmployees();
   }
@@ -1869,6 +1901,19 @@
       </div>`).join('') : '<div class="empty-state">Ingen data</div>';
   }
 
+  function renderBarChartCurrency(containerId, data, color) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const sorted = Object.entries(data).sort((a,b) => b[1]-a[1]).slice(0, 8);
+    const max = sorted[0]?.[1] || 1;
+    container.innerHTML = sorted.length ? sorted.map(([k,v]) =>
+      `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+        <span style="font-size:12px;color:var(--muted);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${k}</span>
+        <div style="flex:1;height:7px;background:var(--surface);border-radius:4px;overflow:hidden;"><div style="width:${Math.round(v/max*100)}%;height:100%;background:${color};border-radius:4px;"></div></div>
+        <span style="font-size:12px;color:var(--muted);width:60px;text-align:right;">${v.toFixed(2)} kr</span>
+      </div>`).join('') : '<div class="empty-state">Ingen data</div>';
+  }
+
   function renderSellerChart(containerId, sellers, pMap, field) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1891,13 +1936,22 @@
     : '<div class="empty-state">Ingen data</div>';
   }
 
-  function renderWeekdayChart(containerId, labels, counts, peakHour, peakDayIdx, total) {
+  function renderWeekdayChart(containerId, labels, counts, hourCounts, peakDayIdx, total) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const max = Math.max(...counts) || 1;
-    const maxH = 80;
-    const peakHourLabel = (typeof peakHour === 'number' && total > 0) ? `${peakHour}:00–${peakHour+1}:00` : '—';
+    const maxH = 70;
     const peakDayLabel = (typeof peakDayIdx === 'number' && total > 0) ? labels[peakDayIdx] : '—';
+
+    // Hourly mini chart (24 timer)
+    const hMax = Math.max(...hourCounts) || 1;
+    const peakHourIdx = hourCounts.indexOf(hMax);
+    const peakHourLabel = total > 0 ? `${peakHourIdx}:00–${peakHourIdx+1}:00` : '—';
+    const hMaxH = 36;
+    const hourBars = hourCounts.map((c,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${hMaxH}px;" title="${i}:00 – ${c} analyser">
+        <div style="width:100%;background:${c>0?'#1A3C2E':'var(--surface)'};border-radius:1px;height:${Math.max(2,Math.round(c/hMax*hMaxH))}px;opacity:${c>0?0.5+0.5*(c/hMax):1};"></div>
+      </div>`).join('');
+
     container.innerHTML = `<div style="display:flex;align-items:flex-end;gap:6px;height:${maxH+40}px;padding-bottom:4px;">
       ${labels.map((l,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%;">
         <span style="font-size:11px;font-weight:500;color:var(--text);">${counts[i] > 0 ? counts[i] : ''}</span>
@@ -1905,7 +1959,19 @@
         <span style="font-size:11px;color:var(--muted);">${l}</span>
       </div>`).join('')}
     </div>
-    <div style="display:flex;justify-content:space-between;gap:12px;margin-top:12px;border-top:0.5px solid var(--border);padding-top:10px;">
+
+    <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:11px;color:var(--muted);">Aktivitet pr. time (00–23)</span>
+        <span style="font-size:11px;font-weight:500;color:var(--text);">Peak: ${peakHourLabel}</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:${hMaxH}px;">${hourBars}</div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px;">
+        <span>00</span><span>06</span><span>12</span><span>18</span><span>23</span>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;gap:12px;margin-top:10px;border-top:0.5px solid var(--border);padding-top:10px;">
       <div>
         <div style="font-size:11px;color:var(--muted);">Mest aktiv ugedag</div>
         <div style="font-size:13px;font-weight:500;color:var(--text);">${peakDayLabel}</div>
@@ -2179,7 +2245,7 @@
     }
 
     // Hent brugernavne til feedback
-    const { data: profiles } = await sb.from('profiles').select('id, full_name');
+    const { data: profiles } = await sb.from('profiles').select('id, full_name, department');
     const profileMap = {};
     if (profiles) profiles.forEach(p => { profileMap[p.id] = p.full_name; });
     window._feedbackProfileMap = profileMap;
@@ -2391,7 +2457,7 @@
   async function loadAPIStats() {
     // Hent profiles til navne hvis ikke allerede loaded
     if (!window._feedbackProfileMap || Object.keys(window._feedbackProfileMap).length === 0) {
-      const { data: profiles } = await sb.from('profiles').select('id, full_name');
+      const { data: profiles } = await sb.from('profiles').select('id, full_name, department');
       const pm = {};
       if (profiles) profiles.forEach(p => { pm[p.id] = p.full_name; });
       window._feedbackProfileMap = pm;
@@ -2876,13 +2942,21 @@
 
   function updateROI() {
     const analyses = window._roiAnalyses || 0;
-    const convRate = parseFloat(document.getElementById('roiConvRate')?.value || 15) / 100;
+    const baseRate = parseFloat(document.getElementById('roiBaseRate')?.value || 25) / 100;
+    const newRate = parseFloat(document.getElementById('roiConvRate')?.value || 40) / 100;
     const premium = parseFloat(document.getElementById('roiPremium')?.value || 8000);
     const monthlyCostDKK = window._roiMonthlyCost || 218;
-    const customers = Math.round(analyses * convRate);
+    const upliftRate = newRate - baseRate;
+    const customers = Math.round(analyses * upliftRate);
     const revenue = customers * premium;
     const annualCost = Math.round(monthlyCostDKK * 12);
     const roi = annualCost > 0 ? Math.round(revenue / annualCost) : 0;
+
+    const upliftEl = document.getElementById('roiUplift');
+    if (upliftEl) {
+      const upliftPct = Math.round(upliftRate * 1000) / 10;
+      upliftEl.textContent = (upliftPct >= 0 ? '+' : '') + upliftPct + ' procentpoint';
+    }
     const roiEl = document.getElementById('roiCustomers'); if (roiEl) roiEl.textContent = '~' + customers;
     const revEl = document.getElementById('roiRevenue'); if (revEl) revEl.textContent = revenue.toLocaleString('da-DK') + ' kr';
     const costEl = document.getElementById('roiCost'); if (costEl) costEl.textContent = '~' + annualCost.toLocaleString('da-DK') + ' kr';
