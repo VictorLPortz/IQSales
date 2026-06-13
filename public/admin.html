@@ -873,6 +873,12 @@
           </div>
         </div>
 
+        <!-- Analysetid per type -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-header"><div><h2>Analysetid per forsikringstype</h2><p>Gennemsnit og median (kun nye analyser, ikke cache)</p></div></div>
+          <div class="card-body" id="ovTimingChart"><div class="empty-state">Indlæser...</div></div>
+        </div>
+
       </div>
 
       <!-- SUBTAB: Feedback Godkendelse -->
@@ -1915,6 +1921,48 @@
     Object.entries(deptCost).forEach(([k,v]) => { deptCostKr[k] = Math.round(v * usdToDkk() * 100) / 100; });
     renderBarChartCurrency('ovDeptCostChart', deptCostKr, '#BA7517');
 
+    // Analysetid per forsikringstype (kun fresh, ikke cache)
+    const timingByType = {};
+    fresh.forEach(a => {
+      if (!a.insurance_type || !a.response_time_ms) return;
+      timingByType[a.insurance_type] = timingByType[a.insurance_type] || [];
+      timingByType[a.insurance_type].push(a.response_time_ms / 1000);
+    });
+    renderTimingChart('ovTimingChart', timingByType);
+
+  }
+
+  function renderTimingChart(containerId, timingByType) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const entries = Object.entries(timingByType);
+    if (entries.length === 0) { container.innerHTML = '<div class="empty-state">Ingen data i perioden</div>'; return; }
+
+    const stats = entries.map(([type, times]) => {
+      const sorted = [...times].sort((a,b) => a-b);
+      const avg = sorted.reduce((s,v)=>s+v,0) / sorted.length;
+      const mid = Math.floor(sorted.length / 2);
+      const median = sorted.length % 2 === 0 ? (sorted[mid-1] + sorted[mid]) / 2 : sorted[mid];
+      return { type, avg, median, count: sorted.length, max: sorted[sorted.length-1], min: sorted[0] };
+    }).sort((a,b) => b.avg - a.avg);
+
+    const maxVal = Math.max(...stats.map(s => s.avg)) || 1;
+
+    container.innerHTML = stats.map(s => `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+          <span style="font-size:12px;color:var(--text);">${s.type}</span>
+          <span style="font-size:11px;color:var(--muted);">${s.count} analyser · min ${s.min.toFixed(0)}s · max ${s.max.toFixed(0)}s</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;position:relative;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;">
+            <div style="position:absolute;left:0;top:0;width:${Math.min(100,Math.round(s.avg/maxVal*100))}%;height:100%;background:#1A3C2E;border-radius:4px;"></div>
+            <div style="position:absolute;left:${Math.min(100,Math.round(s.median/maxVal*100))}%;top:-2px;width:2px;height:12px;background:#BA7517;"></div>
+          </div>
+          <span style="font-size:12px;color:var(--text);width:115px;text-align:right;flex-shrink:0;">gns ${s.avg.toFixed(0)}s · median ${s.median.toFixed(0)}s</span>
+        </div>
+      </div>
+    `).join('') + `<div style="font-size:11px;color:var(--muted);margin-top:8px;">Grøn bar = gennemsnit · gul streg = median</div>`;
   }
 
   function drawDonut(canvasId, pct, color1, color2) {
