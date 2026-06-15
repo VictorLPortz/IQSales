@@ -493,12 +493,12 @@ function showInviteError(msg) {
         <div class="success-icon">✓</div>
         <div class="success-text">
           <div class="success-title">Bruger oprettet!</div>
-          <div class="success-subtitle">Du omdirigeres til login om 3 sekunder...</div>
+          <div class="success-subtitle">Tjek din mail — du skal bekræfte din adresse inden du kan logge ind.</div>
         </div>
       </div>
       
       <h1>Opret bruger</h1>
-      <p class="subtitle">Udfyld formularen for at få adgang til IQSales platformen</p>
+      <p class="subtitle">Kun medarbejdere med ABGroup, Alm. Brand, Codan eller Privatsikring mail kan oprette sig</p>
       
       <form id="signup-form">
         <div class="form-group">
@@ -662,7 +662,7 @@ function showInviteError(msg) {
       
       // ✅ Email whitelist check
       if (email && !isAllowedEmail(email)) {
-        showError('email', 'Denne email kan ikke bruges. Kontakt admin hvis du mener dette er en fejl.');
+        showError('email', 'Kun @abgroup.dk, @almbrand.dk, @codan.dk eller @privatsikring.dk mail kan bruges.');
         hasError = true;
       }
       
@@ -772,11 +772,8 @@ function showInviteError(msg) {
         // Success!
         document.getElementById('success-message').classList.add('show');
         form.style.display = 'none';
+        submitBtn.innerHTML = 'Opret bruger';
         
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          window.location.href = '/login.html';
-        }, 3000);
         
       } catch (error) {
         console.error('Signup error:', error);
