@@ -1888,7 +1888,43 @@ const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://
 
 function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[side];const link=document.getElementById('link-'+side);if(!link)return;const url=BETINGELSER_LINKS[name];if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}else{link.href='#';link.style.display='none';}});}
 
-function resetAnalysis(){selectedTypes=[];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';const wA=document.getElementById('upload-zones-a-wrapper');const wB=document.getElementById('upload-zones-b-wrapper');if(wA)wA.innerHTML='<div id="upload-zones-a"></div>';if(wB)wB.innerHTML='<div id="upload-zones-b"></div>';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
+function buildCoachSystem(companyA, companyB, types, topA, topB) {
+  // Saml PDF-tekst fra alle valgte typer (maks ~60k tegn total for at holde omkostning nede)
+  const MAX_CHARS = 60000;
+  let pdfSection = '';
+  let totalChars = 0;
+  const typeList = Array.isArray(types) ? types : (types || '').split(',').map(t => t.trim());
+
+  for (const type of typeList) {
+    if (docsA[type]?.data && docsA[type].data !== 'cached') {
+      const text = typeof docsA[type].data === 'string' ? docsA[type].data : '';
+      if (totalChars + text.length < MAX_CHARS) {
+        pdfSection += `\n\n=== ${companyA} ${type} betingelser ===\n${text.substring(0, 30000)}`;
+        totalChars += text.length;
+      }
+    }
+    if (docsB[type]?.data && docsB[type].data !== 'cached') {
+      const text = typeof docsB[type].data === 'string' ? docsB[type].data : '';
+      if (totalChars + text.length < MAX_CHARS) {
+        pdfSection += `\n\n=== ${companyB} ${type} betingelser ===\n${text.substring(0, 30000)}`;
+        totalChars += text.length;
+      }
+    }
+  }
+
+  const hasPdf = pdfSection.length > 0;
+
+  return `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB}.
+
+Analysen dækker: ${Array.isArray(types) ? types.join(', ') : types}.
+${companyA} er stærkere på: ${topA}.
+${companyB} er stærkere på: ${topB}.
+${hasPdf ? `\nDu har adgang til de fulde betingelsestekster nedenfor og KAN svare på detaljerede spørgsmål om specifikke dækninger, selvrisici, beløb og begrænsninger direkte fra betingelserne. Citér gerne konkret fra teksten når det er relevant.` : ''}
+
+Tal som en erfaren kollega. Svar på dansk.${hasPdf ? pdfSection : ''}`;
+}
+
+selectedTypes=[];docsA={};docsB={};allResults={};document.querySelectorAll('.type-btn').forEach(b=>{b.classList.remove('selected');});document.getElementById('result').innerHTML='';document.getElementById('reset-btn').style.display='none';const wA=document.getElementById('upload-zones-a-wrapper');const wB=document.getElementById('upload-zones-b-wrapper');if(wA)wA.innerHTML='<div id="upload-zones-a"></div>';if(wB)wB.innerHTML='<div id="upload-zones-b"></div>';updateCddDisplay('a');updateCddDisplay('b');renderUploadZones();window.scrollTo({top:0,behavior:'smooth'});}
 
 // ============================================================
 // USER PREFERENCES (Favoritter + Sortering)
@@ -4865,9 +4901,9 @@ async function sendGlobalCoachMessage(companyA, companyB, types) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
-        system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB}. Analysen dækker: ${types}. ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
+        system: buildCoachSystem(companyA, companyB, types, topA, topB),
         message: question,
-        max_tokens: 600,
+        max_tokens: 1000,
         user_id: getUserId() || null,
         section_type: 'chat'
       })
@@ -5176,9 +5212,9 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
-        system: `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB} (${type}). ${companyA} er stærkere på: ${topA}. ${companyB} er stærkere på: ${topB}. Svar kort, konkret og naturligt på dansk. Max 3-4 sætninger. Tal som en erfaren kollega.`,
+        system: buildCoachSystem(companyA, companyB, type, topA, topB),
         message: question,
-        max_tokens: 600,
+        max_tokens: 1000,
         user_id: getUserId() || null,
         section_type: 'chat'
       })
