@@ -382,7 +382,7 @@
 <body>
 
 <!-- INVITE FLOW: Vises kun når bruger kommer fra invitationslink -->
-<div id="invite-flow" style="display:none; min-height:100vh; background:var(--surface); display:flex; align-items:center; justify-content:center; padding:24px;">
+<div id="invite-flow" style="display:none; min-height:100vh; background:var(--surface); align-items:center; justify-content:center; padding:24px;">
   <div style="background:#fff; border-radius:16px; border:1px solid var(--border); padding:40px; width:100%; max-width:420px;">
     <div style="text-align:center; margin-bottom:32px;">
       <div style="font-family:'DM Sans',sans-serif; font-size:24px; font-weight:700; color:var(--accent); margin-bottom:8px;">Velkommen til IQSales</div>
@@ -403,7 +403,7 @@
   </div>
 </div>
 
-<div id="invite-success" style="display:none; min-height:100vh; background:var(--surface); display:flex; align-items:center; justify-content:center; padding:24px;">
+<div id="invite-success" style="display:none; min-height:100vh; background:var(--surface); align-items:center; justify-content:center; padding:24px;">
   <div style="background:#fff; border-radius:16px; border:1px solid var(--border); padding:40px; width:100%; max-width:420px; text-align:center;">
     <div style="font-size:48px; margin-bottom:16px;">✅</div>
     <div style="font-size:22px; font-weight:700; color:var(--accent); margin-bottom:8px;">Konto aktiveret!</div>
@@ -421,16 +421,19 @@
   const accessToken = params.get('access_token');
 
   if ((type === 'invite' || type === 'recovery') && accessToken) {
-    // Hide normal signup form, show invite flow
-    document.addEventListener('DOMContentLoaded', () => {
-      const mainContent = document.querySelector('.top-bar');
-      const container = document.querySelector('.container');
-      if (mainContent) mainContent.style.display = 'none';
-      if (container) container.style.display = 'none';
-      document.getElementById('invite-flow').style.display = 'flex';
-    });
-
     window._inviteToken = accessToken;
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelector('.top-bar').style.display = 'none';
+      document.querySelector('.container').style.display = 'none';
+      const inviteFlow = document.getElementById('invite-flow');
+      inviteFlow.style.cssText = 'display:flex; min-height:100vh; background:var(--surface); align-items:center; justify-content:center; padding:24px;';
+    });
+  } else {
+    // Ingen invite-token — vis normal signup formular
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('invite-flow').style.display = 'none';
+      document.getElementById('invite-success').style.display = 'none';
+    });
   }
 })();
 
@@ -498,7 +501,7 @@ function showInviteError(msg) {
       </div>
       
       <h1>Opret bruger</h1>
-      <p class="subtitle">Kun medarbejdere med ABGroup, Alm. Brand, Codan eller Privatsikring mail kan oprette sig</p>
+      <p class="subtitle">Udfyld formularen for at få adgang til IQSales</p>
       
       <form id="signup-form">
         <div class="form-group">
