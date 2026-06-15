@@ -1,798 +1,212 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Opret bruger - IQSales</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
-  
-  <style>
-    :root {
-      --bg: #FFFFFF;
-      --surface: #F8F6F1;
-      --accent: #1A3C2E;
-      --accent2: #1A3C2E;
-      --border: #E3E1D9;
-      --text: #141412;
-      --muted: #7A7870;
-      --success: #15803D;
-      --danger: #B91C1C;
-      --r: 14px;
-      --rs: 8px;
-    }
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-    
-    .top-bar {
-      background: var(--accent);
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .logo {
-      font-family: 'Syne', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      color: #fff;
-      text-decoration: none;
-    }
-    
-    .logo-sub {
-      font-size: 13px;
-      color: rgba(255,255,255,0.7);
-      font-weight: 400;
-      margin-left: 8px;
-    }
-    
-    .container {
-      max-width: 500px;
-      margin: 3rem auto;
-      padding: 0 1.5rem;
-    }
-    
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r);
-      padding: 2.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    
-    h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-    }
-    
-    .subtitle {
-      font-size: 14px;
-      color: var(--muted);
-      margin-bottom: 2rem;
-    }
-    
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-    
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-    }
-    
-    .label-required {
-      color: var(--danger);
-      margin-left: 2px;
-    }
-    
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="tel"] {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-      border: 1.5px solid var(--border);
-      border-radius: var(--rs);
-      background: #fff;
-      color: var(--text);
-      transition: all 0.15s;
-    }
-    
-    input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(26, 60, 46, 0.1);
-    }
-    
-    select {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-      border: 1.5px solid var(--border);
-      border-radius: var(--rs);
-      background: #fff;
-      color: var(--text);
-      transition: all 0.15s;
-      cursor: pointer;
-    }
-    
-    select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(26, 60, 46, 0.1);
-    }
-    
-    input.error,
-    select.error {
-      border-color: var(--danger);
-    }
-    
-    .error-message {
-      font-size: 12px;
-      color: var(--danger);
-      margin-top: 0.25rem;
-      display: none;
-    }
-    
-    .error-message.show {
-      display: block;
-    }
-    
-    .helper-text {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 0.25rem;
-    }
-    
-    .password-strength {
-      margin-top: 0.5rem;
-      display: none;
-    }
-    
-    .password-strength.show {
-      display: block;
-    }
-    
-    .strength-bar {
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 0.25rem;
-    }
-    
-    .strength-fill {
-      height: 100%;
-      width: 0%;
-      transition: all 0.3s;
-      border-radius: 2px;
-    }
-    
-    .strength-weak .strength-fill {
-      width: 33%;
-      background: var(--danger);
-    }
-    
-    .strength-medium .strength-fill {
-      width: 66%;
-      background: #F59E0B;
-    }
-    
-    .strength-strong .strength-fill {
-      width: 100%;
-      background: var(--success);
-    }
-    
-    .strength-text {
-      font-size: 11px;
-      color: var(--muted);
-    }
-    
-    .checkbox-group {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-    }
-    
-    input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      margin-top: 2px;
-      cursor: pointer;
-      accent-color: var(--accent);
-    }
-    
-    .checkbox-label {
-      font-size: 13px;
-      color: var(--text);
-      line-height: 1.5;
-    }
-    
-    .checkbox-label a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 500;
-    }
-    
-    .checkbox-label a:hover {
-      text-decoration: underline;
-    }
-    
-    .btn {
-      width: 100%;
-      padding: 0.875rem 1.5rem;
-      font-size: 15px;
-      font-weight: 600;
-      font-family: 'DM Sans', sans-serif;
-      border: none;
-      border-radius: var(--rs);
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-    
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-    
-    .btn-primary:hover:not(:disabled) {
-      background: #152E23;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(26, 60, 46, 0.3);
-    }
-    
-    .btn-primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .divider {
-      text-align: center;
-      margin: 1.5rem 0;
-      position: relative;
-    }
-    
-    .divider::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: var(--border);
-    }
-    
-    .divider-text {
-      position: relative;
-      display: inline-block;
-      padding: 0 1rem;
-      background: var(--surface);
-      font-size: 13px;
-      color: var(--muted);
-    }
-    
-    .login-link {
-      text-align: center;
-      margin-top: 1.5rem;
-      font-size: 14px;
-      color: var(--muted);
-    }
-    
-    .login-link a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-    
-    .login-link a:hover {
-      text-decoration: underline;
-    }
-    
-    .success-message {
-      background: #D1FAE5;
-      border: 1px solid #10B981;
-      border-radius: var(--rs);
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.5rem;
-      display: none;
-    }
-    
-    .success-message.show {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    
-    .success-icon {
-      font-size: 20px;
-    }
-    
-    .success-text {
-      flex: 1;
-    }
-    
-    .success-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #047857;
-      margin-bottom: 0.25rem;
-    }
-    
-    .success-subtitle {
-      font-size: 13px;
-      color: #065F46;
-    }
-    
-    @media (max-width: 640px) {
-      .container {
-        margin: 1.5rem auto;
-      }
-      
-      .card {
-        padding: 1.5rem;
-      }
-      
-      h1 {
-        font-size: 24px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQSales — Opret bruger</title>
+<meta name="description" content="IQSales sammenligner danske forsikringer på sekunder. Få automatisk salgspitch og dækning-for-dækning analyse af 33 selskaber.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://iqsales.dk/login.html">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="shortcut icon" href="/favicon.svg">
+
+<!-- Open Graph (Facebook, LinkedIn, Google) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://iqsales.dk/login.html">
+<meta property="og:title" content="IQSales — Intelligent forsikringssammenligning">
+<meta property="og:description" content="12 forsikringstyper sammenlignet på sekunder. 33 danske forsikringsselskaber. Automatisk salgspitch og kunderapport.">
+<meta property="og:image" content="https://iqsales.dk/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="da_DK">
+<meta property="og:site_name" content="IQSales">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="IQSales — Intelligent forsikringssammenligning">
+<meta name="twitter:description" content="12 forsikringstyper sammenlignet på sekunder. 33 danske forsikringsselskaber.">
+<meta name="twitter:image" content="https://iqsales.dk/og-image.png">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #1A3C2E; --green-mid: #2D6A4F; --green-light: #52B788;
+    --accent: #95D5B2; --cream: #F8F6F1; --text: #1A1A1A;
+    --muted: #6B7280; --border: #E5E7EB; --error: #DC2626;
+  }
+  html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); }
+  body { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .left { background: var(--green); display: flex; flex-direction: column; justify-content: space-between; padding: 56px 64px; position: relative; overflow: hidden; }
+  .left::before { content: ''; position: absolute; top: -120px; right: -120px; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(82,183,136,0.15) 0%, transparent 70%); }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-icon { width: 40px; height: 40px; background: var(--green-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .brand-name { font-family: 'DM Serif Display', serif; font-size: 24px; color: #fff; letter-spacing: -0.5px; }
+  .left-content h1 { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.15; color: #fff; margin-bottom: 20px; letter-spacing: -1px; }
+  .left-content h1 em { font-style: normal; color: var(--accent); }
+  .left-content p { font-size: 16px; color: rgba(255,255,255,.6); line-height: 1.7; max-width: 340px; }
+  .features { display: flex; flex-direction: column; gap: 16px; }
+  .feature { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,.75); font-size: 14px; }
+  .feature-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-light); flex-shrink: 0; }
+  .right { display: flex; align-items: center; justify-content: center; padding: 48px; }
+  .login-box { width: 100%; max-width: 400px; }
+  .login-box h2 { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--green); margin-bottom: 8px; letter-spacing: -0.5px; }
+  .login-box .subtitle { font-size: 15px; color: var(--muted); margin-bottom: 40px; }
+  .form-group { margin-bottom: 20px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  input[type="email"], input[type="password"] { width: 100%; padding: 13px 16px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--text); background: #fff; transition: border-color .2s, box-shadow .2s; outline: none; }
+  input:focus { border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(82,183,136,.12); }
+  .btn { width: 100%; padding: 14px; background: var(--green); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .2s; margin-top: 8px; }
+  .btn:hover { background: var(--green-mid); }
+  .btn:disabled { opacity: .6; cursor: not-allowed; }
+  .error-msg { background: #FEF2F2; border: 1px solid #FECACA; color: var(--error); padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; display: none; }
+  .error-msg.show { display: block; }
+  .forgot { text-align: center; margin-top: 20px; font-size: 13px; color: var(--muted); }
+  .forgot a { color: var(--green-mid); text-decoration: none; font-weight: 500; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 768px) { body { grid-template-columns: 1fr; } .left { display: none; } }
+</style>
 </head>
 <body>
-
-<!-- INVITE FLOW: Vises kun når bruger kommer fra invitationslink -->
-<div id="invite-flow" style="display:none; min-height:100vh; background:var(--surface); align-items:center; justify-content:center; padding:24px;">
-  <div style="background:#fff; border-radius:16px; border:1px solid var(--border); padding:40px; width:100%; max-width:420px;">
-    <div style="text-align:center; margin-bottom:32px;">
-      <div style="font-family:'DM Sans',sans-serif; font-size:24px; font-weight:700; color:var(--accent); margin-bottom:8px;">Velkommen til IQSales</div>
-      <div style="font-size:14px; color:var(--muted);">Sæt din adgangskode for at aktivere din konto</div>
-    </div>
-    <div id="invite-error" style="display:none; background:#FEF2F2; border:1px solid #FECACA; color:#DC2626; padding:12px 16px; border-radius:8px; font-size:14px; margin-bottom:20px;"></div>
-    <div style="margin-bottom:20px;">
-      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Ny adgangskode</label>
-      <input type="password" id="invite-password" placeholder="Minimum 8 tegn" style="width:100%; padding:13px 16px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:'DM Sans',sans-serif; outline:none;">
-    </div>
-    <div style="margin-bottom:28px;">
-      <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Gentag adgangskode</label>
-      <input type="password" id="invite-password2" placeholder="Gentag adgangskode" style="width:100%; padding:13px 16px; border:1.5px solid var(--border); border-radius:10px; font-size:15px; font-family:'DM Sans',sans-serif; outline:none;">
-    </div>
-    <button id="invite-btn" onclick="setInvitePassword()" style="width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer;">
-      Aktiver konto
-    </button>
+<div class="left">
+  <div class="brand">
+    <div class="brand-icon">⚡</div>
+    <span class="brand-name">IQSales</span>
+  </div>
+  <div class="left-content">
+    <h1>Sammenlign forsikringer.<br><em>Vind kunden.</em></h1>
+    <p>Intelligent forsikringssammenligning der giver dig de stærkeste argumenter — dækning for dækning.</p>
+  </div>
+  <div class="features">
+    <div class="feature"><div class="feature-dot"></div>12 forsikringstyper sammenlignet på sekunder</div>
+    <div class="feature"><div class="feature-dot"></div>33 danske forsikringsselskaber</div>
+    <div class="feature"><div class="feature-dot"></div>Automatisk salgspitch og kunderapport</div>
   </div>
 </div>
 
-<div id="invite-success" style="display:none; min-height:100vh; background:var(--surface); align-items:center; justify-content:center; padding:24px;">
-  <div style="background:#fff; border-radius:16px; border:1px solid var(--border); padding:40px; width:100%; max-width:420px; text-align:center;">
-    <div style="font-size:48px; margin-bottom:16px;">✅</div>
-    <div style="font-size:22px; font-weight:700; color:var(--accent); margin-bottom:8px;">Konto aktiveret!</div>
-    <div style="font-size:14px; color:var(--muted); margin-bottom:28px;">Du kan nu logge ind med din nye adgangskode.</div>
-    <a href="/login.html" style="display:inline-block; padding:12px 32px; background:var(--accent); color:#fff; border-radius:10px; text-decoration:none; font-weight:600; font-size:15px;">Gå til login</a>
+<div class="right">
+  <div class="login-box">
+    <h2>Opret bruger</h2>
+    <p class="subtitle">Udfyld formularen for at få adgang til IQSales</p>
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="form-group">
+      <label for="name">Fulde navn</label>
+      <input type="text" id="name" placeholder="fx Navn Navnesen" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="din@arbejdsmail.dk" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label for="department">Afdeling</label>
+      <select id="department" style="width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text);background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;cursor:pointer;">
+        <option value="">Vælg afdeling...</option>
+        <option>Direkte Salg Privat Vest</option>
+        <option>Direkte Salg Privat Midt</option>
+        <option>Direkte Salg Privat Øst</option>
+        <option>Direkte Salg Privat Online</option>
+        <option>Direkte Salg Privat Sydbank Vest</option>
+        <option>Direkte Salg Privat Sydbank Øst</option>
+        <option>Salgscenter Alm Brand</option>
+        <option>Salgscenter Codan</option>
+        <option>Mødebooking</option>
+        <option>Ledelsen</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="password">Adgangskode</label>
+      <input type="password" id="password" placeholder="Minimum 8 tegn" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label for="password2">Bekræft adgangskode</label>
+      <input type="password" id="password2" placeholder="Gentag adgangskode" autocomplete="new-password">
+    </div>
+    <button class="btn" id="signupBtn">Opret bruger</button>
+    <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted);">
+      Har du allerede en bruger?
+      <a href="/login.html" style="color: var(--green-mid); text-decoration: none; font-weight: 600;">Log ind her</a>
+    </div>
   </div>
 </div>
 
 <script>
-// ── INVITE TOKEN HANDLER ──────────────────────────────────────
-(function() {
-  const hash = window.location.hash.substring(1);
-  const params = new URLSearchParams(hash);
-  const type = params.get('type');
-  const accessToken = params.get('access_token');
+const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
 
-  if ((type === 'invite' || type === 'recovery') && accessToken) {
-    window._inviteToken = accessToken;
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelector('.top-bar').style.display = 'none';
-      document.querySelector('.container').style.display = 'none';
-      const inviteFlow = document.getElementById('invite-flow');
-      inviteFlow.style.cssText = 'display:flex; min-height:100vh; background:var(--surface); align-items:center; justify-content:center; padding:24px;';
-    });
-  } else {
-    // Ingen invite-token — vis normal signup formular
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('invite-flow').style.display = 'none';
-      document.getElementById('invite-success').style.display = 'none';
-    });
-  }
-})();
+const ALLOWED_DOMAINS = ['abgroup.dk', 'almbrand.dk', 'codan.dk', 'privatsikring.dk'];
 
-async function setInvitePassword() {
-  const pw1 = document.getElementById('invite-password').value;
-  const pw2 = document.getElementById('invite-password2').value;
-  const btn = document.getElementById('invite-btn');
-  const errEl = document.getElementById('invite-error');
-  errEl.style.display = 'none';
+function isAllowedEmail(email) {
+  if (!email || !email.includes('@')) return false;
+  return ALLOWED_DOMAINS.includes(email.split('@')[1].toLowerCase().trim());
+}
 
-  if (pw1.length < 8) { showInviteError('Adgangskoden skal være mindst 8 tegn.'); return; }
-  if (pw1 !== pw2) { showInviteError('Adgangskoderne matcher ikke.'); return; }
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
+document.getElementById('signupBtn').addEventListener('click', doSignup);
+
+async function doSignup() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const department = document.getElementById('department').value;
+  const password = document.getElementById('password').value;
+  const password2 = document.getElementById('password2').value;
+  const btn = document.getElementById('signupBtn');
+
+  document.getElementById('errorMsg').classList.remove('show');
+
+  if (!name) { showError('Indtast dit fulde navn.'); return; }
+  if (!email || !email.includes('@')) { showError('Indtast en gyldig email.'); return; }
+  if (!isAllowedEmail(email)) { showError('Kun @abgroup.dk, @almbrand.dk, @codan.dk eller @privatsikring.dk mail kan bruges.'); return; }
+  if (!department) { showError('Vælg venligst en afdeling.'); return; }
+  if (password.length < 8) { showError('Adgangskoden skal være mindst 8 tegn.'); return; }
+  if (password !== password2) { showError('Adgangskoderne matcher ikke.'); return; }
 
   btn.disabled = true;
-  btn.textContent = 'Aktiverer...';
-
-  const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
+  btn.innerHTML = '<span class="spinner"></span>Opretter bruger...';
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${window._inviteToken}`
-      },
-      body: JSON.stringify({ password: pw1 })
+    const res = await fetch(SUPABASE_URL + '/auth/v1/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email, password, data: { full_name: name, department, role: 'seller' } })
     });
-
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || data.msg || 'Fejl');
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Kunne ikke oprette bruger');
 
-    document.getElementById('invite-flow').style.display = 'none';
-    document.getElementById('invite-success').style.display = 'flex';
+    if (data.user) {
+      const authToken = data.access_token || SUPABASE_ANON_KEY;
+      await fetch(SUPABASE_URL + '/rest/v1/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + authToken, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ id: data.user.id, email, full_name: name, department: department || null, role: 'seller' })
+      });
+    }
 
-  } catch (e) {
-    showInviteError('Fejl: ' + e.message);
+    showSuccess('Bruger oprettet! Du omdirigeres til login...');
+    btn.innerHTML = 'Opret bruger';
+    setTimeout(() => { window.location.href = '/login.html'; }, 2000);
+
+  } catch(e) {
     btn.disabled = false;
-    btn.textContent = 'Aktiver konto';
+    btn.innerHTML = 'Opret bruger';
+    showError('Fejl: ' + e.message);
   }
 }
 
-function showInviteError(msg) {
-  const el = document.getElementById('invite-error');
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
   el.textContent = msg;
-  el.style.display = 'block';
+  el.style.background = '#FEF2F2'; el.style.borderColor = '#FECACA'; el.style.color = '#DC2626';
+  el.classList.add('show');
+}
+function showSuccess(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.background = '#F0FDF4'; el.style.borderColor = '#BBF7D0'; el.style.color = '#166534';
+  el.classList.add('show');
 }
 </script>
-  <div class="top-bar">
-    <a href="/" class="logo">
-      IQSales
-      <span class="logo-sub">Forsikringssammenligninger</span>
-    </a>
-  </div>
-  
-  <div class="container">
-    <div class="card">
-      <div class="success-message" id="success-message">
-        <div class="success-icon">✓</div>
-        <div class="success-text">
-          <div class="success-title">Bruger oprettet!</div>
-          <div class="success-subtitle">Tjek din mail — du skal bekræfte din adresse inden du kan logge ind.</div>
-        </div>
-      </div>
-      
-      <h1>Opret bruger</h1>
-      <p class="subtitle">Udfyld formularen for at få adgang til IQSales</p>
-      
-      <form id="signup-form">
-        <div class="form-group">
-          <label for="name">Fulde navn<span class="label-required">*</span></label>
-          <input type="text" id="name" name="name" placeholder="fx Navn Navnesen" required>
-          <div class="error-message" id="name-error">Indtast dit fulde navn</div>
-        </div>
-        
-        <div class="form-group">
-          <label for="email">E-mail<span class="label-required">*</span></label>
-          <input type="email" id="email" name="email" placeholder="din@email.dk" required>
-          <div class="helper-text">Brug din arbejdsmail</div>
-          <div class="error-message" id="email-error">Indtast en gyldig email</div>
-        </div>
-        
-        <div class="form-group">
-          <label for="department">Afdeling<span class="label-required">*</span></label>
-          <select id="department" name="department" required>
-            <option value="">Vælg afdeling...</option>
-            <option value="Direkte Salg Privat Vest">Direkte Salg Privat Vest</option>
-            <option value="Direkte Salg Privat Midt">Direkte Salg Privat Midt</option>
-            <option value="Direkte Salg Privat Øst">Direkte Salg Privat Øst</option>
-            <option value="Direkte Salg Privat Online">Direkte Salg Privat Online</option>
-            <option value="Direkte Salg Privat Sydbank Vest">Direkte Salg Privat Sydbank Vest</option>
-            <option value="Direkte Salg Privat Sydbank Øst">Direkte Salg Privat Sydbank Øst</option>
-            <option value="Salgscenter Alm Brand">Salgscenter Alm Brand</option>
-            <option value="Salgscenter Codan">Salgscenter Codan</option>
-            <option value="Mødebooking">Mødebooking</option>
-            <option value="Ledelsen">Ledelsen</option>
-          </select>
-          <div class="helper-text">Vælg den afdeling du tilhører</div>
-          <div class="error-message" id="department-error">Vælg venligst en afdeling</div>
-        </div>
-        
-        <div class="form-group">
-          <label for="password">Adgangskode<span class="label-required">*</span></label>
-          <input type="password" id="password" name="password" placeholder="Minimum 8 tegn" required>
-          <div class="password-strength" id="password-strength">
-            <div class="strength-bar">
-              <div class="strength-fill"></div>
-            </div>
-            <div class="strength-text"></div>
-          </div>
-          <div class="error-message" id="password-error">Adgangskode skal være mindst 8 tegn</div>
-        </div>
-        
-        <div class="form-group">
-          <label for="password-confirm">Bekræft adgangskode<span class="label-required">*</span></label>
-          <input type="password" id="password-confirm" name="password-confirm" placeholder="Gentag adgangskode" required>
-          <div class="error-message" id="password-confirm-error">Adgangskoder matcher ikke</div>
-        </div>
-        
-        <div class="form-group">
-          <div class="checkbox-group">
-            <input type="checkbox" id="terms" name="terms" required>
-            <label for="terms" class="checkbox-label">
-              Jeg accepterer <a href="/terms" target="_blank">betingelserne</a> og <a href="/privacy" target="_blank">privatlivspolitikken</a>
-            </label>
-          </div>
-          <div class="error-message" id="terms-error">Du skal acceptere betingelserne</div>
-        </div>
-        
-        <button type="submit" class="btn btn-primary" id="submit-btn">
-          Opret bruger
-        </button>
-      </form>
-      
-      <div class="login-link">
-        Har du allerede en bruger? <a href="/login.html">Log ind her</a>
-      </div>
-    </div>
-  </div>
-  
-  <script>
-    const SUPABASE_URL = 'https://pnzpdgjstzuapgknagsa.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
-    
-    // ========================================
-    // EMAIL WHITELIST - Kun medarbejdere med disse email domæner kan oprette sig
-    // ========================================
-    const ALLOWED_DOMAINS = [
-      'abgroup.dk',      // Alm. Brand Group medarbejdere (fx vipo@abgroup.dk)
-      'almbrand.dk',     // Alm. Brand medarbejdere (fx abrtup@almbrand.dk)
-      'codan.dk',        // Codan medarbejdere (fx 1c3@codan.dk)
-      'privatsikring.dk' // Privatsikring medarbejdere
-    ];
-    
-    /**
-     * Tjekker om en email er fra et godkendt domæne
-     */
-    function isAllowedEmail(email) {
-      if (!email || !email.includes('@')) return false;
-      
-      const domain = email.split('@')[1].toLowerCase().trim();
-      return ALLOWED_DOMAINS.includes(domain);
-    }
-    
-    const form = document.getElementById('signup-form');
-    const submitBtn = document.getElementById('submit-btn');
-    const passwordInput = document.getElementById('password');
-    const passwordStrength = document.getElementById('password-strength');
-    
-    // Password strength indicator
-    passwordInput.addEventListener('input', function() {
-      const password = this.value;
-      if (password.length === 0) {
-        passwordStrength.classList.remove('show');
-        return;
-      }
-      
-      passwordStrength.classList.add('show');
-      const strengthBar = passwordStrength.querySelector('.strength-bar');
-      const strengthText = passwordStrength.querySelector('.strength-text');
-      
-      let strength = 0;
-      if (password.length >= 8) strength++;
-      if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
-      if (password.match(/[0-9]/)) strength++;
-      if (password.match(/[^a-zA-Z0-9]/)) strength++;
-      
-      strengthBar.className = 'strength-bar';
-      if (strength <= 2) {
-        strengthBar.classList.add('strength-weak');
-        strengthText.textContent = 'Svag adgangskode';
-      } else if (strength === 3) {
-        strengthBar.classList.add('strength-medium');
-        strengthText.textContent = 'Medium styrke';
-      } else {
-        strengthBar.classList.add('strength-strong');
-        strengthText.textContent = 'Stærk adgangskode';
-      }
-    });
-    
-    form.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      // Clear previous errors
-      document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
-      document.querySelectorAll('input').forEach(el => el.classList.remove('error'));
-      
-      // Get form values
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const department = document.getElementById('department').value.trim();
-      const password = document.getElementById('password').value;
-      const passwordConfirm = document.getElementById('password-confirm').value;
-      const terms = document.getElementById('terms').checked;
-      
-      // Validation
-      let hasError = false;
-      
-      if (!name) {
-        showError('name', 'Indtast dit fulde navn');
-        hasError = true;
-      }
-      
-      if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-        showError('email', 'Indtast en gyldig email');
-        hasError = true;
-      }
-      
-      // ✅ Email whitelist check
-      if (email && !isAllowedEmail(email)) {
-        showError('email', 'Kun @abgroup.dk, @almbrand.dk, @codan.dk eller @privatsikring.dk mail kan bruges.');
-        hasError = true;
-      }
-      
-      if (!department) {
-        showError('department', 'Vælg venligst en afdeling');
-        hasError = true;
-      }
-      
-      if (password.length < 8) {
-        showError('password', 'Adgangskode skal være mindst 8 tegn');
-        hasError = true;
-      }
-      
-      if (password !== passwordConfirm) {
-        showError('password-confirm', 'Adgangskoder matcher ikke');
-        hasError = true;
-      }
-      
-      if (!terms) {
-        showError('terms', 'Du skal acceptere betingelserne');
-        hasError = true;
-      }
-      
-      if (hasError) return;
-      
-      // Disable button and show loading
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<div class="spinner"></div> Opretter bruger...';
-      
-      try {
-        // Sign up with Supabase Auth
-        const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-            data: {
-              full_name: name,
-              department: department,
-              role: 'seller'
-            }
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error_description || data.msg || 'Kunne ikke oprette bruger');
-        }
-        
-        console.log('✅ User created in auth.users:', data.user?.id);
-        
-        // ✅ OGSÅ opret bruger i profiles tabel
-        if (data.user) {
-          console.log('🔵 Attempting to create profile for:', data.user.id);
-
-          // Brug brugerens eget access_token hvis tilgængeligt, ellers service key via proxy
-          const authToken = data.access_token || SUPABASE_ANON_KEY;
-          
-          const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': 'Bearer ' + authToken,
-              'Prefer': 'resolution=merge-duplicates'
-            },
-            body: JSON.stringify({
-              id: data.user.id,
-              email: email,
-              full_name: name,
-              department: department || null,
-              role: 'seller'
-            })
-          });
-          
-          if (!profileResponse.ok) {
-            const profileError = await profileResponse.text();
-            console.error('❌ Profile creation failed:', profileError);
-            // Forsøg via create-user API som fallback
-            try {
-              await fetch('/api/create-profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  id: data.user.id,
-                  email: email,
-                  full_name: name,
-                  department: department || null
-                })
-              });
-              console.log('✅ Profile created via fallback API');
-            } catch(e) {
-              console.error('❌ Fallback also failed:', e);
-            }
-          } else {
-            console.log('✅ Profile created successfully');
-          }
-        } else {
-          console.error('❌ No user object in response');
-        }
-        
-        // Success!
-        document.getElementById('success-message').classList.add('show');
-        form.style.display = 'none';
-        submitBtn.innerHTML = 'Opret bruger';
-        
-        
-      } catch (error) {
-        console.error('Signup error:', error);
-        alert('Fejl ved oprettelse: ' + error.message);
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Opret bruger';
-      }
-    });
-    
-    function showError(fieldId, message) {
-      const field = document.getElementById(fieldId);
-      const errorEl = document.getElementById(fieldId + '-error');
-      field.classList.add('error');
-      errorEl.textContent = message;
-      errorEl.classList.add('show');
-    }
-  </script>
 </body>
 </html>
