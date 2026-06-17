@@ -2273,6 +2273,13 @@
 
   async function loadFeedback() {
     loadUnknownCacheIssues();
+
+    // Hent selskabsnavne til dropdown
+    if (!window._allCompanies) {
+      const { data: terms } = await sb.from('insurance_terms').select('selskab');
+      window._allCompanies = [...new Set((terms || []).map(t => t.selskab).filter(Boolean))].sort();
+    }
+
     const { data: feedback, error } = await sb
       .from('feedback')
       .select('*')
@@ -2347,11 +2354,27 @@
             <textarea id="comment-edit-${f.id}" style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid #E3E1D9;border-radius:8px;resize:vertical;min-height:70px;color:#141412;background:var(--surface);outline:none;display:none;" onfocus="this.style.borderColor='#1A3C2E'" onblur="this.style.borderColor='#E3E1D9'">${f.comment || ''}</textarea>
             <button id="edit-btn-${f.id}" onclick="toggleEditComment('${f.id}')" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;margin-top:4px;">✏️ Rediger kommentar</button>
           </div>
+          <div style="margin-top:10px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div>
+              <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Knyt til selskab (valgfri)</label>
+              <select id="company-select-${f.id}" style="padding:6px 10px;border:1.5px solid #E3E1D9;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--surface);color:#141412;">
+                <option value="">Alle selskaber</option>
+                ${window._allCompanies ? window._allCompanies.map(c => `<option value="${c}">${c}</option>`).join('') : ''}
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:18px;">
+              <input type="checkbox" id="priority-${f.id}" style="width:16px;height:16px;cursor:pointer;accent-color:#1A3C2E;">
+              <label for="priority-${f.id}" style="font-size:12px;color:var(--muted);cursor:pointer;">Prioritér altid i analyser</label>
+            </div>
+          </div>
           <div class="feedback-actions">
             <button class="btn-success" onclick="approveFeedback('${f.id}')">✅ Godkend</button>
             <button class="btn-secondary" onclick="rejectFeedback('${f.id}')">❌ Afvis</button>
           </div>
-        ` : ''}
+        ` : `
+          ${f.company ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">🏢 Selskab: <strong>${f.company}</strong></div>` : ''}
+          ${f.priority ? `<div style="font-size:12px;color:#1A3C2E;margin-top:2px;">⭐ Prioriteret</div>` : ''}
+        `}
       </div>
     `}).join('');
   }
@@ -2636,8 +2659,14 @@
     const textarea = document.getElementById('comment-edit-' + id);
     const editedComment = textarea && textarea.style.display !== 'none' ? textarea.value.trim() : null;
 
+    // Hent selskab og prioritet
+    const companySelect = document.getElementById('company-select-' + id);
+    const priorityCheck = document.getElementById('priority-' + id);
+
     const updateData = { status: 'approved' };
     if (editedComment) updateData.comment = editedComment;
+    if (companySelect && companySelect.value) updateData.company = companySelect.value;
+    if (priorityCheck) updateData.priority = priorityCheck.checked;
 
     const { error } = await sb
       .from('feedback')
