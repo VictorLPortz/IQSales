@@ -2379,15 +2379,16 @@
     statusEl.textContent = 'Henter godkendt feedback...';
     previewEl.style.display = 'none';
 
-    // Hent al godkendt feedback med indhold
+    // Hent kun feedback der IKKE er implementeret endnu
     const { data: approvedFeedback } = await sb
       .from('feedback')
-      .select('id, insurance_type, category, comment, created_at')
+      .select('id, insurance_type, category, comment, created_at, implemented_at')
       .eq('status', 'approved')
+      .is('implemented_at', null)
       .order('insurance_type');
 
     if (!approvedFeedback || approvedFeedback.length === 0) {
-      statusEl.textContent = 'Ingen godkendt feedback at implementere';
+      statusEl.textContent = '✅ Al godkendt feedback er allerede implementeret';
       return;
     }
 
@@ -2591,8 +2592,8 @@
       const keepId = ids[0];
       const restIds = ids.slice(1);
 
-      // Opdater den bevarede række med den samlede tekst
-      const { error: updateErr } = await sb.from('feedback').update({ comment: mergedText }).eq('id', keepId);
+      // Opdater den bevarede række med den samlede tekst + implemented_at
+      const { error: updateErr } = await sb.from('feedback').update({ comment: mergedText, implemented_at: new Date().toISOString() }).eq('id', keepId);
       if (updateErr) {
         statusEl.textContent = `❌ Fejl ved opdatering af feedback: ${updateErr.message}`;
         showToast('Fejl: ' + updateErr.message, 'error');
@@ -2601,7 +2602,7 @@
 
       // Marker resten som 'merged' så de ikke længere er 'approved'
       for (const rid of restIds) {
-        const { error: mergeErr } = await sb.from('feedback').update({ status: 'merged' }).eq('id', rid);
+        const { error: mergeErr } = await sb.from('feedback').update({ status: 'merged', implemented_at: new Date().toISOString() }).eq('id', rid);
         if (mergeErr) {
           statusEl.textContent = `❌ Kunne ikke markere duplikater som 'merged': ${mergeErr.message}. Tjek om 'feedback.status' kolonnen tillader værdien 'merged' (CHECK-constraint i Supabase).`;
           showToast('Fejl: ' + mergeErr.message, 'error');
