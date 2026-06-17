@@ -1924,7 +1924,7 @@ ${hasPdf ? `\nDu har adgang til de fulde betingelsestekster nedenfor og KAN svar
 Tal som en erfaren kollega. Svar på dansk.${hasPdf ? pdfSection : ''}`;
 }
 
-function resetAnalysis(){ window.location.reload(); }
+function resetAnalysis(){ window.location.href = window.location.pathname + '?r=' + Date.now(); }
 
 // ============================================================
 // USER PREFERENCES (Favoritter + Sortering)
