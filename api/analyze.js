@@ -221,7 +221,6 @@ module.exports = async function handler(req, res) {
 
     // Kategorier fra prioriteret feedback skal altid med i coverage items
     const mandatoryCategories = feedbacks.filter(f => f.priority).map(f => f.category);
-
     // Count votes per category
     const importantCounts = {};
     importantRaw.forEach(f => { if(f.category) importantCounts[f.category] = (importantCounts[f.category]||0)+1; });
@@ -236,7 +235,7 @@ module.exports = async function handler(req, res) {
     console.log(`📊 Ligegyldige dækninger: ${topIrrelevant.join(', ')}`);
  
     // Build prompt with type-specific instructions
-    let prompt = buildPrompt(companyA, companyB, type, pdfA.full_text, pdfB.full_text, feedbacks, topImportant, topIrrelevant);
+    let prompt = buildPrompt(companyA, companyB, type, pdfA.full_text, pdfB.full_text, feedbacks, topImportant, topIrrelevant, mandatoryCategories);
  
     console.log(`🔄 Starting analysis: ${companyA} vs ${companyB} for ${type}`);
  
@@ -470,7 +469,7 @@ module.exports = async function handler(req, res) {
 // PROMPT BUILDER WITH TYPE-SPECIFIC INSTRUCTIONS
 // ═══════════════════════════════════════════════════════════════
  
-function buildPrompt(companyA, companyB, type, textA, textB, feedbacks, topImportant, topIrrelevant) {
+function buildPrompt(companyA, companyB, type, textA, textB, feedbacks, topImportant, topIrrelevant, mandatoryCategories = []) {
   let prompt = `Sammenlign ${companyA} og ${companyB} for ${type}.
  
 SELSKAB A (${companyA}) BETINGELSER:
