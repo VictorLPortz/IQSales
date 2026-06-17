@@ -242,7 +242,7 @@ module.exports = async function handler(req, res) {
         console.log(`🔄 API attempt ${attempt}/${maxAttempts}`);
         message = await anthropic.messages.create({
           model: 'claude-sonnet-4-6',
-          max_tokens: 16000,
+          max_tokens: 30000,
           system: getSystemPrompt(type),
           messages: [{
             role: 'user',
@@ -473,6 +473,7 @@ ${textB.substring(0, 100000)}
  
   if (feedbacks.length > 0) {
     prompt += `\n\nGODKENDT FEEDBACK (VIGTIGT - tag højde for dette):\n`;
+    prompt += `Når en feedback-kommentar indeholder specifikke detaljer (beløb, procenter, selskabsnavne, undtagelser), skal du inkludere disse detaljer direkte i "reason"-feltet for den pågældende dækning. Forkort ikke detaljeret feedback.\n`;
     feedbacks.forEach(function(f, i) {
       prompt += `${i + 1}. ${f.category}: ${f.comment}\n`;
     });
