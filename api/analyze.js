@@ -209,9 +209,18 @@ module.exports = async function handler(req, res) {
       )
     ]);
 
-    const feedbacks = feedbackResponse.ok ? await feedbackResponse.json() : [];
+    const allFeedbacks = feedbackResponse.ok ? await feedbackResponse.json() : [];
     const importantRaw = importantResponse.ok ? await importantResponse.json() : [];
     const irrelevantRaw = irrelevantResponse.ok ? await irrelevantResponse.json() : [];
+
+    // Filtrer feedback på selskab — inkluder feedback der er generel (company=null) eller matcher et af de to selskaber
+    const feedbacks = allFeedbacks.filter(f => !f.company || f.company === companyA || f.company === companyB);
+
+    // Sorter: prioriterede feedback øverst
+    feedbacks.sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
+
+    // Kategorier fra prioriteret feedback skal altid med i coverage items
+    const mandatoryCategories = feedbacks.filter(f => f.priority).map(f => f.category);
 
     // Count votes per category
     const importantCounts = {};
@@ -473,9 +482,18 @@ ${textB.substring(0, 100000)}
  
   if (feedbacks.length > 0) {
     prompt += `\n\nGODKENDT FEEDBACK (VIGTIGT - tag højde for dette):\n`;
-    prompt += `Når en feedback-kommentar indeholder specifikke detaljer (beløb, procenter, selskabsnavne, undtagelser), skal du inkludere disse detaljer direkte i "reason"-feltet for den pågældende dækning. Forkort ikke detaljeret feedback.\n`;
+    prompt += `REGEL 1: Dækninger markeret som prioriterede (⭐) SKAL altid inkluderes i dine 20 coverage items.\n`;
+    prompt += `REGEL 2: Feedback der er knyttet til et specifikt selskab gælder kun for det selskab — brug det til at beskrive det selskabs dækning præcist.\n`;
+    prompt += `REGEL 3: Inkluder specifikke detaljer (beløb, procenter, tidsrum, undtagelser) direkte i "reason"-feltet. Forkort ikke.\n`;
+    if (mandatoryCategories.length > 0) {
+      prompt += `\n⭐ OBLIGATORISKE DÆKNINGER (skal altid med):\n`;
+      mandatoryCategories.forEach((cat, i) => { prompt += `${i + 1}. ${cat}\n`; });
+    }
+    prompt += `\nFEEDBACK:\n`;
     feedbacks.forEach(function(f, i) {
-      prompt += `${i + 1}. ${f.category}: ${f.comment}\n`;
+      const companyTag = f.company ? ` [${f.company}]` : '';
+      const priorityTag = f.priority ? ' ⭐' : '';
+      prompt += `${i + 1}.${priorityTag}${companyTag} ${f.category}: ${f.comment}\n`;
     });
   }
  
