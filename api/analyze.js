@@ -45,6 +45,32 @@ module.exports = async function handler(req, res) {
   }
  
   try {
+    // ── DALL-E billedgenerering ──────────────────────────────────
+    if (req.body.action === 'dalle') {
+      const { prompt } = req.body;
+      if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
+
+      const openaiRes = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'dall-e-3',
+          prompt: prompt + '. Photorealistic, professional insurance damage photo. No people.',
+          n: 1,
+          size: '1024x1024',
+          quality: 'standard'
+        })
+      });
+
+      const openaiData = await openaiRes.json();
+      if (!openaiRes.ok) return res.status(500).json({ error: openaiData.error?.message || 'OpenAI fejl' });
+      return res.status(200).json({ url: openaiData.data[0].url });
+    }
+    // ── Ende DALL-E ──────────────────────────────────────────────
+
     const { companyA, companyB, type } = req.body;
     
     if (!companyA || !companyB || !type) {
