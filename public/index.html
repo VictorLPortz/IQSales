@@ -1212,6 +1212,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     const {data:p}=await window._sb.from('profiles').select('full_name,role').eq('id',session.user.id).single();
     const nav=document.getElementById('user-nav');
     if(!nav)return;
+    window._userRole = p && p.role ? p.role : 'seller';
     nav.innerHTML=
       '<span style="font-size:12px;color:rgba(255,255,255,.6)">'+(p&&p.full_name?p.full_name:session.user.email)+'</span>'+
       (p&&p.role==='admin'?'<a href="/admin.html" style="font-size:12px;color:#4ADE80;text-decoration:none;font-weight:500">Admin ⚙️</a>':'')+
@@ -2854,8 +2855,9 @@ selectedTypes=[type];
 docsA[type]={name:nameA+' - '+type+' (fra database)',data:'cached',fromCache:true};
 docsB[type]={name:nameB+' - '+type+' (fra database)',data:'cached',fromCache:true};
 renderUploadZones();
-  const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()"><span class="tab-emoji">📊</span><span class="tab-label">Samlet overblik</span></button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')"><span class="tab-emoji">${TYPE_EMOJI[type]}</span><span class="tab-label">${TYPE_LABELS[type]} ✓</span></button><div class="tabs-divider"></div><button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button><button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>`;
-  document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div><div id="tab-coach" class="multi-tab-content" style="display:none"></div><div id="tab-send" class="multi-tab-content" style="display:none"></div></div>`;
+  const skaderTab = window._userRole === 'admin' ? `<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>` : '';
+  const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()"><span class="tab-emoji">📊</span><span class="tab-label">Samlet overblik</span></button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')"><span class="tab-emoji">${TYPE_EMOJI[type]}</span><span class="tab-label">${TYPE_LABELS[type]} ✓</span></button><div class="tabs-divider"></div><button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button><button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>${skaderTab}`;
+  document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div><div id="tab-coach" class="multi-tab-content" style="display:none"></div><div id="tab-send" class="multi-tab-content" style="display:none"></div><div id="tab-skader" class="multi-tab-content" style="display:none"></div></div>`;
   renderMultiResult(nameA,nameB);renderTypeInTab(type);switchMultiTab(type);
   document.getElementById('reset-btn').style.display='block';
   window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
@@ -3208,6 +3210,8 @@ async function analyze() {
 
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
+  window._nameA = nameA;
+  window._nameB = nameB;
   resetCoachHistory();
 
   // Fold upload zones sammen automatisk
@@ -3243,7 +3247,8 @@ async function analyze() {
     }).join('')}
     <div class="tabs-divider"></div>
     <button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button>
-    <button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>`;
+    <button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>
+    ${window._userRole === 'admin' ? '<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>' : ''}`;
 
   resultDiv.innerHTML = `
     <div class="result-section">
@@ -3254,6 +3259,7 @@ async function analyze() {
       <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
       <div id="tab-coach" class="multi-tab-content" style="display:none"></div>
       <div id="tab-send" class="multi-tab-content" style="display:none"></div>
+      <div id="tab-skader" class="multi-tab-content" style="display:none"></div>
       ${typesToAnalyze.map(t => `<div id="tab-${t}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`).join('')}
     </div>`;
 
@@ -4392,6 +4398,168 @@ function switchToSend(){
     renderGlobalSend();
     sendTab.dataset.initialized = '1';
   }
+}
+
+function switchToSkader(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  const tab = document.getElementById('tab-skader');
+  if(!tab) return;
+  tab.style.display='block';
+  const btn = document.getElementById('mtab-skader');
+  if(btn) btn.classList.add('active');
+  if(!tab.dataset.initialized) {
+    renderSkader(tab);
+    tab.dataset.initialized = '1';
+  }
+}
+
+function renderSkader(container){
+  const nameA = window._nameA || 'Selskab A';
+  const nameB = window._nameB || 'Selskab B';
+  const coverages = [];
+  Object.keys(allResults||{}).forEach(shortName=>{
+    const res = allResults[shortName];
+    if(!res||!res.categories) return;
+    const typeName = Object.keys(TYPE_LABELS).find(k=>k.replace('forsikring','').toLowerCase()===shortName)||shortName;
+    res.categories.forEach(cat=>{
+      if(cat.winner && cat.winner !== 'Uafgjort') {
+        coverages.push({
+          type: TYPE_LABELS[typeName]||shortName,
+          name: cat.name||cat.category||'Dækning',
+          detail: cat.summary||cat.detail||'',
+          winner: cat.winner,
+          nameA, nameB, shortName
+        });
+      }
+    });
+  });
+
+  if(coverages.length===0){
+    container.innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted)">Kør en analyse først for at se dækningsforskelle her.</div>`;
+    return;
+  }
+
+  container.innerHTML=`
+    <div style="padding:1rem 0">
+      <p style="font-size:14px;color:var(--muted);margin-bottom:1.5rem">Vælg en dækning for at generere et skadeseksempel med AI-billede.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1.5rem" id="skader-grid">
+        ${coverages.slice(0,12).map((c,i)=>`
+          <div class="skader-card" data-idx="${i}" onclick="selectSkaderCard(this,${i})" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all .15s">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${c.type}</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text)">${c.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">${c.winner} har fordelen</div>
+          </div>`).join('')}
+      </div>
+      <div id="skader-result" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr">
+          <div id="skader-img-wrap" style="background:#e0e0e0;min-height:240px;display:flex;align-items:center;justify-content:center">
+            <div id="skader-img-inner" style="text-align:center;padding:2rem">
+              <div style="font-size:32px">🔥</div>
+              <div style="font-size:13px;color:#888;margin-top:8px">Vælg en dækning for at generere billede</div>
+            </div>
+          </div>
+          <div style="padding:1.25rem">
+            <div id="skader-label" style="font-size:11px;color:var(--muted);margin-bottom:6px">SKADESEKSEMPEL</div>
+            <div id="skader-title" style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">—</div>
+            <div id="skader-desc" style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:14px">—</div>
+            <div id="skader-comparison" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+            <button onclick="generateSkaderImage()" id="skader-gen-btn" style="width:100%;background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">
+              🎨 Generér billede
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  window._skaderCoverages = coverages;
+}
+
+function selectSkaderCard(el, idx){
+  document.querySelectorAll('.skader-card').forEach(c=>{
+    c.style.background='var(--surface)';
+    c.style.border='1px solid var(--border)';
+  });
+  el.style.background='#EAF3DE';
+  el.style.border='2px solid #1A3C2E';
+  const c = window._skaderCoverages[idx];
+  window._selectedSkader = c;
+  document.getElementById('skader-result').style.display='block';
+  document.getElementById('skader-label').textContent='SKADESEKSEMPEL — '+c.name.toUpperCase();
+  document.getElementById('skader-title').textContent='Genererer scenarie...';
+  document.getElementById('skader-desc').textContent='';
+  document.getElementById('skader-comparison').innerHTML='';
+  document.getElementById('skader-img-inner').innerHTML='<div style="font-size:13px;color:#888">Klik "Generér billede" for at starte</div>';
+  generateSkaderScenario(c);
+}
+
+async function generateSkaderScenario(c){
+  const prompt = `Du er forsikringsekspert. Baseret på denne forsikringsforskel skal du generere et kort, konkret skadeseksempel til brug i et salgsmøde.
+
+Dækning: ${c.name}
+Forsikringstype: ${c.type}
+${c.winner} har fordelen på denne dækning.
+
+Returner KUN JSON (ingen markdown) med disse felter:
+{
+  "title": "Kort overskrift på skadeseksemplet (max 10 ord)",
+  "description": "Konkret scenariebeskrivelse på 2-3 sætninger. Beskriv hvad der sker og hvad det koster.",
+  "winner_text": "Hvad ${c.winner} dækker i dette tilfælde (1 sætning)",
+  "loser_text": "Hvad det andet selskab IKKE dækker (1 sætning)",
+  "image_prompt": "Fotorealistisk DALL-E prompt på engelsk til et billede der viser selve skaden. Ingen mennesker. Max 20 ord."
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    const json = JSON.parse(text);
+    window._selectedSkader._scenario = json;
+    document.getElementById('skader-title').textContent = json.title;
+    document.getElementById('skader-desc').textContent = json.description;
+    const loser = c.winner === c.nameA ? c.nameB : c.nameA;
+    document.getElementById('skader-comparison').innerHTML=`
+      <div style="background:#EAF3DE;border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;color:#3B6D11;font-weight:600;margin-bottom:2px">${c.winner.toUpperCase()}</div>
+        <div style="font-size:13px;color:#27500A">${json.winner_text}</div>
+      </div>
+      <div style="background:#FCEBEB;border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;color:#A32D2D;font-weight:600;margin-bottom:2px">${loser.toUpperCase()}</div>
+        <div style="font-size:13px;color:#791F1F">${json.loser_text}</div>
+      </div>`;
+  } catch(e){
+    document.getElementById('skader-title').textContent='Kunne ikke generere scenarie';
+    document.getElementById('skader-desc').textContent='Prøv igen.';
+  }
+}
+
+async function generateSkaderImage(){
+  const c = window._selectedSkader;
+  if(!c||!c._scenario) return;
+  const btn = document.getElementById('skader-gen-btn');
+  btn.textContent='⏳ Genererer billede...';
+  btn.disabled=true;
+  const imgWrap = document.getElementById('skader-img-inner');
+  imgWrap.innerHTML='<div style="font-size:13px;color:#888">Genererer billede — det tager 10-20 sekunder...</div>';
+  try {
+    const res = await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'dalle',prompt:c._scenario.image_prompt})
+    });
+    const data = await res.json();
+    if(!data.url) throw new Error(data.error||'Ingen URL');
+    document.getElementById('skader-img-inner').innerHTML='';
+    document.getElementById('skader-img-wrap').innerHTML=`<img src="${data.url}" style="width:100%;height:100%;object-fit:cover;display:block" alt="Skadeseksempel">`;
+  } catch(e){
+    imgWrap.innerHTML='<div style="font-size:13px;color:#888">Kunne ikke generere billede: '+e.message+'</div>';
+  }
+  btn.textContent='🎨 Generér nyt billede';
+  btn.disabled=false;
 }
 
 function renderTypeInTab(type){
