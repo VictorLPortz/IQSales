@@ -122,8 +122,6 @@ module.exports = async function handler(req, res) {
       if (!imageUrl) return res.status(500).json({ error: 'Timeout — prøv igen' });
       return res.status(200).json({ url: imageUrl });
     }
-      return res.status(200).json({ url: result.data.data[0].url });
-    }
     // ── Ende DALL-E ──────────────────────────────────────────────
 
     // ── Scenariegenerering ───────────────────────────────────────
