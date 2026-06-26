@@ -4555,7 +4555,7 @@ async function generateSkaderImage(){
       body:JSON.stringify({action:'dalle',prompt:c._scenario.image_prompt})
     });
     const data = await res.json();
-    if(!data.url) throw new Error(data.error||'Ingen URL');
+    if(!data.url) throw new Error(data.error + (data.details ? ' — ' + JSON.stringify(data.details) : '') || 'Ingen URL');
     document.getElementById('skader-img-inner').innerHTML='';
     document.getElementById('skader-img-wrap').innerHTML=`<img src="${data.url}" style="width:100%;height:100%;object-fit:cover;display:block" alt="Skadeseksempel">`;
   } catch(e){
