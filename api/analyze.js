@@ -71,6 +71,21 @@ module.exports = async function handler(req, res) {
     }
     // ── Ende DALL-E ──────────────────────────────────────────────
 
+    // ── Scenariegenerering ───────────────────────────────────────
+    if (req.body.action === 'scenario') {
+      const { prompt } = req.body;
+      if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
+
+      const msg = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      return res.status(200).json({ text: msg.content[0].text });
+    }
+    // ── Ende scenarie ────────────────────────────────────────────
+
     const { companyA, companyB, type } = req.body;
     
     if (!companyA || !companyB || !type) {
