@@ -1,8 +1,30 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const https = require('https');
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+function httpsPost(url, data, headers) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(data);
+    const urlObj = new URL(url);
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), ...headers }
+    };
+    const req = https.request(options, res => {
+      let d = '';
+      res.on('data', chunk => d += chunk);
+      res.on('end', () => resolve({ status: res.statusCode, data: JSON.parse(d) }));
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
  
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -50,24 +72,20 @@ module.exports = async function handler(req, res) {
       const { prompt } = req.body;
       if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
 
-      const openaiRes = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
+      const result = await httpsPost(
+        'https://api.openai.com/v1/images/generations',
+        {
           model: 'dall-e-3',
           prompt: prompt + '. Photorealistic, professional insurance damage photo. No people.',
           n: 1,
           size: '1024x1024',
           quality: 'standard'
-        })
-      });
+        },
+        { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` }
+      );
 
-      const openaiData = await openaiRes.json();
-      if (!openaiRes.ok) return res.status(500).json({ error: openaiData.error?.message || 'OpenAI fejl' });
-      return res.status(200).json({ url: openaiData.data[0].url });
+      if (result.status !== 200) return res.status(500).json({ error: result.data.error?.message || 'OpenAI fejl' });
+      return res.status(200).json({ url: result.data.data[0].url });
     }
     // ── Ende DALL-E ──────────────────────────────────────────────
 
