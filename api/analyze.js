@@ -84,7 +84,10 @@ module.exports = async function handler(req, res) {
         { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` }
       );
 
-      if (result.status !== 200) return res.status(500).json({ error: result.data.error?.message || 'OpenAI fejl' });
+      if (result.status !== 200) {
+        console.error('OpenAI DALL-E fejl:', JSON.stringify(result.data));
+        return res.status(500).json({ error: result.data.error?.message || 'OpenAI fejl', details: result.data });
+      }
       return res.status(200).json({ url: result.data.data[0].url });
     }
     // ── Ende DALL-E ──────────────────────────────────────────────
