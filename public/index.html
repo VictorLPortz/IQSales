@@ -4512,13 +4512,14 @@ Returner KUN JSON (ingen markdown) med disse felter:
 }`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const res = await fetch('/api/analyze',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({action:'scenario', prompt})
     });
     const data = await res.json();
-    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    if(!data.text) throw new Error(data.error||'Ingen respons');
+    const text = data.text.replace(/```json|```/g,'').trim();
     const json = JSON.parse(text);
     window._selectedSkader._scenario = json;
     document.getElementById('skader-title').textContent = json.title;
