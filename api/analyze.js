@@ -72,21 +72,56 @@ module.exports = async function handler(req, res) {
       const { prompt } = req.body;
       if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
 
-      const result = await httpsPost(
-        'https://api.openai.com/v1/images/generations',
+      // Start prediction
+      const startResult = await httpsPost(
+        'https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions',
         {
-          model: 'dall-e-2',
-          prompt: prompt + '. Photorealistic, professional insurance damage photo. No people.',
-          n: 1,
-          size: '512x512'
+          input: {
+            prompt: prompt + '. Photorealistic, professional insurance damage photo. No people.',
+            num_outputs: 1,
+            output_format: 'webp'
+          }
         },
-        { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` }
+        { 'Authorization': `Bearer ${process.env.REPLICATE_API_KEY}` }
       );
 
-      if (result.status !== 200) {
-        console.error('OpenAI DALL-E fejl:', JSON.stringify(result.data));
-        return res.status(500).json({ error: result.data.error?.message || 'OpenAI fejl', details: result.data });
+      if (startResult.status !== 201) {
+        console.error('Replicate start fejl:', JSON.stringify(startResult.data));
+        return res.status(500).json({ error: startResult.data.detail || 'Replicate fejl' });
       }
+
+      // Poll for result
+      const predictionId = startResult.data.id;
+      let imageUrl = null;
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const pollResult = await new Promise((resolve, reject) => {
+          const options = {
+            hostname: 'api.replicate.com',
+            path: `/v1/predictions/${predictionId}`,
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${process.env.REPLICATE_API_KEY}` }
+          };
+          const req2 = require('https').request(options, res2 => {
+            let d = '';
+            res2.on('data', chunk => d += chunk);
+            res2.on('end', () => resolve(JSON.parse(d)));
+          });
+          req2.on('error', reject);
+          req2.end();
+        });
+
+        if (pollResult.status === 'succeeded') {
+          imageUrl = pollResult.output[0];
+          break;
+        } else if (pollResult.status === 'failed') {
+          return res.status(500).json({ error: 'Billedgenerering fejlede' });
+        }
+      }
+
+      if (!imageUrl) return res.status(500).json({ error: 'Timeout — prøv igen' });
+      return res.status(200).json({ url: imageUrl });
+    }
       return res.status(200).json({ url: result.data.data[0].url });
     }
     // ── Ende DALL-E ──────────────────────────────────────────────
