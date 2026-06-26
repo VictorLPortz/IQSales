@@ -4420,15 +4420,17 @@ function renderSkader(container){
   const coverages = [];
   Object.keys(allResults||{}).forEach(shortName=>{
     const res = allResults[shortName];
-    if(!res||!res.categories) return;
+    if(!res||!res.coverage) return;
     const typeName = Object.keys(TYPE_LABELS).find(k=>k.replace('forsikring','').toLowerCase()===shortName)||shortName;
-    res.categories.forEach(cat=>{
-      if(cat.winner && cat.winner !== 'Uafgjort') {
+    res.coverage.forEach(cat=>{
+      if(cat.winner && cat.winner !== 'equal') {
+        const winnerName = cat.winner === 'a' ? nameA : nameB;
         coverages.push({
           type: TYPE_LABELS[typeName]||shortName,
-          name: cat.name||cat.category||'Dækning',
-          detail: cat.summary||cat.detail||'',
-          winner: cat.winner,
+          name: cat.category||'Dækning',
+          detail: cat.customer_explanation||cat.reason||'',
+          winner: winnerName,
+          winnerKey: cat.winner,
           nameA, nameB, shortName
         });
       }
@@ -4521,7 +4523,7 @@ Returner KUN JSON (ingen markdown) med disse felter:
     window._selectedSkader._scenario = json;
     document.getElementById('skader-title').textContent = json.title;
     document.getElementById('skader-desc').textContent = json.description;
-    const loser = c.winner === c.nameA ? c.nameB : c.nameA;
+    const loser = c.winnerKey === 'a' ? c.nameB : c.nameA;
     document.getElementById('skader-comparison').innerHTML=`
       <div style="background:#EAF3DE;border-radius:8px;padding:10px 12px">
         <div style="font-size:11px;color:#3B6D11;font-weight:600;margin-bottom:2px">${c.winner.toUpperCase()}</div>
