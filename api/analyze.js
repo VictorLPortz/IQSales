@@ -75,11 +75,10 @@ module.exports = async function handler(req, res) {
       const result = await httpsPost(
         'https://api.openai.com/v1/images/generations',
         {
-          model: 'dall-e-3',
+          model: 'dall-e-2',
           prompt: prompt + '. Photorealistic, professional insurance damage photo. No people.',
           n: 1,
-          size: '1024x1024',
-          quality: 'standard'
+          size: '512x512'
         },
         { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` }
       );
