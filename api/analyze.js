@@ -120,6 +120,32 @@ module.exports = async function handler(req, res) {
       }
 
       if (!imageUrl) return res.status(500).json({ error: 'Timeout — prøv igen' });
+
+      // Log til Supabase
+      const { userId, insuranceType, coverageName, promptText, feedbackText } = req.body;
+      if (userId && insuranceType) {
+        try {
+          await httpsPost(
+            `${process.env.SUPABASE_URL}/rest/v1/skader_images`,
+            {
+              user_id: userId,
+              insurance_type: insuranceType,
+              coverage_name: coverageName || '',
+              image_url: imageUrl,
+              prompt: promptText || '',
+              feedback: feedbackText || null
+            },
+            {
+              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              'Prefer': 'return=minimal'
+            }
+          );
+        } catch(logErr) {
+          console.error('Skader log fejl:', logErr);
+        }
+      }
+
       return res.status(200).json({ url: imageUrl });
     }
     // ── Ende DALL-E ──────────────────────────────────────────────
