@@ -4423,7 +4423,7 @@ function renderSkader(container){
     if(!res||!res.coverage) return;
     const typeName = Object.keys(TYPE_LABELS).find(k=>k.replace('forsikring','').toLowerCase()===shortName)||shortName;
     res.coverage.forEach(cat=>{
-      if(cat.winner && cat.winner !== 'equal') {
+      if(cat.winner && cat.winner === 'a') {
         const winnerName = cat.winner === 'a' ? nameA : nameB;
         coverages.push({
           type: TYPE_LABELS[typeName]||shortName,
@@ -4452,7 +4452,7 @@ function renderSkader(container){
         </select>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1.5rem" id="skader-grid">
-        ${coverages.slice(0,24).map((c,i)=>`
+        ${coverages.map((c,i)=>`
           <div class="skader-card" data-idx="${i}" data-type="${c.type}" onclick="selectSkaderCard(this,${i})" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all .15s">
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${c.type}</div>
             <div style="font-size:14px;font-weight:500;color:var(--text)">${c.name}</div>
