@@ -1084,71 +1084,30 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
 <!-- ONBOARDING MODAL -->
 <div id="onboarding-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:16px;width:440px;max-width:90vw;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
-    <div style="padding:2rem 2rem 1.25rem;text-align:center;">
-      <div style="display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:500;color:#141412;margin-bottom:1.25rem;">
-        <div style="width:28px;height:28px;border-radius:6px;background:#1D9E75;display:flex;align-items:center;justify-content:center;">
-          <i class="ti ti-shield-check" style="color:#fff;font-size:16px;" aria-hidden="true"></i>
+  <div style="background:var(--bg);border-radius:var(--r);width:460px;max-width:92vw;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.18);border:1px solid var(--border);">
+
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;">
+          <i class="ti ti-shield-check" style="color:#fff;font-size:15px;" aria-hidden="true"></i>
         </div>
-        IQSales
+        <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);">IQSales guide</span>
       </div>
-      <p style="font-size:22px;font-weight:500;color:#141412;margin:0 0 6px;">Velkommen til IQSales</p>
-      <p style="font-size:14px;color:#7A7870;margin:0;">Dit stærkeste værktøj til forsikringsanalyse</p>
+      <span style="font-size:12px;color:var(--muted);" id="ob-counter">Trin 1 af 4</span>
     </div>
-    <div style="padding:0 2rem;">
-      <div style="display:flex;border-radius:8px;overflow:hidden;border:0.5px solid #E3E1D9;">
-        <div style="flex:1;padding:12px 8px;text-align:center;background:#E1F5EE;border-right:0.5px solid #E3E1D9;">
-          <div style="font-size:11px;font-weight:500;color:#0F6E56;margin-bottom:3px;">Trin 1</div>
-          <div style="font-size:12px;font-weight:500;color:#085041;">Vælg typer</div>
-        </div>
-        <div style="flex:1;padding:12px 8px;text-align:center;background:#F8F6F1;border-right:0.5px solid #E3E1D9;">
-          <div style="font-size:11px;font-weight:500;color:#A09E96;margin-bottom:3px;">Trin 2</div>
-          <div style="font-size:12px;font-weight:500;color:#7A7870;">Upload betingelser</div>
-        </div>
-        <div style="flex:1;padding:12px 8px;text-align:center;background:#F8F6F1;">
-          <div style="font-size:11px;font-weight:500;color:#A09E96;margin-bottom:3px;">Trin 3</div>
-          <div style="font-size:12px;font-weight:500;color:#7A7870;">Analysér</div>
-        </div>
-      </div>
+
+    <div style="display:flex;gap:5px;padding:1rem 1.5rem 0;" id="ob-dots">
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--accent);transition:background .3s;" id="ob-dot-0"></div>
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;" id="ob-dot-1"></div>
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;" id="ob-dot-2"></div>
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;" id="ob-dot-3"></div>
     </div>
-    <div style="padding:1.25rem 2rem;">
-      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;">
-        <li style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#141412;">
-          <div style="width:28px;height:28px;border-radius:6px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
-            <i class="ti ti-files" style="color:#0F6E56;font-size:15px;" aria-hidden="true"></i>
-          </div>
-          <div>
-            <strong style="font-weight:500;display:block;margin-bottom:2px;">Saml betingelserne</strong>
-            <span style="color:#7A7870;font-size:13px;">Upload PDF-betingelser fra to forsikringsselskaber</span>
-          </div>
-        </li>
-        <li style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#141412;">
-          <div style="width:28px;height:28px;border-radius:6px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
-            <i class="ti ti-chart-bar" style="color:#0F6E56;font-size:15px;" aria-hidden="true"></i>
-          </div>
-          <div>
-            <strong style="font-weight:500;display:block;margin-bottom:2px;">Få en præcis analyse</strong>
-            <span style="color:#7A7870;font-size:13px;">AI gennemgår forskellene på sekunder — ikke timer</span>
-          </div>
-        </li>
-        <li style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#141412;">
-          <div style="width:28px;height:28px;border-radius:6px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
-            <i class="ti ti-user-check" style="color:#0F6E56;font-size:15px;" aria-hidden="true"></i>
-          </div>
-          <div>
-            <strong style="font-weight:500;display:block;margin-bottom:2px;">Hjælp kunden med at beslutte</strong>
-            <span style="color:#7A7870;font-size:13px;">Klare fordele og ulemper i et sprog kunden forstår</span>
-          </div>
-        </li>
-      </ul>
-    </div>
-    <div style="padding:0 2rem 2rem;display:flex;flex-direction:column;gap:10px;">
-      <button onclick="closeOnboarding()" style="background:#1D9E75;color:#fff;border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:500;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;">
-        Kom i gang <i class="ti ti-arrow-right" aria-hidden="true"></i>
-      </button>
-      <button onclick="closeOnboarding(true)" style="background:none;border:0.5px solid #D3D1C7;border-radius:8px;padding:10px 20px;font-size:13px;color:#7A7870;cursor:pointer;width:100%;font-family:inherit;">
-        Spring over — vis mig ikke dette igen
-      </button>
+
+    <div id="ob-content" style="padding:1.25rem 1.5rem;min-height:300px;"></div>
+
+    <div style="padding:0 1.5rem 1.5rem;display:flex;gap:10px;">
+      <button id="ob-back" onclick="obBack()" style="flex:1;padding:11px;background:none;border:1px solid var(--border);border-radius:var(--rs);font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit;display:none;">Tilbage</button>
+      <button id="ob-next" onclick="obNext()" style="flex:2;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;">Næste →</button>
     </div>
   </div>
 </div>
@@ -1170,8 +1129,118 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
   window.closeOnboarding = function(permanent) {
     document.getElementById('onboarding-overlay').style.display = 'none';
-    if (permanent) localStorage.setItem('iqsales_onboarding_done', '1');
-    else localStorage.setItem('iqsales_onboarding_done', '1');
+    localStorage.setItem('iqsales_onboarding_done', '1');
+  };
+
+  var obStep = 0;
+  var obSteps = [
+    {
+      title: 'Velkommen til IQSales',
+      desc: 'Din AI-assistent til forsikringssammenligninger. Denne guide viser dig hvordan du bruger appen på 2 minutter.',
+      visual: '<div style="display:flex;flex-direction:column;gap:8px;margin-top:1rem">' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-chart-bar" style="color:var(--accent);font-size:17px" aria-hidden="true"></i>' +
+        '<span style="font-size:13px;color:var(--text)">Sammenlign forsikringer på sekunder</span></div>' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-robot" style="color:var(--accent);font-size:17px" aria-hidden="true"></i>' +
+        '<span style="font-size:13px;color:var(--text)">Få AI-genereret salgspitch og salgscoach</span></div>' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-photo" style="color:var(--accent);font-size:17px" aria-hidden="true"></i>' +
+        '<span style="font-size:13px;color:var(--text)">Generer skadeseksempler med AI-billeder</span></div>' +
+        '<div style="margin-top:4px;padding:10px 12px;background:var(--surface);border-radius:var(--rs);border:1px solid var(--border)">' +
+        '<span style="font-size:11px;color:var(--muted)">Vi bruger kun nødvendige cookies til login og session. Ingen tracking eller deling med tredjeparter.</span></div></div>'
+    },
+    {
+      title: 'Vælg forsikringstyper',
+      desc: 'Klik på de typer du vil analysere — op til 8 ad gangen. Betingelserne hentes automatisk fra vores database.',
+      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem">' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">1. FORSIKRINGSTYPER</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">' +
+        '<div id="ob-hus" style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--accent);text-align:center;font-size:11px;font-weight:500;color:#fff;background:var(--accent);transition:all .4s">🏠<br>Hus</div>' +
+        '<div id="ob-bil" style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface);transition:all .4s">🚗<br>Bil</div>' +
+        '<div style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface)">🛋️<br>Indbo</div>' +
+        '<div style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface)">✈️<br>Rejse</div>' +
+        '</div></div>'
+    },
+    {
+      title: 'Vælg selskaber og analysér',
+      desc: 'Vælg dit selskab og kundens nuværende selskab. Tryk analysér — AI gennemgår alle forskelle på sekunder.',
+      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem">' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">2. VÆLG SELSKABER</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+        '<div style="background:var(--bg);border:1.5px solid var(--accent);border-radius:var(--rs);padding:8px 10px">' +
+        '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">Dit selskab</div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text)">Alm. Brand</div></div>' +
+        '<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:8px 10px">' +
+        '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">Kundens selskab</div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text)">Tryg</div></div></div>' +
+        '<div style="background:var(--accent);color:#fff;border-radius:var(--rs);padding:9px;text-align:center;font-size:12px;font-weight:600;font-family:\'Syne\',sans-serif">Analysér og generer salgspitch →</div>' +
+        '<div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden">' +
+        '<div id="ob-bar" style="height:100%;background:var(--accent);border-radius:2px;width:0;transition:width 2s ease"></div></div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px" id="ob-bar-txt">Klar til analyse</div></div>'
+    },
+    {
+      title: 'Brug resultaterne',
+      desc: 'Gennemgå dækningsforskelle, stil spørgsmål til salgscoachen, send rapport til kunden — eller generer skadeseksempler.',
+      visual: '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:1rem">' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-chart-bar" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Analyse</div>' +
+        '<div style="font-size:11px;color:var(--muted)">20 dækningsforskelle</div></div>' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-robot" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Salgscoach</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Stil spørgsmål til AI</div></div>' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-mail" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Send til kunde</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Professionel rapport</div></div>' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-photo" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Skadeseksempler</div>' +
+        '<div style="font-size:11px;color:var(--muted)">AI-billeder af skader</div></div></div>'
+    }
+  ];
+
+  function obRender() {
+    var s = obSteps[obStep];
+    document.getElementById('ob-content').innerHTML =
+      '<p style="font-family:\'Syne\',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin:0 0 4px">' + s.title + '</p>' +
+      '<p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">' + s.desc + '</p>' +
+      s.visual;
+    document.getElementById('ob-counter').textContent = 'Trin ' + (obStep+1) + ' af ' + obSteps.length;
+    document.getElementById('ob-back').style.display = obStep === 0 ? 'none' : '';
+    document.getElementById('ob-next').textContent = obStep === obSteps.length-1 ? 'Kom i gang ✓' : 'Næste →';
+    for (var i=0; i<obSteps.length; i++) {
+      var d = document.getElementById('ob-dot-'+i);
+      if (d) d.style.background = i <= obStep ? 'var(--accent)' : 'var(--border)';
+    }
+    if (obStep === 1) {
+      setTimeout(function() {
+        var bil = document.getElementById('ob-bil');
+        if (bil) { bil.style.background='var(--accent)'; bil.style.color='#fff'; bil.style.border='1.5px solid var(--accent)'; }
+      }, 1000);
+    }
+    if (obStep === 2) {
+      setTimeout(function() {
+        var bar = document.getElementById('ob-bar');
+        var txt = document.getElementById('ob-bar-txt');
+        if (bar) bar.style.width = '75%';
+        if (txt) txt.textContent = 'Analyserer Husforsikring...';
+        setTimeout(function() {
+          if (bar) bar.style.width = '100%';
+          if (txt) txt.textContent = 'Analyse færdig!';
+        }, 2200);
+      }, 400);
+    }
+  }
+
+  window.obNext = function() {
+    if (obStep < obSteps.length-1) { obStep++; obRender(); }
+    else { window.closeOnboarding(); }
+  };
+  window.obBack = function() {
+    if (obStep > 0) { obStep--; obRender(); }
   };
 
   window.addEventListener('DOMContentLoaded', function() {
@@ -1179,6 +1248,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     var onboardingDone = localStorage.getItem('iqsales_onboarding_done');
     if (!onboardingDone) {
       var overlay = document.getElementById('onboarding-overlay');
+      obStep = 0;
+      obRender();
       overlay.style.display = 'flex';
     }
 
