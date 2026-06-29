@@ -1153,19 +1153,26 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     {
       title: 'Vælg forsikringstyper',
       desc: 'Klik på de typer du vil analysere — op til 8 ad gangen. Betingelserne hentes automatisk fra vores database.',
-      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem">' +
+      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem;position:relative;overflow:hidden">' +
+        '<style>' +
+        '@keyframes ob-cursor-move{0%{transform:translate(20px,20px)}30%{transform:translate(20px,20px)}50%{transform:translate(80px,55px)}70%{transform:translate(80px,55px)}85%{transform:translate(155px,55px)}100%{transform:translate(155px,55px)}}' +
+        '@keyframes ob-click{0%,48%,52%,98%,100%{transform:scale(1)}50%,99%{transform:scale(0.85)}}' +
+        '</style>' +
         '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">1. FORSIKRINGSTYPER</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:relative">' +
         '<div id="ob-hus" style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--accent);text-align:center;font-size:11px;font-weight:500;color:#fff;background:var(--accent);transition:all .4s">🏠<br>Hus</div>' +
         '<div id="ob-bil" style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface);transition:all .4s">🚗<br>Bil</div>' +
         '<div style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface)">🛋️<br>Indbo</div>' +
         '<div style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface)">✈️<br>Rejse</div>' +
+        '<svg style="position:absolute;left:0;top:0;width:18px;height:22px;pointer-events:none;animation:ob-cursor-move 3s ease-in-out infinite,ob-click 3s ease-in-out infinite;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3))" viewBox="0 0 18 22" fill="none"><path d="M2 2L2 18L6 13L10 20L13 19L9 12L16 12Z" fill="#1A3C2E" stroke="#fff" stroke-width="1"/></svg>' +
         '</div></div>'
     },
     {
       title: 'Vælg selskaber og analysér',
       desc: 'Vælg dit selskab og kundens nuværende selskab. Tryk analysér — AI gennemgår alle forskelle på sekunder.',
-      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem">' +
+      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem;position:relative;overflow:hidden">' +
+        '<style>@keyframes ob-cursor-analyze{0%{transform:translate(60px,10px)}40%{transform:translate(60px,10px)}65%{transform:translate(150px,75px)}100%{transform:translate(150px,75px)}}' +
+        '@keyframes ob-click2{0%,62%,68%{transform:scale(1)}65%{transform:scale(0.85)}}</style>' +
         '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">2. VÆLG SELSKABER</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div style="background:var(--bg);border:1.5px solid var(--accent);border-radius:var(--rs);padding:8px 10px">' +
@@ -1174,7 +1181,10 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
         '<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:8px 10px">' +
         '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">Kundens selskab</div>' +
         '<div style="font-size:12px;font-weight:600;color:var(--text)">Tryg</div></div></div>' +
+        '<div style="position:relative">' +
         '<div style="background:var(--accent);color:#fff;border-radius:var(--rs);padding:9px;text-align:center;font-size:12px;font-weight:600;font-family:\'Syne\',sans-serif">Analysér og generer salgspitch →</div>' +
+        '<svg style="position:absolute;right:20px;top:-30px;width:18px;height:22px;pointer-events:none;animation:ob-cursor-analyze 3s ease-in-out infinite,ob-click2 3s ease-in-out infinite;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3))" viewBox="0 0 18 22" fill="none"><path d="M2 2L2 18L6 13L10 20L13 19L9 12L16 12Z" fill="#1A3C2E" stroke="#fff" stroke-width="1"/></svg>' +
+        '</div>' +
         '<div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden">' +
         '<div id="ob-bar" style="height:100%;background:var(--accent);border-radius:2px;width:0;transition:width 2s ease"></div></div>' +
         '<div style="font-size:11px;color:var(--muted);margin-top:4px" id="ob-bar-txt">Klar til analyse</div></div>'
