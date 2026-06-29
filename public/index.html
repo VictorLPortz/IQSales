@@ -4444,10 +4444,16 @@ function renderSkader(container){
 
   container.innerHTML=`
     <div style="padding:1rem 0">
-      <p style="font-size:14px;color:var(--muted);margin-bottom:1.5rem">Vælg en dækning for at generere et skadeseksempel med AI-billede.</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem">
+        <label style="font-size:13px;color:var(--muted);white-space:nowrap">Vis scenarier for:</label>
+        <select id="skader-type-filter" onchange="filterSkaderCards()" style="flex:1;max-width:260px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
+          <option value="">Alle forsikringstyper</option>
+          ${[...new Set(coverages.map(c=>c.type))].map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1.5rem" id="skader-grid">
-        ${coverages.slice(0,12).map((c,i)=>`
-          <div class="skader-card" data-idx="${i}" onclick="selectSkaderCard(this,${i})" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all .15s">
+        ${coverages.slice(0,24).map((c,i)=>`
+          <div class="skader-card" data-idx="${i}" data-type="${c.type}" onclick="selectSkaderCard(this,${i})" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all .15s">
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${c.type}</div>
             <div style="font-size:14px;font-weight:500;color:var(--text)">${c.name}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:4px">${c.winner} har fordelen</div>
@@ -4475,6 +4481,13 @@ function renderSkader(container){
     </div>`;
 
   window._skaderCoverages = coverages;
+}
+
+function filterSkaderCards(){
+  const val = document.getElementById('skader-type-filter').value;
+  document.querySelectorAll('.skader-card').forEach(card=>{
+    card.style.display = (!val || card.dataset.type === val) ? '' : 'none';
+  });
 }
 
 function selectSkaderCard(el, idx){
