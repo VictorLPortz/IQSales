@@ -4475,6 +4475,16 @@ function renderSkader(container){
             <button onclick="generateSkaderImage()" id="skader-gen-btn" style="width:100%;background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">
               🎨 Generér billede
             </button>
+            <div id="skader-feedback-area" style="display:none;margin-top:10px">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Ikke tilfreds? Beskriv hvad du ønsker anderledes:</div>
+              <div style="display:flex;gap:8px">
+                <input type="text" id="skader-feedback-input" placeholder="fx 'mere dramatisk, vis vandet tydeligere'" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+                <button onclick="submitSkaderFeedback()" style="background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">Prøv igen</button>
+              </div>
+            </div>
+            <div id="skader-limit-msg" style="display:none;margin-top:10px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400E">
+              🔒 Du har nået den daglige grænse på 3 billeder for denne forsikringstype. Grænsen nulstilles automatisk kl. 06.00.
+            </div>
           </div>
         </div>
       </div>
@@ -4553,29 +4563,104 @@ Returner KUN JSON (ingen markdown) med disse felter:
   }
 }
 
-async function generateSkaderImage(){
+async function generateSkaderImage(feedbackText){
   const c = window._selectedSkader;
   if(!c||!c._scenario) return;
+
+  const today = new Date().toISOString().slice(0,10);
+  const limitKey = `skader_limit_${c.type}_${today}`;
+  const count = parseInt(localStorage.getItem(limitKey)||'0');
+  const MAX = 3;
+
+  if(count >= MAX && !feedbackText){
+    showSkaderLimitMessage(c.type);
+    return;
+  }
+
+  const cacheKey = `skader_img_${c.type}_${c.name}`;
+  if(!feedbackText && window._skaderImageCache && window._skaderImageCache[cacheKey]){
+    showSkaderImage(window._skaderImageCache[cacheKey], count, MAX, c.type);
+    return;
+  }
+
   const btn = document.getElementById('skader-gen-btn');
   btn.textContent='⏳ Genererer billede...';
   btn.disabled=true;
+  const feedbackArea = document.getElementById('skader-feedback-area');
+  if(feedbackArea) feedbackArea.style.display='none';
+
   const imgWrap = document.getElementById('skader-img-inner');
-  imgWrap.innerHTML='<div style="font-size:13px;color:#888">Genererer billede — det tager 10-20 sekunder...</div>';
+  if(imgWrap) imgWrap.innerHTML='<div style="font-size:13px;color:#888">Genererer billede — 10-20 sekunder...</div>';
+
+  const prompt = feedbackText
+    ? c._scenario.image_prompt + '. User feedback: ' + feedbackText
+    : c._scenario.image_prompt;
+
   try {
     const res = await fetch('/api/analyze',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'dalle',prompt:c._scenario.image_prompt})
+      body:JSON.stringify({
+        action:'dalle',
+        prompt,
+        userId: getUserId(),
+        insuranceType: c.type,
+        coverageName: c.name,
+        promptText: c._scenario.image_prompt,
+        feedbackText: feedbackText || null
+      })
     });
     const data = await res.json();
-    if(!data.url) throw new Error(data.error + (data.details ? ' — ' + JSON.stringify(data.details) : '') || 'Ingen URL');
-    document.getElementById('skader-img-inner').innerHTML='';
-    document.getElementById('skader-img-wrap').innerHTML=`<img src="${data.url}" style="width:100%;height:100%;object-fit:cover;display:block" alt="Skadeseksempel">`;
+    if(!data.url) throw new Error(data.error||'Ingen URL');
+
+    if(!window._skaderImageCache) window._skaderImageCache = {};
+    window._skaderImageCache[cacheKey] = data.url;
+    const newCount = count + 1;
+    localStorage.setItem(limitKey, String(newCount));
+
+    showSkaderImage(data.url, newCount, MAX, c.type);
+
+    if(newCount >= MAX){
+      btn.textContent = '🔒 Daglig grænse nået';
+      btn.disabled = true;
+      showSkaderLimitMessage(c.type);
+    } else {
+      btn.textContent = '🎨 Generér nyt billede';
+      btn.disabled = false;
+    }
   } catch(e){
-    imgWrap.innerHTML='<div style="font-size:13px;color:#888">Kunne ikke generere billede: '+e.message+'</div>';
+    const el = document.getElementById('skader-img-inner');
+    if(el) el.innerHTML='<div style="font-size:13px;color:#888">Kunne ikke generere billede: '+e.message+'</div>';
+    btn.textContent='🎨 Generér nyt billede';
+    btn.disabled=false;
   }
-  btn.textContent='🎨 Generér nyt billede';
-  btn.disabled=false;
+}
+
+function showSkaderImage(url, count, max, type){
+  const wrap = document.getElementById('skader-img-wrap');
+  if(!wrap) return;
+  const remaining = max - count;
+  wrap.innerHTML=`<div style="position:relative;width:100%;height:100%">
+    <img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block;min-height:240px" alt="Skadeseksempel">
+    <div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.5);color:#fff;font-size:11px;padding:3px 8px;border-radius:4px">${remaining} tilbage i dag</div>
+  </div>`;
+  const feedbackArea = document.getElementById('skader-feedback-area');
+  if(feedbackArea && remaining > 0) feedbackArea.style.display='block';
+}
+
+function showSkaderLimitMessage(type){
+  const feedbackArea = document.getElementById('skader-feedback-area');
+  if(feedbackArea) feedbackArea.style.display='none';
+  const limitMsg = document.getElementById('skader-limit-msg');
+  if(limitMsg) limitMsg.style.display='block';
+}
+
+function submitSkaderFeedback(){
+  const input = document.getElementById('skader-feedback-input');
+  const text = input ? input.value.trim() : '';
+  if(!text) return;
+  input.value = '';
+  generateSkaderImage(text);
 }
 
 function renderTypeInTab(type){
