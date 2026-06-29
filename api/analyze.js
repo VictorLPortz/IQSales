@@ -77,7 +77,7 @@ module.exports = async function handler(req, res) {
         'https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions',
         {
           input: {
-            prompt: prompt + '. Photorealistic, professional insurance damage photo. No people.',
+            prompt: prompt + '. Hyper-realistic insurance damage documentation photo, shot with a professional DSLR camera. Dramatic but tasteful. No people, no bodies, no blood, no gore, no victims. Focus on the physical damage to property only. Photojournalistic style, natural lighting.',
             num_outputs: 1,
             output_format: 'webp'
           }
