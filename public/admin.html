@@ -1356,8 +1356,18 @@
       <div id="subtab-updates" class="subtab-content" style="width:100%;min-height:200px;box-sizing:border-box;">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:24px">
           <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px">Opret ny nyhed</div>
-          <input type="text" id="updateTitleInput" placeholder="Titel, fx 'Ny feature: Skadeseksempler'" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text);border:1px solid var(--border)">
-          <textarea id="updateMessageInput" placeholder="Besked, fx 'Generer AI-billeder af konkrete skadeseksempler direkte fra din analyse.'" rows="3" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text);border:1px solid var(--border);resize:vertical"></textarea>
+          <input type="text" id="updateTitleInput" placeholder="Titel, fx 'Ny feature: Skadeseksempler'" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text)">
+          <textarea id="updateMessageInput" placeholder="Besked, fx 'Generer AI-billeder af konkrete skadeseksempler direkte fra din analyse.'" rows="3" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text);resize:vertical"></textarea>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Vis fra</label>
+              <input type="date" id="updateStartDate" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Vis til og med (valgfri)</label>
+              <input type="date" id="updateEndDate" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+            </div>
+          </div>
           <button onclick="createUpdate()" style="background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer">Offentliggør nyhed</button>
           <span id="updateStatus" style="font-size:13px;margin-left:12px"></span>
         </div>
@@ -1656,17 +1666,30 @@
       list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:14px">Ingen nyheder oprettet endnu</div>';
       return;
     }
-    list.innerHTML = data.map(u => `
+    list.innerHTML = data.map(u => {
+      const periodText = u.end_date
+        ? `${formatDk(u.start_date)} – ${formatDk(u.end_date)}`
+        : `Fra ${formatDk(u.start_date)} (uden slutdato)`;
+      return `
       <div style="padding:12px 1.25rem;border-bottom:1px solid var(--border)">
         <div style="font-size:13px;font-weight:600;color:var(--text)">${u.title}</div>
         <div style="font-size:13px;color:var(--muted);margin-top:2px">${u.message}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">${new Date(u.created_at).toLocaleString('da-DK')}</div>
-      </div>`).join('');
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Oprettet ${new Date(u.created_at).toLocaleString('da-DK')} · Vises: ${periodText}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function formatDk(dateStr){
+    if(!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('da-DK');
   }
 
   async function createUpdate() {
     const title = document.getElementById('updateTitleInput').value.trim();
     const message = document.getElementById('updateMessageInput').value.trim();
+    const startDate = document.getElementById('updateStartDate').value || new Date().toISOString().slice(0,10);
+    const endDate = document.getElementById('updateEndDate').value || null;
     const status = document.getElementById('updateStatus');
     if(!title || !message){ status.textContent = 'Udfyld både titel og besked'; status.style.color = '#DC2626'; return; }
 
@@ -1681,7 +1704,7 @@
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
-      body: JSON.stringify({ title, message })
+      body: JSON.stringify({ title, message, start_date: startDate, end_date: endDate })
     });
 
     if(res.ok){
@@ -1689,6 +1712,8 @@
       status.style.color = '#16A34A';
       document.getElementById('updateTitleInput').value = '';
       document.getElementById('updateMessageInput').value = '';
+      document.getElementById('updateStartDate').value = '';
+      document.getElementById('updateEndDate').value = '';
       loadUpdates();
     } else {
       status.textContent = 'Fejl — prøv igen';
