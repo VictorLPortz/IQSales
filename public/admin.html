@@ -729,6 +729,7 @@
         <button class="subtab-button" onclick="switchSubtab('api')">💰 Økonomi & data</button>
         <button class="subtab-button" onclick="switchSubtab('protection')">🔒 Sikkerhed</button>
         <button class="subtab-button" onclick="switchSubtab('skader')">🖼️ Skadeseksempler</button>
+        <button class="subtab-button" onclick="switchSubtab('updates')">🔔 Nyheder</button>
       </div>
 
       <!-- SUBTAB: Overblik -->
@@ -1423,6 +1424,22 @@
           </div>
         </div>
       </div>
+
+      <div id="subtab-updates" class="subtab-content">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:24px">
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px">Opret ny nyhed</div>
+          <input type="text" id="updateTitleInput" placeholder="Titel, fx 'Ny feature: Skadeseksempler'" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--bg);color:var(--text)">
+          <textarea id="updateMessageInput" placeholder="Besked, fx 'Generer AI-billeder af konkrete skadeseksempler direkte fra din analyse.'" rows="3" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+          <button onclick="createUpdate()" style="background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer">Offentliggør nyhed</button>
+          <span id="updateStatus" style="font-size:13px;margin-left:12px"></span>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;color:var(--text)">Tidligere nyheder</div>
+          <div id="updatesList" style="padding:0.5rem 0">
+            <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:14px">Indlæser...</div>
+          </div>
+        </div>
+      </div>
   </div>
 </div>
 
@@ -1575,6 +1592,7 @@
     if (subtabName === 'overview') loadOverview();
     if (subtabName === 'protection') loadProtectionData();
     if (subtabName === 'skader') loadSkaderImages();
+    if (subtabName === 'updates') loadUpdates();
   }
 
   // ========== SKADESEKSEMPLER ==========
@@ -1617,6 +1635,59 @@
           ${img.feedback ? `<div style="font-size:11px;color:#92400E;background:#FEF3C7;padding:2px 8px;border-radius:4px;margin-top:3px;display:inline-block">Feedback: ${img.feedback}</div>` : ''}
         </div>
       </div>`).join('');
+  }
+
+  // ========== NYHEDER ==========
+  async function loadUpdates() {
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session) return;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/updates?order=created_at.desc&limit=30`, {
+      headers: {'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${session.access_token}`}
+    });
+    const data = await res.json();
+    const list = document.getElementById('updatesList');
+    if(!Array.isArray(data) || data.length === 0){
+      list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:14px">Ingen nyheder oprettet endnu</div>';
+      return;
+    }
+    list.innerHTML = data.map(u => `
+      <div style="padding:12px 1.25rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${u.title}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">${u.message}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${new Date(u.created_at).toLocaleString('da-DK')}</div>
+      </div>`).join('');
+  }
+
+  async function createUpdate() {
+    const title = document.getElementById('updateTitleInput').value.trim();
+    const message = document.getElementById('updateMessageInput').value.trim();
+    const status = document.getElementById('updateStatus');
+    if(!title || !message){ status.textContent = 'Udfyld både titel og besked'; status.style.color = '#DC2626'; return; }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session) return;
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/updates`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ title, message })
+    });
+
+    if(res.ok){
+      status.textContent = '✓ Nyhed offentliggjort';
+      status.style.color = '#16A34A';
+      document.getElementById('updateTitleInput').value = '';
+      document.getElementById('updateMessageInput').value = '';
+      loadUpdates();
+    } else {
+      status.textContent = 'Fejl — prøv igen';
+      status.style.color = '#DC2626';
+    }
   }
 
   // ========== BESKYTTELSE & OVERVÅGNING ==========
