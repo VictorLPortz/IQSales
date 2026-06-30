@@ -1425,11 +1425,11 @@
         </div>
       </div>
 
-      <div id="subtab-updates" class="subtab-content">
+      <div id="subtab-updates" class="subtab-content" style="width:100%;min-height:200px;box-sizing:border-box;">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:24px">
           <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px">Opret ny nyhed</div>
-          <input type="text" id="updateTitleInput" placeholder="Titel, fx 'Ny feature: Skadeseksempler'" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--bg);color:var(--text)">
-          <textarea id="updateMessageInput" placeholder="Besked, fx 'Generer AI-billeder af konkrete skadeseksempler direkte fra din analyse.'" rows="3" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--bg);color:var(--text);resize:vertical"></textarea>
+          <input type="text" id="updateTitleInput" placeholder="Titel, fx 'Ny feature: Skadeseksempler'" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text);border:1px solid var(--border)">
+          <textarea id="updateMessageInput" placeholder="Besked, fx 'Generer AI-billeder af konkrete skadeseksempler direkte fra din analyse.'" rows="3" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text);border:1px solid var(--border);resize:vertical"></textarea>
           <button onclick="createUpdate()" style="background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer">Offentliggør nyhed</button>
           <span id="updateStatus" style="font-size:13px;margin-left:12px"></span>
         </div>
@@ -1584,8 +1584,14 @@
     document.querySelectorAll('.subtab-button').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     
-    document.querySelectorAll('.subtab-content').forEach(content => content.classList.remove('active'));
-    document.getElementById(`subtab-${subtabName}`).classList.add('active');
+    document.querySelectorAll('.subtab-content').forEach(content => {
+      content.classList.remove('active');
+      content.style.display = 'none';
+    });
+    const target = document.getElementById(`subtab-${subtabName}`);
+    target.classList.add('active');
+    target.style.display = 'block';
+    target.style.width = '100%';
 
     if (subtabName === 'feedback') { loadFeedback(); loadCoverageRatings(); }
     if (subtabName === 'api') loadAPIStats();
