@@ -1317,11 +1317,17 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   });
 
   async function loadNotifications(){
-    const {data,error} = await window._sb.from('updates').select('*').order('created_at',{ascending:false}).limit(10);
+    const {data,error} = await window._sb.from('updates').select('*').order('created_at',{ascending:false}).limit(20);
     if(error||!data) return;
+    const today = new Date().toISOString().slice(0,10);
+    const isInPeriod = function(u){
+      if(u.start_date && u.start_date > today) return false;
+      if(u.end_date && u.end_date < today) return false;
+      return true;
+    };
     const seenIds = JSON.parse(localStorage.getItem('iqsales_seen_updates')||'[]');
-    const unread = data.filter(u=>!seenIds.includes(u.id));
-    if(unread.length>0) document.getElementById('bell-dot').style.display='block';
+    const activeUnread = data.filter(u=>!seenIds.includes(u.id) && isInPeriod(u));
+    if(activeUnread.length>0) document.getElementById('bell-dot').style.display='block';
 
     const list = document.getElementById('notif-list');
     if(data.length===0){
@@ -1329,13 +1335,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       return;
     }
     list.innerHTML = data.map(u=>{
-      const isUnread = !seenIds.includes(u.id);
+      const unread = !seenIds.includes(u.id) && isInPeriod(u);
       const timeAgo = formatTimeAgo(new Date(u.created_at));
-      return '<div style="padding:12px 18px;border-bottom:1px solid #E3E1D9;background:'+(isUnread?'#F0FAF6':'#fff')+'">'+
+      return '<div style="padding:12px 18px;border-bottom:1px solid #E3E1D9;background:'+(unread?'#F0FAF6':'#fff')+'">'+
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-        '<div style="width:6px;height:6px;border-radius:50%;background:'+(isUnread?'#1D9E75':'#D3D1C7')+'"></div>'+
-        '<span style="font-size:13px;font-weight:600;color:'+(isUnread?'#141412':'#7A7870')+'">'+u.title+'</span></div>'+
-        '<p style="font-size:12px;color:'+(isUnread?'#7A7870':'#A09E96')+';margin:0 0 4px;line-height:1.5">'+u.message+'</p>'+
+        '<div style="width:6px;height:6px;border-radius:50%;background:'+(unread?'#1D9E75':'#D3D1C7')+'"></div>'+
+        '<span style="font-size:13px;font-weight:600;color:'+(unread?'#141412':'#7A7870')+'">'+u.title+'</span></div>'+
+        '<p style="font-size:12px;color:'+(unread?'#7A7870':'#A09E96')+';margin:0 0 4px;line-height:1.5">'+u.message+'</p>'+
         '<span style="font-size:11px;color:#A09E96">'+timeAgo+'</span></div>';
     }).join('');
   }
