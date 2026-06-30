@@ -1327,7 +1327,13 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     };
     const seenIds = JSON.parse(localStorage.getItem('iqsales_seen_updates')||'[]');
     const activeUnread = data.filter(u=>!seenIds.includes(u.id) && isInPeriod(u));
-    if(activeUnread.length>0) document.getElementById('bell-dot').style.display='block';
+    if(activeUnread.length>0){
+      document.getElementById('bell-dot').style.display='block';
+      setTimeout(function(){
+        const dd = document.getElementById('notif-dropdown');
+        if(dd) dd.style.display='block';
+      }, 600);
+    }
 
     const list = document.getElementById('notif-list');
     if(data.length===0){
@@ -1375,8 +1381,15 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   document.addEventListener('click', function(e){
     const wrap = document.getElementById('bell-wrap');
     const dd = document.getElementById('notif-dropdown');
-    if(dd && wrap && !wrap.contains(e.target) && !dd.contains(e.target)){
+    if(dd && wrap && !wrap.contains(e.target) && !dd.contains(e.target) && dd.style.display==='block'){
       dd.style.display = 'none';
+      window._sb.from('updates').select('id').order('created_at',{ascending:false}).limit(20).then(function(res){
+        if(res.data){
+          const ids = res.data.map(u=>u.id);
+          localStorage.setItem('iqsales_seen_updates', JSON.stringify(ids));
+          document.getElementById('bell-dot').style.display='none';
+        }
+      });
     }
   });
   </script>
@@ -3012,7 +3025,7 @@ selectedTypes=[type];
 docsA[type]={name:nameA+' - '+type+' (fra database)',data:'cached',fromCache:true};
 docsB[type]={name:nameB+' - '+type+' (fra database)',data:'cached',fromCache:true};
 renderUploadZones();
-  const skaderTab = window._userRole === 'admin' ? `<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>` : '';
+  const skaderTab = `<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>`;
   const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()"><span class="tab-emoji">📊</span><span class="tab-label">Samlet overblik</span></button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')"><span class="tab-emoji">${TYPE_EMOJI[type]}</span><span class="tab-label">${TYPE_LABELS[type]} ✓</span></button><div class="tabs-divider"></div><button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button><button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>${skaderTab}`;
   document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div><div id="tab-coach" class="multi-tab-content" style="display:none"></div><div id="tab-send" class="multi-tab-content" style="display:none"></div><div id="tab-skader" class="multi-tab-content" style="display:none"></div></div>`;
   renderMultiResult(nameA,nameB);renderTypeInTab(type);switchMultiTab(type);
@@ -3405,7 +3418,7 @@ async function analyze() {
     <div class="tabs-divider"></div>
     <button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button>
     <button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>
-    ${window._userRole === 'admin' ? '<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>' : ''}`;
+    '<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>`;
 
   resultDiv.innerHTML = `
     <div class="result-section">
