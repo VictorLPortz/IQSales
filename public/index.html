@@ -1155,8 +1155,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       desc: 'Klik på de typer du vil analysere — op til 8 ad gangen. Betingelserne hentes automatisk fra vores database.',
       visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem;position:relative;overflow:hidden">' +
         '<style>' +
-        '@keyframes ob-cursor-move{0%{transform:translate(20px,20px)}30%{transform:translate(20px,20px)}50%{transform:translate(80px,55px)}70%{transform:translate(80px,55px)}85%{transform:translate(155px,55px)}100%{transform:translate(155px,55px)}}' +
-        '@keyframes ob-click{0%,48%,52%,98%,100%{transform:scale(1)}50%,99%{transform:scale(0.85)}}' +
+        '@keyframes ob-cursor-move{0%{transform:translate(18px,18px)}35%{transform:translate(18px,18px)}55%{transform:translate(88px,52px)}100%{transform:translate(88px,52px)}}' +
+        '@keyframes ob-click{0%,53%,59%{transform:scale(1)}56%{transform:scale(0.8)}}' +
         '</style>' +
         '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">1. FORSIKRINGSTYPER</div>' +
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:relative">' +
@@ -1171,8 +1171,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       title: 'Vælg selskaber og analysér',
       desc: 'Vælg dit selskab og kundens nuværende selskab. Tryk analysér — AI gennemgår alle forskelle på sekunder.',
       visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem;position:relative;overflow:hidden">' +
-        '<style>@keyframes ob-cursor-analyze{0%{transform:translate(60px,10px)}40%{transform:translate(60px,10px)}65%{transform:translate(150px,75px)}100%{transform:translate(150px,75px)}}' +
-        '@keyframes ob-click2{0%,62%,68%{transform:scale(1)}65%{transform:scale(0.85)}}</style>' +
+        '<style>@keyframes ob-cursor-analyze{0%{transform:translate(200px,10px)}35%{transform:translate(200px,10px)}55%{transform:translate(200px,68px)}100%{transform:translate(200px,68px)}}' +
+        '@keyframes ob-click2{0%,53%,59%{transform:scale(1)}56%{transform:scale(0.8)}}</style>' +
         '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">2. VÆLG SELSKABER</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<div style="background:var(--bg);border:1.5px solid var(--accent);border-radius:var(--rs);padding:8px 10px">' +
@@ -1229,7 +1229,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
       setTimeout(function() {
         var bil = document.getElementById('ob-bil');
         if (bil) { bil.style.background='var(--accent)'; bil.style.color='#fff'; bil.style.border='1.5px solid var(--accent)'; }
-      }, 1000);
+      }, 1700);
     }
     if (obStep === 2) {
       setTimeout(function() {
@@ -1241,7 +1241,7 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
           if (bar) bar.style.width = '100%';
           if (txt) txt.textContent = 'Analyse færdig!';
         }, 2200);
-      }, 400);
+      }, 1700);
     }
   }
 
