@@ -1284,17 +1284,17 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     <div class="logo-sub">Forsikringssammenligner</div>
   </div>
   <!-- USER NAV -->
-  <div id="user-nav" style="display:flex;align-items:center;gap:12px;position:relative">
+  <div id="user-nav" style="display:flex;align-items:center;gap:14px;position:relative">
     <div id="bell-wrap" style="position:relative;cursor:pointer;display:none" onclick="toggleNotifDropdown()">
       <span style="color:rgba(255,255,255,.85);font-size:18px;line-height:1">🔔</span>
       <div id="bell-dot" style="display:none;position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#E24B4A;border:1.5px solid #1A3C2E"></div>
+      <div id="notif-dropdown" style="display:none;position:absolute;top:28px;right:-8px;width:340px;background:#fff;border:1px solid #E3E1D9;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);overflow:hidden;z-index:1000;max-height:400px;overflow-y:auto;cursor:default">
+        <div style="padding:14px 18px;border-bottom:1px solid #E3E1D9;font-size:14px;font-weight:600;color:#141412">Nyheder</div>
+        <div id="notif-list"></div>
+      </div>
     </div>
-    <div id="notif-dropdown" style="display:none;position:absolute;top:36px;right:0;width:340px;background:#fff;border:1px solid #E3E1D9;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);overflow:hidden;z-index:1000;max-height:400px;overflow-y:auto">
-      <div style="padding:14px 18px;border-bottom:1px solid #E3E1D9;font-size:14px;font-weight:600;color:#141412">Nyheder</div>
-      <div id="notif-list"></div>
-    </div>
+    <div id="user-info-nav" style="display:flex;align-items:center;gap:12px"></div>
   </div>
-  <div id="user-info-nav" style="display:flex;align-items:center;gap:12px"></div>
   <script>
   window.addEventListener('DOMContentLoaded',async function(){
     if(!window._sb)return;
