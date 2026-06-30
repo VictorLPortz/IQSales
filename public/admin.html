@@ -1284,78 +1284,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- TAB 3: PDF Betingelser -->
-  <div id="tab-pdfs" class="tab-content">
-    <div class="container">
-      <div class="page-header">
-        <h1>Betingelser</h1>
-        <p>Administrer forsikringsbetingelser fra selskaberne</p>
-      </div>
-
-      <!-- Ryd cache med ukendt dækning -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>Cache-vedligeholdelse</h2>
-            <p>Ryd analyser der indeholder fejl eller ukendte dækninger</p>
-          </div>
-        </div>
-        <div class="card-body">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <button class="btn-primary" onclick="previewUnknownCache()" style="font-size: 15px; padding: 12px 24px; background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
-              🗑️ Find cache med ukendt dækning
-            </button>
-            <div id="cacheCleanStatus" style="font-size: 13px; color: var(--muted);"></div>
-          </div>
-          <div id="cacheCleanPreview" style="margin-top:16px; display:none;"></div>
-        </div>
-      </div>
-
-      <!-- PDF Status Overview -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>Status på PDF'er</h2>
-            <p id="pdfStatusCount">Indlæser...</p>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="pdf-grid" id="pdfGrid">
-            <div class="empty-state">Indlæser PDF status...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Latest refresh log -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>Seneste refreshes</h2>
-            <p>Historik over PDF opdateringer</p>
-          </div>
-        </div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Startet</th>
-                <th>Status</th>
-                <th>PDFs</th>
-                <th>Succesfull</th>
-                <th>Fejlet</th>
-                <th>Cost</th>
-                <th>Varighed</th>
-              </tr>
-            </thead>
-            <tbody id="refreshLogTable">
-              <tr><td colspan="7"><div class="empty-state">Indlæser historik...</div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       <!-- SUBTAB: Beskyttelse & overvågning -->
       <div id="subtab-protection" class="subtab-content">
@@ -1441,6 +1369,78 @@
         </div>
       </div>
   </div>
+</div>
+
+
+  <!-- TAB 3: PDF Betingelser -->
+  <div id="tab-pdfs" class="tab-content">
+    <div class="container">
+      <div class="page-header">
+        <h1>Betingelser</h1>
+        <p>Administrer forsikringsbetingelser fra selskaberne</p>
+      </div>
+
+      <!-- Ryd cache med ukendt dækning -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Cache-vedligeholdelse</h2>
+            <p>Ryd analyser der indeholder fejl eller ukendte dækninger</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <button class="btn-primary" onclick="previewUnknownCache()" style="font-size: 15px; padding: 12px 24px; background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
+              🗑️ Find cache med ukendt dækning
+            </button>
+            <div id="cacheCleanStatus" style="font-size: 13px; color: var(--muted);"></div>
+          </div>
+          <div id="cacheCleanPreview" style="margin-top:16px; display:none;"></div>
+        </div>
+      </div>
+
+      <!-- PDF Status Overview -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Status på PDF'er</h2>
+            <p id="pdfStatusCount">Indlæser...</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="pdf-grid" id="pdfGrid">
+            <div class="empty-state">Indlæser PDF status...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Latest refresh log -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Seneste refreshes</h2>
+            <p>Historik over PDF opdateringer</p>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Startet</th>
+                <th>Status</th>
+                <th>PDFs</th>
+                <th>Succesfull</th>
+                <th>Fejlet</th>
+                <th>Cost</th>
+                <th>Varighed</th>
+              </tr>
+            </thead>
+            <tbody id="refreshLogTable">
+              <tr><td colspan="7"><div class="empty-state">Indlæser historik...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 </div>
 
 <!-- Edit User Modal -->
