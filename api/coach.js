@@ -43,10 +43,12 @@ export default async function handler(req, res) {
   const startTime = Date.now();
 
   try {
+    const RESTRICTION = `\n\nVIGTIGT: Du må KUN svare på spørgsmål der er direkte relateret til forsikring, forsikringssalg, kundehåndtering i forsikringsbranchen eller salgsteknikker til forsikringsprodukter. Hvis brugeren stiller spørgsmål om emner der ikke er relevante for forsikringssalg (fx madopskrifter, politik, teknologi, generel livsvejledning, underholdning eller andet der ikke vedrører forsikring), skal du høfligt afvise og forklare at du kun kan hjælpe med forsikrings- og salgsrelaterede spørgsmål.`;
+
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: max_tokens || 600,
-      system: system || 'Du er en erfaren dansk forsikringssælger. Svar kort og praktisk på dansk.',
+      system: (system || 'Du er en erfaren dansk forsikringssælger. Svar kort og praktisk på dansk.') + RESTRICTION,
       messages: [{ role: 'user', content: message }]
     });
 
