@@ -69,8 +69,36 @@ module.exports = async function handler(req, res) {
   try {
     // ── DALL-E billedgenerering ──────────────────────────────────
     if (req.body.action === 'dalle') {
-      const { prompt } = req.body;
+      const { prompt, userId, insuranceType, coverageName, promptText, feedbackText } = req.body;
       if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
+
+      // Tjek cache først (kun hvis brugeren IKKE har givet feedback — så vil de have noget nyt)
+      if (insuranceType && coverageName && !feedbackText) {
+        try {
+          const cacheCheck = await new Promise((resolve, reject) => {
+            require('https').get(
+              `${process.env.SUPABASE_URL}/rest/v1/skader_images?insurance_type=eq.${encodeURIComponent(insuranceType)}&coverage_name=eq.${encodeURIComponent(coverageName)}&feedback=is.null&select=image_url&order=created_at.desc&limit=1`,
+              {
+                headers: {
+                  'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                  'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+                }
+              },
+              r => {
+                let d = '';
+                r.on('data', chunk => d += chunk);
+                r.on('end', () => resolve(JSON.parse(d)));
+              }
+            ).on('error', reject);
+          });
+          if (cacheCheck && cacheCheck.length > 0 && cacheCheck[0].image_url) {
+            return res.status(200).json({ url: cacheCheck[0].image_url, cached: true });
+          }
+        } catch (cacheErr) {
+          console.error('Skader cache-tjek fejl:', cacheErr);
+          // Fortsæt til ny generering hvis cache-tjek fejler
+        }
+      }
 
       // Start prediction
       const startResult = await httpsPost(
@@ -122,7 +150,6 @@ module.exports = async function handler(req, res) {
       if (!imageUrl) return res.status(500).json({ error: 'Timeout — prøv igen' });
 
       // Log til Supabase
-      const { userId, insuranceType, coverageName, promptText, feedbackText } = req.body;
       if (userId && insuranceType) {
         try {
           await httpsPost(
