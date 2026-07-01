@@ -1,917 +1,6081 @@
-const Anthropic = require('@anthropic-ai/sdk');
-const https = require('https');
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-function httpsPost(url, data, headers) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify(data);
-    const urlObj = new URL(url);
-    const options = {
-      hostname: urlObj.hostname,
-      path: urlObj.pathname,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), ...headers }
-    };
-    const req = https.request(options, res => {
-      let d = '';
-      res.on('data', chunk => d += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, data: JSON.parse(d) }));
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
- 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
- 
-// ═══════════════════════════════════════════════════════════════
-// JSON SANITIZATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════════
- 
-function sanitizeJSON(jsonStr) {
-  return jsonStr
-    .replace(/,(\s*[}\]])/g, '$1')
-    .replace(/\n/g, ' ')
-    .replace(/\r/g, '')
-    .replace(/\t/g, ' ')
-    .replace(/  +/g, ' ')
-    .trim();
-}
- 
-function aggressiveJSONClean(jsonStr) {
-  let cleaned = jsonStr;
-  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
-  cleaned = cleaned.replace(
-    /"([^"]+)":\s*"([^"]*)"/g,
-    function(match, key, value) {
-      const escapedValue = value
-        .replace(/\"/g, 'TEMP_ESCAPED_QUOTE')
-        .replace(/"/g, '\"')
-        .replace(/TEMP_ESCAPED_QUOTE/g, '\"');
-      return `"${key}": "${escapedValue}"`;
-    }
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<!-- AUTH GUARD: Tjek login før siden vises -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  const _sb=window.supabase.createClient(
+    'https://pnzpdgjstzuapgknagsa.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY'
   );
-  cleaned = cleaned.replace(/[-]/g, ' ');
-  cleaned = cleaned.replace(/\s+/g, ' ').trim();
-  return cleaned;
+  window._sb=_sb;
+  document.documentElement.style.visibility='hidden';
+  _sb.auth.getSession().then(({data:{session}})=>{
+    if(!session){window.location.href='/login.html';return;}
+    document.documentElement.style.visibility='visible';
+    window.currentUser=session.user;
+  });
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQSales – Forsikringssammenligner</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFFFFF;--surface:#F8F6F1;--border:#E3E1D9;--text:#141412;--muted:#7A7870;--accent:#1A3C2E;--accent2:#1A3C2E;--accent-light:#E8F5EF;--danger:#B91C1C;--danger-light:#FEF2F2;--warn:#92400E;--warn-light:#FFFBEB;--green:#15803D;--green-light:#F0FDF4;--r:14px;--rs:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--accent);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-iq{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:#fff;letter-spacing:-1px}
+.logo-iq span{color:#4ADE80}
+.logo-sub{font-size:12px;color:rgba(255,255,255,.45);font-weight:300;letter-spacing:.03em}
+.header-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 14px;font-size:12px;color:rgba(255,255,255,.7)}
+main{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+
+.section-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1.25rem}
+.type-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.type-btn{padding:10px 4px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;color:var(--muted);background:var(--surface);transition:all .15s;text-align:center;line-height:1.3}
+.type-btn:hover{border-color:var(--accent2);color:var(--accent2);background:var(--accent-light)}
+.type-btn.selected{background:var(--accent2);color:#fff;border-color:var(--accent2)}.type-btn.selected:hover{opacity:.9}.type-max-note{font-size:12px;color:var(--muted);margin-top:8px;display:none}.type-max-note.show{display:block}
+.type-icon{font-size:18px;display:block;margin-bottom:3px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.company-select-wrap{position:relative;margin-bottom:10px}
+.company-logo-preview{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:24px;height:24px;object-fit:contain;border-radius:4px;pointer-events:none;display:none}
+.company-logo-preview.visible{display:block}
+select{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px 10px 44px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A7870' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer;transition:border-color .15s}
+select:focus{outline:none;border-color:var(--accent)}
+input[type="text"]{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text)}
+input[type="text"]:focus{outline:none;border-color:var(--accent)}
+.col-label-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+.col-label-yours{background:var(--accent);color:#fff}
+.col-label-theirs{background:#F1F5F9;color:#475569;border:1px solid #E2E8F0}
+.col-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.betingelser-link{font-size:11px;color:var(--accent2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:500;opacity:.85;transition:opacity .15s}
+.betingelser-link:hover{opacity:1;text-decoration:underline}
+.betingelser-link svg{width:11px;height:11px;flex-shrink:0}
+.upload-zone{border:1.5px dashed var(--border);border-radius:var(--r);padding:1.25rem;text-align:center;cursor:pointer;transition:all .15s}
+.upload-zone:hover{border-color:var(--accent2);background:var(--accent-light)}
+.upload-zone.ready{border-style:solid;border-color:var(--green);background:var(--green-light)}
+  /* CACHE STATUS STYLES */
+.upload-zone.cache-fresh{border-style:solid;border-color:#10B981;background:#D1FAE5;cursor:default;pointer-events:none}
+.upload-zone.cache-fresh:hover{border-color:#10B981;background:#D1FAE5}
+.upload-zone.cache-stale{border-style:solid;border-color:#F59E0B;background:#FEF3C7;cursor:pointer}
+.upload-zone.cache-stale:hover{border-color:#D97706;background:#FDE68A}
+.upload-zone.cache-missing{border-style:dashed;border-color:#EF4444;background:#FEF2F2;cursor:pointer}
+.upload-zone.cache-missing:hover{border-color:#DC2626;background:#FEE2E2}
+.cache-status-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 8px;border-radius:12px;margin-top:6px}
+.cache-fresh .cache-status-badge{background:#059669;color:#fff}
+.cache-stale .cache-status-badge{background:#D97706;color:#fff}
+.upload-zone.cache-old{border-style:solid;border-color:#E24B4A;background:#FCEBEB;cursor:pointer}
+.upload-zone.cache-old:hover{border-color:#A32D2D;background:#F7C1C1}
+.cache-old .cache-status-badge{background:#A32D2D;color:#fff}
+.cache-old .cache-btn-use{border-color:#E24B4A;color:#A32D2D}
+.cache-old .cache-btn-upload{background:#E24B4A;border-color:#E24B4A;color:#fff}
+.cache-old .cache-btn-upload:hover{background:#A32D2D;border-color:#A32D2D}
+.source-ref{display:flex;align-items:center;gap:5px;padding:4px 8px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border);margin-top:8px;font-size:11px;color:var(--muted);}
+.source-ref i{font-size:12px;flex-shrink:0;}
+.cache-missing .cache-status-badge{background:#DC2626;color:#fff}
+.cache-actions{display:flex;gap:6px;margin-top:8px;justify-content:center}
+.cache-btn{padding:6px 12px;font-size:11px;font-weight:500;border:1.5px solid;border-radius:var(--rs);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.cache-btn-use{background:var(--surface);border-color:#10B981;color:#059669}
+.cache-btn-use:hover{background:#D1FAE5}
+.cache-btn-upload{background:#D97706;border-color:#D97706;color:#fff}
+.cache-btn-upload:hover{background:#B45309;border-color:#B45309}
+.iq-tooltip{position:relative;display:inline-block}
+.iq-tooltip .iq-tooltiptext{visibility:hidden;width:220px;background:#1A1A1A;color:#fff;text-align:left;border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.5;position:absolute;z-index:999;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);opacity:0;transition:opacity .15s;pointer-events:none}
+.iq-tooltip .iq-tooltiptext::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1A1A1A}
+.iq-tooltip:hover .iq-tooltiptext{visibility:visible;opacity:1}
+.uz-icon{width:28px;height:28px;margin:0 auto 8px;color:var(--muted)}
+.uz-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.uz-hint{font-size:12px;color:var(--muted)}
+.uz-files{font-size:12px;color:var(--green);margin-top:6px;font-weight:500}
+.analyze-btn{width:100%;padding:14px;font-family:'Syne',sans-serif;font-size:16px;font-weight:600;background:var(--accent2);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:opacity .15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px}
+.analyze-btn:hover{opacity:.88}
+.analyze-btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-arrow{font-size:18px;transition:transform .2s}
+.analyze-btn:not(:disabled):hover .btn-arrow{transform:translateX(3px)}
+.status-box{text-align:center;padding:3rem;color:var(--muted);font-size:14px}
+.dots{display:inline-flex;gap:5px;margin-top:10px}
+.dots span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dt 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dt{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.result-section{animation:fadeIn .4s ease;margin-top:1.5rem}
+.disclaimer-banner{display:flex;align-items:center;gap:8px;background:#FEF9C3;border:0.5px solid #FDE047;border-radius:var(--r);padding:7px 14px;margin-bottom:1rem;font-size:12px;color:#713F12;line-height:1.5}
+.disclaimer-banner i{font-size:14px;color:#854F0B;flex-shrink:0}
+.screenshot-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(10,37,64,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s forwards}
+.screenshot-modal{background:var(--surface);border-radius:12px;border:0.5px solid var(--border);padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* TOAST NOTIFICATIONS */
+.toast-container{position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:12px;max-width:400px}
+.toast{background:var(--surface);border-radius:12px;padding:1rem 1.25rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);border:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.3s;transform:translateX(450px);opacity:0}
+.toast.show{transform:translateX(0);opacity:1}
+.toast.hide{transform:translateX(450px);opacity:0}
+.toast:hover{transform:translateX(-4px);box-shadow:0 12px 32px rgba(0,0,0,0.2)}
+.toast-icon{font-size:24px;flex-shrink:0}
+.toast-content{flex:1}
+.toast-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.toast-message{font-size:12px;color:var(--muted)}
+.toast-close{font-size:18px;color:var(--muted);cursor:pointer;opacity:0.5;transition:opacity 0.15s}
+.toast-close:hover{opacity:1}
+.toast.success{border-left:4px solid var(--green)}
+.toast.error{border-left:4px solid var(--danger)}
+.toast.celebration{border-left:4px solid #F59E0B;background:linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)}
+
+/* PAUSE/RESUME CONTROLS */
+.progress-controls{display:flex;gap:8px;margin-top:1rem;justify-content:center}
+.progress-control-btn{padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s}
+.progress-control-btn:hover{background:var(--bg);border-color:var(--accent2)}
+.progress-control-btn:disabled{opacity:0.5;cursor:not-allowed}
+.progress-control-btn.danger:hover{background:#FEF2F2;border-color:var(--danger);color:var(--danger)}
+
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--bg);border-radius:var(--rs);padding:6px;border:1px solid var(--border);overflow-x:auto;scrollbar-width:none;align-items:center}.tabs::-webkit-scrollbar{display:none}.tabs-divider{width:1px;height:28px;background:var(--border);margin:0 4px;flex-shrink:0}
+.filter-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;border-bottom:2px solid var(--border);padding-bottom:0}
+.filter-tab{padding:0.75rem 1.25rem;background:none;border:none;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;position:relative;transition:all .15s;border-radius:8px 8px 0 0;font-family:inherit}
+.filter-tab:hover{color:var(--text);background:var(--surface)}
+.filter-tab.active{color:var(--accent2);background:var(--surface)}
+.filter-tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent2)}
+.tab{padding:8px 14px;font-size:12px;font-weight:500;border:none;border-radius:8px;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:60px;line-height:1.3}.tab .tab-emoji{font-size:18px;line-height:1}.tab .tab-label{font-size:11px;white-space:nowrap}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08);font-weight:600}.tab:hover:not(.active){background:var(--surface);color:var(--text)}
+.sum-bar{display:flex;align-items:center;gap:8px;background:var(--accent-light);border-radius:var(--rs);padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--accent2);flex-wrap:wrap}
+.sum-bar strong{font-weight:500}
+.sum-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);opacity:.4}
+.sync-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;table-layout:fixed}
+.sync-table th{padding:12px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text);width:50%}
+.sync-table th:first-child{border-right:1px solid var(--border)}
+.sync-table td{padding:0;vertical-align:top;border-bottom:1px solid var(--border)}
+.sync-table td:first-child{border-right:1px solid var(--border)}
+.sync-table tr:last-child td{border-bottom:none}
+.cv-cell{padding:10px 14px;min-height:72px;position:relative}
+.cv-cell.is-top{background:#F0FDF4;border-left:3px solid var(--accent2)}
+.cv-cell.is-yours-weak{background:#FFF8F8}
+.cv-cat{font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.cv-det{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:5px}
+.cv-badges{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.dot svg{width:9px;height:9px}
+.dy{background:var(--green-light)}
+.dn{background:var(--danger-light)}
+.dp{background:var(--warn-light)}
+.top-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;background:var(--accent2);color:#fff}
+.top-num{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.25);font-size:9px;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.ch-b{background:var(--green-light);color:var(--green)}
+.ch-w{background:var(--danger-light);color:var(--danger)}
+.ch-inib{background:#FEF9EC;color:#92400E;border:1px solid #FDE68A}
+.has-tip{position:relative;display:inline-block;cursor:help}
+.has-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:360px;max-width:90vw;background:var(--accent);color:#fff;border-radius:8px;padding:10px 13px;font-size:12px;line-height:1.65;z-index:9000;font-weight:400;pointer-events:auto;word-wrap:break-word;white-space:normal}
+.has-tip .tip-box::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
+.has-tip:hover .tip-box{display:block}
+.tip-more{color:rgba(255,255,255,.7);text-decoration:underline;cursor:pointer;font-size:11px;margin-top:4px;display:inline-block}
+.tip-more:hover{color:#fff}
+.tip-full{display:none;margin-top:4px;border-top:1px solid rgba(255,255,255,.2);padding-top:4px}
+.ch-exc{background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA}
+.badge-tip{position:relative;display:inline-block}
+.badge-tip .tip-box{display:none;position:absolute;left:0;top:calc(100% + 6px);width:360px;max-width:90vw;background:var(--accent);color:#fff;border-radius:8px;padding:10px 13px;font-size:12px;line-height:1.65;z-index:9000;font-weight:400;word-wrap:break-word;white-space:normal}
+.badge-tip .tip-box::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
+.badge-tip:hover .tip-box{display:block}
+.inib-wrap{position:relative;display:inline-block}
+.inib-tip{display:none;position:absolute;left:0;top:calc(100% + 6px);width:220px;background:var(--accent);color:#fff;border-radius:8px;padding:8px 11px;font-size:11px;line-height:1.55;z-index:200}
+.inib-tip::before{content:'';position:absolute;top:-4px;left:12px;width:8px;height:8px;background:var(--accent);transform:rotate(45deg);border-radius:1px}
+.inib-wrap:hover .inib-tip{display:block}
+.sales-hint{margin-top:6px;background:#EFF8FF;border-left:2px solid #378ADD;border-radius:0 6px 6px 0;padding:5px 9px;font-size:11px;color:#042C53;line-height:1.5;display:flex;gap:6px;align-items:flex-start}
+.sales-hint-icon{font-size:11px;flex-shrink:0;margin-top:1px;color:#378ADD;font-weight:700}
+.objection-hint{background:#FFF5F5;border-left:2px solid #E24B4A;border-radius:0 6px 6px 0}
+.objection-hint .sales-hint-icon{color:#E24B4A}
+.objection-hint p{color:#7A1F1F}
+.co-head-sync{display:flex;align-items:center;gap:10px}
+.co-logo-wrap{width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.co-logo-wrap img{width:28px;height:28px;object-fit:contain}
+.co-logo-fallback{font-size:12px;font-weight:600;color:var(--accent);font-family:'Syne',sans-serif}
+.co-nm{font-size:14px;font-weight:500;color:var(--text)}
+.co-sub{font-size:11px;color:var(--muted)}
+.yours-tag{font-size:10px;font-weight:500;background:var(--accent2);color:#fff;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+.hidden{display:none}
+.disclaimer{font-size:11px;color:var(--muted);text-align:center;margin-top:1rem;padding:8px 12px;border:1px solid var(--border);border-radius:var(--rs);line-height:1.5}
+.fb-btn{display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:11px;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:2px 0;font-family:'DM Sans',sans-serif;transition:color .15s}
+.fb-btn:hover{color:var(--danger)}
+.fb-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;align-items:center;justify-content:center}
+.fb-modal-bg.open{display:flex}
+.fb-modal{background:var(--surface);border-radius:var(--r);padding:1.25rem;width:340px;max-width:90vw;border:1px solid var(--border)}
+.fb-modal-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px}
+.fb-modal-cat{font-size:12px;color:var(--muted);margin-bottom:1rem}
+.scope-option:hover{border-color:var(--accent2)!important;background:#F9FAFB}
+.scope-option input[type="radio"]:checked + div{color:var(--accent2)}
+.scope-option:has(input[type="radio"]:checked){border-color:var(--accent2)!important;background:#F0FDF4}
+.fb-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:1rem}
+.fb-type-btn{padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;text-align:left;transition:all .15s}
+.fb-type-btn:hover{border-color:var(--danger);color:var(--danger)}
+.fb-type-btn.active{border-color:var(--danger);background:#FEF2F2;color:var(--danger)}
+.fb-comment{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--rs);resize:vertical;min-height:70px;margin-bottom:1rem;color:var(--text)}
+.fb-comment:focus{outline:none;border-color:var(--accent)}
+.fb-actions{display:flex;gap:8px}
+.fb-send{flex:1;padding:9px;font-size:13px;font-weight:500;border:none;border-radius:var(--rs);cursor:pointer;background:var(--accent2);color:#fff;font-family:'DM Sans',sans-serif}
+.fb-cancel{padding:9px 14px;font-size:13px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif}
+.fb-success{font-size:13px;color:var(--accent2);text-align:center;padding:.5rem 0}
+.cdd{position:relative;margin-bottom:10px;user-select:none}
+.cdd-trigger{display:flex;align-items:center;gap:10px;padding:10px 36px 10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);cursor:pointer;transition:border-color .15s;min-height:42px}
+.cdd-trigger:hover{border-color:var(--accent2)}
+.cdd-trigger.open{border-color:var(--accent);border-radius:var(--rs) var(--rs) 0 0}
+.cdd-logo{width:24px;height:24px;object-fit:contain;border-radius:3px;flex-shrink:0}
+.cdd-logo-fb{width:24px;height:24px;border-radius:3px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);font-family:'Syne',sans-serif;flex-shrink:0}
+.cdd-label{font-size:14px;color:var(--text);flex:1}
+.cdd-arrow{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;transition:transform .2s}
+.cdd-trigger.open .cdd-arrow{transform:translateY(-50%) rotate(180deg)}
+.cdd-arrow svg{width:12px;height:8px;display:block}
+.cdd-menu{display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--accent);border-top:none;border-radius:0 0 var(--rs) var(--rs);z-index:500;max-height:260px;overflow-y:auto}
+.cdd-menu.open{display:block}
+.cdd-option{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:background .1s}
+.cdd-option:hover{background:var(--accent-light)}
+.cdd-option.active{background:var(--accent-light)}
+.cdd-option-logo{width:24px;height:24px;object-fit:contain;border-radius:3px;flex-shrink:0}
+.cdd-option-logo-fb{width:24px;height:24px;border-radius:3px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--accent);font-family:'Syne',sans-serif;flex-shrink:0}
+.cdd-option-label{font-size:13px;color:var(--text)}
+.cdd-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
+.cdd-custom-input{padding:8px 12px;border-top:1px solid var(--border)}
+.cdd-custom-input input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text)}
+.cdd-custom-input input:focus{outline:none;border-color:var(--accent)}
+.pitch-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.pitch-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.pitch-col-full{grid-column:1/-1}
+.pitch-col-header{padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#fff;display:flex;align-items:center;gap:8px}
+.ph-green{background:var(--accent2)}
+.ph-red{background:#9B1C1C}
+.ph-blue{background:var(--accent)}
+.ph-dark{background:#374151}
+.pitch-body{padding:1rem 1.1rem}
+.pitch-body p{font-size:14px;line-height:1.78;color:var(--text)}
+.pitch-kp{list-style:none}
+.pitch-kp li{font-size:14px;line-height:1.65;padding:6px 0 6px 20px;position:relative;color:var(--text);border-bottom:1px solid var(--border)}
+.pitch-kp li:last-child{border-bottom:none}
+.pitch-kp li::before{content:"→";position:absolute;left:0;color:var(--accent2);font-weight:600}
+.pitch-actions{padding:1rem;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px;grid-column:1/-1}
+.btn-act{flex:1;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border-radius:var(--rs);cursor:pointer;transition:all .15s}
+.btn-sec{border:1.5px solid var(--border);background:var(--surface);color:var(--text)}
+.btn-sec:hover{background:var(--bg)}
+.btn-pri{border:none;background:var(--accent2);color:#fff}
+.btn-pri:hover{opacity:.88}
+.send-intro{background:var(--accent-light);border:1px solid #A7D7B8;border-radius:var(--rs);padding:12px 16px;margin-bottom:1.25rem;font-size:13px;color:#0F4D2A;line-height:1.6}
+.coverage-selector{margin-bottom:1.25rem}
+.sel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sel-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .15s;background:var(--surface)}
+.sel-item.selected{border-color:var(--accent2);background:var(--accent-light)}
+.sel-item input[type=checkbox]{margin-top:2px;accent-color:var(--accent2);width:15px;height:15px;flex-shrink:0;cursor:pointer}
+.sel-item-text{flex:1}
+.sel-item-cat{font-size:13px;font-weight:500;color:var(--text)}
+.sel-item-det{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.sel-controls{display:flex;gap:8px;margin-bottom:10px}
+.sel-ctrl-btn{padding:5px 14px;font-size:12px;border:1px solid var(--border);border-radius:20px;cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+.sel-ctrl-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.customer-pdf-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1rem}
+.pdf-header{background:var(--accent);padding:1.25rem 1.5rem;color:#fff}
+.pdf-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:4px}
+.pdf-sub{font-size:13px;color:rgba(255,255,255,.6)}
+.pdf-body{padding:1.25rem 1.5rem}
+.pdf-row{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:1px}
+.pdf-cell{padding:12px 14px;border-bottom:1px solid var(--border)}
+.pdf-cell:first-child{border-right:1px solid var(--border)}
+.pdf-row-header{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--bg)}
+.pdf-col-head{padding:8px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border)}
+.pdf-col-head:first-child{border-right:1px solid var(--border)}
+.pdf-cat{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.pdf-det{font-size:12px;color:var(--muted);line-height:1.45}
+.pdf-exp{font-size:12px;color:#042C53;background:#EFF8FF;border-radius:4px;padding:4px 8px;margin-top:5px;line-height:1.5}
+.pdf-better{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--green-light);color:var(--green);font-weight:500;display:inline-block;margin-top:4px}
+.pdf-footer{padding:1rem 1.5rem;background:var(--bg);border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.5}
+.send-actions{display:flex;gap:8px}
+@media print{header,#setup-area,.api-bar,.analyze-btn,.tabs,.disclaimer,.pitch-actions,.send-actions,.send-intro,.coverage-selector,.sel-controls{display:none!important}.result-section{margin:0}}
+@media(max-width:640px){.two-col,.sel-grid{grid-template-columns:1fr}.type-grid{grid-template-columns:repeat(3,1fr);}.type-grid.extended{grid-template-columns:repeat(3,1fr)}.pitch-wrap{grid-template-columns:1fr}.sync-table th,.sync-table td{font-size:12px}}
+
+/* KOLLEGA CACHE PANEL */
+.cache-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:1.25rem;overflow:hidden}
+.cache-panel-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cache-panel-header:hover{background:#FAFAFA}
+.cache-panel-title{font-size:13px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:8px}
+.cache-panel-count{font-size:11px;color:var(--muted);font-weight:400}
+.cache-panel-body{border-top:1px solid var(--border);padding:8px 0;display:none}
+.cache-panel-body.open{display:block}
+.cache-group{border-bottom:1px solid var(--border)}
+.cache-group:last-child{border-bottom:none}
+.cache-group-header{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px}
+.cache-group-header:hover{background:#FAFAFA}
+.cache-group-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.cache-group-companies{font-size:13px;font-weight:500;color:var(--text)}
+.cache-group-date{font-size:11px;color:var(--muted);white-space:nowrap}
+.cache-group-arrow{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.cache-group-arrow.open{transform:rotate(180deg)}
+.cache-products{padding:4px 16px 8px 48px;display:none}
+.cache-products.open{display:block}
+.cache-product-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F3F4F6}
+.cache-product-row:last-child{border-bottom:none}
+.cache-product-left{display:flex;align-items:center;gap:8px}
+.cache-product-label{font-size:13px;color:var(--text)}
+.freshness-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fresh-green{background:#22C55E}
+.fresh-yellow{background:#F59E0B}
+.fresh-red{background:#EF4444}
+.freshness-text{font-size:11px}
+.fresh-green-text{color:#166534}
+.fresh-yellow-text{color:#92400E}
+.fresh-red-text{color:#991B1B}
+.cache-load-btn{padding:4px 12px;font-size:12px;font-weight:500;border:1px solid var(--accent2);border-radius:6px;cursor:pointer;background:var(--accent-light);color:var(--accent2);font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .15s}
+.cache-load-btn:hover{background:var(--accent2);color:#fff}
+.cache-reanalyze-btn{padding:4px 12px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);color:var(--muted);font-family:'DM Sans',sans-serif;white-space:nowrap}
+
+/* DRAG AND DROP */
+.upload-zone.drag-over{border-color:var(--accent2);background:var(--accent-light);transform:scale(1.01)}
+
+/* COMPANY SEARCH */
+.cdd-search{padding:8px 12px;border-bottom:1px solid var(--border)}
+.cdd-search input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);outline:none}
+.cdd-search input:focus{border-color:var(--accent2)}
+.cdd-option.hidden{display:none}
+
+/* MULTI UPLOAD */
+.upload-file-list{margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.upload-file-item{display:flex;align-items:center;justify-content:space-between;background:var(--green-light);border:1px solid var(--green);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--green)}
+.upload-file-remove{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;transition:color .15s}
+.upload-file-remove:hover{color:var(--danger)}
+.upload-add-more{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:11px;color:var(--accent2);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:2px 0}
+.upload-add-more:hover{text-decoration:underline}
+
+/* FAVORITES & SORT */
+.cv-row-wrap{display:contents}
+.cv-row-wrap.dragging tr{opacity:.4}
+.cv-row-wrap.drag-over-above tr td{border-top:2px solid var(--accent2)}
+.cv-row-wrap.drag-over-below tr td{border-bottom:2px solid var(--accent2)}
+.fav-btn{background:none;border:none;cursor:pointer;padding:0 4px;font-size:14px;line-height:1;opacity:.4;transition:all .15s;vertical-align:middle}
+.fav-btn:hover{opacity:1;transform:scale(1.2)}
+.fav-btn.active{opacity:1;color:#F59E0B}
+.drag-handle{cursor:grab;padding:0 6px;color:var(--muted);opacity:.35;font-size:14px;transition:opacity .15s;vertical-align:middle;user-select:none}
+.drag-handle:hover{opacity:.8}
+.drag-handle:active{cursor:grabbing}
+.fav-row td{background:#FFFBEB!important;border-left:3px solid #F59E0B!important}
+
+/* CONFIDENCE (kun admin) */
+.conf-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;margin-left:4px}
+.conf-medium{background:#FEF3C7;color:#92400E}
+.conf-low{background:#FEF2F2;color:#991B1B}
+.conf-panel{background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs);padding:10px 14px;margin-top:1rem;font-size:13px}
+.conf-panel-title{font-weight:600;color:#92400E;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.conf-item{padding:5px 0;border-bottom:1px solid #FDE68A;font-size:12px;color:#78350F}
+.conf-item:last-child{border-bottom:none}
+  /* Individual tab styling */
+.individual-tab-container {
+  margin-top: 20px;
+}
+
+.sub-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.sub-tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+}
+
+.sub-tab.active {
+  color: #00594F;
+  border-bottom-color: #00594F;
+}
+
+.sub-tab-content {
+  display: none;
+}
+
+.sub-tab-content.active {
+  display: block;
+}
+
+.coverage-comparison {
+  max-width: 1200px;
+}
+
+.company-badges {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.badge-green {
+  background: #D4EDDA;
+  color: #155724;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.badge-neutral {
+  background: #E2E3E5;
+  color: #383D41;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.coverage-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.coverage-card {
+  background: var(--surface);
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  transition: box-shadow 0.2s;
+}
+
+.coverage-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.winner-card {
+  border-left: 4px solid #28a745;
+  background: #f8fff9;
+}
+
+.loser-card {
+  border-left: 4px solid #dc3545;
+  background: #fff8f8;
+}
+  .tie-card {
+  border-left: 4px solid #378ADD;
+}
+
+.coverage-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.coverage-icon {
+  font-size: 24px;
+  font-weight: bold;
+  color: #00594F;
+}
+
+.coverage-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #00594F;
+  font-weight: 600;
+}
+
+.coverage-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.company-detail {
+  padding: 12px;
+  border-radius: 6px;
+  background: #f8f9fa;
+}
+
+.company-detail h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+}
+
+.company-detail p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.company-detail.highlight {
+  background: #e6f2ec;
+  border: 1px solid #a7d7b8;
+}
+
+.advantage-note {
+  background: #e8f5e9;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-top: 10px;
+  color: #0f4d2a;
+  font-style: italic;
+}
+  /* Individual tab styling */
+.individual-tab-container {
+  margin-top: 1rem;
+}
+
+.sub-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #E3E1D9;
+}
+
+.sub-tab {
+  padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: #7A7870;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.sub-tab:hover {
+  color: #00AEEF;
+  background: #F4F3EF;
+}
+
+.sub-tab.active {
+  color: #00AEEF;
+  border-bottom-color: #00AEEF;
+}
+
+.sub-tab-content {
+  display: none;
+}
+
+.sub-tab-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+.placeholder-content {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #7A7870;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 1rem;
+}
+
+.placeholder-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #141412;
+  margin: 0 0 0.5rem 0;
+}
+
+.placeholder-content p {
+  font-size: 14px;
+  color: #7A7870;
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+  /* COMPARISON SUMMARY */
+.comparison-summary {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+  border-bottom: 2px solid #E3E1D9;
+}
+
+.comparison-summary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.comparison-summary span:first-child {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.comparison-summary span:last-child {
+  font-size: 14px;
+  color: #7A7870;
+}
+
+/* CARD BODY */
+.card-body {
+  padding: 1.25rem;
+}
+
+/* COMPANY COMPARISON */
+.company-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.company-column {
+  background: #FAFAF9;
+  border: 1px solid #E3E1D9;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.company-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #141412;
+  margin-bottom: 0.75rem;
+}
+
+/* COVERAGE STATUS */
+.coverage-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  width: fit-content;
+  margin-bottom: 0.5rem;
+}
+
+.status-yes {
+  background: #EAF3DE;
+  color: #3B6D11;
+}
+
+.status-no {
+  background: #FCEBEB;
+  color: #791F1F;
+}
+
+.status-inib {
+  background: #FEF9C3;
+  color: #854D0E;
+  border: 1px solid #FDE047;
+}
+
+.coverage-detail {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5F5E5A;
+  margin: 0;
+}
+ /* TOOLTIP STYLING - NYT */
+.tooltip-wrapper {
+  position: relative;
+  display: inline-block;
 }
  
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+.tooltip-content {
+  display: none;
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 8px;
+  background: #0A2540;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  width: 360px;
+  max-width: 90vw;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  white-space: normal;
+}
+ 
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #0A2540;
+}
+ 
+.tooltip-wrapper:hover .tooltip-content {
+  display: block;
+}
+ 
+/* FEEDBACK BUTTON PÅ KORT - NYT */
+.card-feedback-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.75rem;
+  font-size: 11px;
+  color: #7A7870;
+  background: transparent;
+  border: 1px solid #E3E1D9;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+ 
+.card-feedback-btn:hover {
+  border-color: #BA7517;
+  color: #BA7517;
+  background: #FAFAF9;
+}
+ 
+/* BADGE LEGEND - NYT */
+.badge-legend {
+  background: #F4F3EF;
+  border: 1px solid #E3E1D9;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+ 
+.badge-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #5F5E5A;
+}
+ 
+.badge-legend-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+ 
+@media (max-width: 768px) {
+  .badge-legend {
+    grid-template-columns: repeat(2, 1fr);
   }
- 
+}
+/* ============================================
+   PROGRESS MODAL STYLES
+   ============================================ */
+.progress-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 37, 64, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+.progress-modal {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.progress-modal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.progress-modal-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.progress-bar-container {
+  background: #F4F3EF;
+  border-radius: 100px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, var(--accent2), #22C55E);
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-percentage {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+.progress-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 10px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.3s;
+}
+
+.progress-item.active {
+  background: #F0FDF4;
+  border-color: #86EFAC;
+}
+
+.progress-item.complete {
+  background: #F0FDF4;
+  border-color: #22C55E;
+  opacity: 0.7;
+}
+
+.progress-item.error {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+}
+
+.progress-item-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.progress-item-content {
+  flex: 1;
+}
+
+.progress-item-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.progress-item-status {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.progress-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent2);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.progress-error-box {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.progress-error-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #991B1B;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-error-message {
+  font-size: 13px;
+  color: #7F1D1D;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.progress-error-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.progress-error-actions button {
+  padding: 8px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+
+.progress-error-actions button.primary {
+  background: var(--accent2);
+  color: white;
+}
+
+.progress-error-actions button.primary:hover {
+  background: #15803D;
+}
+
+.progress-error-actions button.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.progress-error-actions button.secondary:hover {
+  border-color: var(--accent2);
+  color: var(--accent2);
+}
+
+.progress-success-box {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.progress-success-icon {
+  font-size: 48px;
+  margin-bottom: 1rem;
+  animation: successPop 0.4s ease-out;
+}
+
+@keyframes successPop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.progress-success-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.progress-success-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.progress-success-button {
+  padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--accent2);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.progress-success-button:hover {
+  background: #15803D;
+  transform: translateY(-1px);
+}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  // Configure PDF.js worker
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+</head>
+<body>
+
+<!-- ONBOARDING MODAL -->
+<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--r);width:460px;max-width:92vw;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.18);border:1px solid var(--border);">
+
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;">
+          <i class="ti ti-shield-check" style="color:#fff;font-size:15px;" aria-hidden="true"></i>
+        </div>
+        <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);">IQSales guide</span>
+      </div>
+      <span style="font-size:12px;color:var(--muted);" id="ob-counter">Trin 1 af 4</span>
+    </div>
+
+    <div style="display:flex;gap:5px;padding:1rem 1.5rem 0;" id="ob-dots">
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--accent);transition:background .3s;" id="ob-dot-0"></div>
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;" id="ob-dot-1"></div>
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;" id="ob-dot-2"></div>
+      <div style="flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;" id="ob-dot-3"></div>
+    </div>
+
+    <div id="ob-content" style="padding:1.25rem 1.5rem;min-height:300px;"></div>
+
+    <div style="padding:0 1.5rem 1.5rem;display:flex;gap:10px;">
+      <button id="ob-back" onclick="obBack()" style="flex:1;padding:11px;background:none;border:1px solid var(--border);border-radius:var(--rs);font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit;display:none;">Tilbage</button>
+      <button id="ob-next" onclick="obNext()" style="flex:2;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;">Næste →</button>
+    </div>
+  </div>
+</div>
+
+<!-- VELKOMSTBESKED -->
+
+
+<script>
+(function(){
+  function getGreeting(name, h) {
+    var hilsen;
+    if (h >= 5 && h < 10) hilsen = 'Godmorgen';
+    else if (h >= 10 && h < 12) hilsen = 'Godformiddag';
+    else if (h >= 12 && h < 18) hilsen = 'Goddag';
+    else if (h >= 18 && h < 22) hilsen = 'Godaften';
+    else hilsen = 'Godnat';
+    return hilsen + (name ? ', ' + name : '') + '! 👋 Klar til dagens møder?';
+  }
+
+  window.closeOnboarding = function(permanent) {
+    document.getElementById('onboarding-overlay').style.display = 'none';
+    localStorage.setItem('iqsales_onboarding_done', '1');
+  };
+
+  var obStep = 0;
+  var obSteps = [
+    {
+      title: 'Velkommen til IQSales',
+      desc: 'Din AI-assistent til forsikringssammenligninger. Denne guide viser dig hvordan du bruger appen på 2 minutter.',
+      visual: '<div style="display:flex;flex-direction:column;gap:8px;margin-top:1rem">' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-chart-bar" style="color:var(--accent);font-size:17px" aria-hidden="true"></i>' +
+        '<span style="font-size:13px;color:var(--text)">Sammenlign forsikringer på sekunder</span></div>' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-robot" style="color:var(--accent);font-size:17px" aria-hidden="true"></i>' +
+        '<span style="font-size:13px;color:var(--text)">Få AI-genereret salgspitch og salgscoach</span></div>' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-photo" style="color:var(--accent);font-size:17px" aria-hidden="true"></i>' +
+        '<span style="font-size:13px;color:var(--text)">Generer skadeseksempler med AI-billeder</span></div>' +
+        '<div style="margin-top:4px;padding:10px 12px;background:var(--surface);border-radius:var(--rs);border:1px solid var(--border)">' +
+        '<span style="font-size:11px;color:var(--muted)">Vi bruger kun nødvendige cookies til login og session. Ingen tracking eller deling med tredjeparter.</span></div></div>'
+    },
+    {
+      title: 'Vælg forsikringstyper',
+      desc: 'Klik på de typer du vil analysere — op til 8 ad gangen. Betingelserne hentes automatisk fra vores database.',
+      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem;position:relative;overflow:hidden">' +
+        '<style>' +
+        '@keyframes ob-cursor-move{0%{transform:translate(18px,18px)}35%{transform:translate(18px,18px)}55%{transform:translate(88px,52px)}100%{transform:translate(88px,52px)}}' +
+        '@keyframes ob-click{0%,53%,59%{transform:scale(1)}56%{transform:scale(0.8)}}' +
+        '</style>' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">1. FORSIKRINGSTYPER</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:relative">' +
+        '<div id="ob-hus" style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--accent);text-align:center;font-size:11px;font-weight:500;color:#fff;background:var(--accent);transition:all .4s">🏠<br>Hus</div>' +
+        '<div id="ob-bil" style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface);transition:all .4s">🚗<br>Bil</div>' +
+        '<div style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface)">🛋️<br>Indbo</div>' +
+        '<div style="padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);text-align:center;font-size:11px;color:var(--muted);background:var(--surface)">✈️<br>Rejse</div>' +
+        '<svg style="position:absolute;left:0;top:0;width:18px;height:22px;pointer-events:none;animation:ob-cursor-move 3s ease-in-out infinite,ob-click 3s ease-in-out infinite;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3))" viewBox="0 0 18 22" fill="none"><path d="M2 2L2 18L6 13L10 20L13 19L9 12L16 12Z" fill="#1A3C2E" stroke="#fff" stroke-width="1"/></svg>' +
+        '</div></div>'
+    },
+    {
+      title: 'Vælg selskaber og analysér',
+      desc: 'Vælg dit selskab og kundens nuværende selskab. Tryk analysér — AI gennemgår alle forskelle på sekunder.',
+      visual: '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-top:1rem;position:relative;overflow:hidden">' +
+        '<style>@keyframes ob-cursor-analyze{0%{transform:translate(200px,10px)}35%{transform:translate(200px,10px)}55%{transform:translate(200px,68px)}100%{transform:translate(200px,68px)}}' +
+        '@keyframes ob-click2{0%,53%,59%{transform:scale(1)}56%{transform:scale(0.8)}}</style>' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500">2. VÆLG SELSKABER</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">' +
+        '<div style="background:var(--bg);border:1.5px solid var(--accent);border-radius:var(--rs);padding:8px 10px">' +
+        '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">Dit selskab</div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text)">Alm. Brand</div></div>' +
+        '<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:8px 10px">' +
+        '<div style="font-size:10px;color:var(--muted);margin-bottom:2px">Kundens selskab</div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text)">Tryg</div></div></div>' +
+        '<div style="position:relative">' +
+        '<div style="background:var(--accent);color:#fff;border-radius:var(--rs);padding:9px;text-align:center;font-size:12px;font-weight:600;font-family:\'Syne\',sans-serif">Analysér og generer salgspitch →</div>' +
+        '<svg style="position:absolute;right:20px;top:-30px;width:18px;height:22px;pointer-events:none;animation:ob-cursor-analyze 3s ease-in-out infinite,ob-click2 3s ease-in-out infinite;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3))" viewBox="0 0 18 22" fill="none"><path d="M2 2L2 18L6 13L10 20L13 19L9 12L16 12Z" fill="#1A3C2E" stroke="#fff" stroke-width="1"/></svg>' +
+        '</div>' +
+        '<div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden">' +
+        '<div id="ob-bar" style="height:100%;background:var(--accent);border-radius:2px;width:0;transition:width 2s ease"></div></div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px" id="ob-bar-txt">Klar til analyse</div></div>'
+    },
+    {
+      title: 'Brug resultaterne',
+      desc: 'Gennemgå dækningsforskelle, stil spørgsmål til salgscoachen, send rapport til kunden — eller generer skadeseksempler.',
+      visual: '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:1rem">' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-chart-bar" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Analyse</div>' +
+        '<div style="font-size:11px;color:var(--muted)">20 dækningsforskelle</div></div>' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-robot" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Salgscoach</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Stil spørgsmål til AI</div></div>' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-mail" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Send til kunde</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Professionel rapport</div></div>' +
+        '<div style="padding:10px;background:var(--accent-light);border-radius:var(--rs)">' +
+        '<i class="ti ti-photo" style="color:var(--accent);font-size:16px" aria-hidden="true"></i>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">Skadeseksempler</div>' +
+        '<div style="font-size:11px;color:var(--muted)">AI-billeder af skader</div></div></div>'
+    }
+  ];
+
+  function obRender() {
+    var s = obSteps[obStep];
+    document.getElementById('ob-content').innerHTML =
+      '<p style="font-family:\'Syne\',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin:0 0 4px">' + s.title + '</p>' +
+      '<p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">' + s.desc + '</p>' +
+      s.visual;
+    document.getElementById('ob-counter').textContent = 'Trin ' + (obStep+1) + ' af ' + obSteps.length;
+    document.getElementById('ob-back').style.display = obStep === 0 ? 'none' : '';
+    document.getElementById('ob-next').textContent = obStep === obSteps.length-1 ? 'Kom i gang ✓' : 'Næste →';
+    for (var i=0; i<obSteps.length; i++) {
+      var d = document.getElementById('ob-dot-'+i);
+      if (d) d.style.background = i <= obStep ? 'var(--accent)' : 'var(--border)';
+    }
+    if (obStep === 1) {
+      setTimeout(function() {
+        var bil = document.getElementById('ob-bil');
+        if (bil) { bil.style.background='var(--accent)'; bil.style.color='#fff'; bil.style.border='1.5px solid var(--accent)'; }
+      }, 1700);
+    }
+    if (obStep === 2) {
+      setTimeout(function() {
+        var bar = document.getElementById('ob-bar');
+        var txt = document.getElementById('ob-bar-txt');
+        if (bar) bar.style.width = '75%';
+        if (txt) txt.textContent = 'Analyserer Husforsikring...';
+        setTimeout(function() {
+          if (bar) bar.style.width = '100%';
+          if (txt) txt.textContent = 'Analyse færdig!';
+        }, 2200);
+      }, 1700);
+    }
+  }
+
+  window.obNext = function() {
+    if (obStep < obSteps.length-1) { obStep++; obRender(); }
+    else { window.closeOnboarding(); }
+  };
+  window.obBack = function() {
+    if (obStep > 0) { obStep--; obRender(); }
+  };
+
+  window.addEventListener('DOMContentLoaded', function() {
+    // Onboarding — vis kun hvis ikke set før
+    var onboardingDone = localStorage.getItem('iqsales_onboarding_done');
+    if (!onboardingDone) {
+      var overlay = document.getElementById('onboarding-overlay');
+      obStep = 0;
+      obRender();
+      overlay.style.display = 'flex';
+    }
+
+    // Hent navn fra session til brug i quips
+    if (window._sb) {
+      window._sb.auth.getSession().then(function(res) {
+        var session = res.data && res.data.session;
+        if (!session) return;
+        window._sb.from('profiles').select('full_name').eq('id', session.user.id).single().then(function(res2) {
+          var name = res2.data && res2.data.full_name ? res2.data.full_name : '';
+          window._userName = name;
+        });
+      });
+    }
+  });
+})();
+</script>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-iq">IQ<span>Sales</span></div>
+    <div class="logo-sub">Forsikringssammenligner</div>
+  </div>
+  <!-- USER NAV -->
+  <div id="user-nav" style="display:flex;align-items:center;gap:14px;position:relative">
+    <div id="bell-wrap" style="position:relative;cursor:pointer;display:none" onclick="toggleNotifDropdown()">
+      <span style="color:rgba(255,255,255,.85);font-size:18px;line-height:1">🔔</span>
+      <div id="bell-dot" style="display:none;position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#E24B4A;border:1.5px solid #1A3C2E"></div>
+      <div id="notif-dropdown" style="display:none;position:absolute;top:28px;right:-8px;width:340px;background:#fff;border:1px solid #E3E1D9;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);overflow:hidden;z-index:1000;max-height:400px;overflow-y:auto;cursor:default">
+        <div style="padding:14px 18px;border-bottom:1px solid #E3E1D9;font-size:14px;font-weight:600;color:#141412">Nyheder</div>
+        <div id="notif-list"></div>
+      </div>
+    </div>
+    <div id="user-info-nav" style="display:flex;align-items:center;gap:12px"></div>
+  </div>
+  <script>
+  window.addEventListener('DOMContentLoaded',async function(){
+    if(!window._sb)return;
+    const {data:{session}}=await window._sb.auth.getSession();
+    if(!session)return;
+    const {data:p}=await window._sb.from('profiles').select('full_name,role').eq('id',session.user.id).single();
+    const nav=document.getElementById('user-info-nav');
+    if(!nav)return;
+    window._userRole = p && p.role ? p.role : 'seller';
+    nav.innerHTML=
+      '<span style="font-size:12px;color:rgba(255,255,255,.6)">'+(p&&p.full_name?p.full_name:session.user.email)+'</span>'+
+      (p&&p.role==='admin'?'<a href="/admin.html" style="font-size:12px;color:#4ADE80;text-decoration:none;font-weight:500">Admin ⚙️</a>':'')+
+      '<button onclick="window._sb.auth.signOut().then(function(){location.href=\'/login.html\'})" style="font-size:12px;padding:5px 12px;border:1px solid rgba(255,255,255,.2);border-radius:6px;cursor:pointer;background:transparent;color:rgba(255,255,255,.8);font-family:inherit">Log ud</button>';
+    // Log login history
+    if(p){
+      window._sb.from('login_history').insert({user_id:session.user.id,email:session.user.email,full_name:p.full_name||session.user.email,logged_in_at:new Date().toISOString()}).then(function(){});
+    }
+    document.getElementById('bell-wrap').style.display='block';
+    loadNotifications();
+  });
+
+  async function loadNotifications(){
+    const {data,error} = await window._sb.from('updates').select('*').order('created_at',{ascending:false}).limit(20);
+    if(error||!data) return;
+    const today = new Date().toISOString().slice(0,10);
+    const isInPeriod = function(u){
+      if(u.start_date && u.start_date > today) return false;
+      if(u.end_date && u.end_date < today) return false;
+      return true;
+    };
+    const seenIds = JSON.parse(localStorage.getItem('iqsales_seen_updates')||'[]');
+    const activeUnread = data.filter(u=>!seenIds.includes(u.id) && isInPeriod(u));
+    if(activeUnread.length>0){
+      document.getElementById('bell-dot').style.display='block';
+      setTimeout(function(){
+        const dd = document.getElementById('notif-dropdown');
+        if(dd) dd.style.display='block';
+      }, 600);
+    }
+
+    const list = document.getElementById('notif-list');
+    if(data.length===0){
+      list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:#A09E96;font-size:13px">Ingen nyheder endnu</div>';
+      return;
+    }
+    list.innerHTML = data.map(u=>{
+      const unread = !seenIds.includes(u.id) && isInPeriod(u);
+      const timeAgo = formatTimeAgo(new Date(u.created_at));
+      return '<div style="padding:12px 18px;border-bottom:1px solid #E3E1D9;background:'+(unread?'#F0FAF6':'#fff')+'">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
+        '<div style="width:6px;height:6px;border-radius:50%;background:'+(unread?'#1D9E75':'#D3D1C7')+'"></div>'+
+        '<span style="font-size:13px;font-weight:600;color:'+(unread?'#141412':'#7A7870')+'">'+u.title+'</span></div>'+
+        '<p style="font-size:12px;color:'+(unread?'#7A7870':'#A09E96')+';margin:0 0 4px;line-height:1.5">'+u.message+'</p>'+
+        '<span style="font-size:11px;color:#A09E96">'+timeAgo+'</span></div>';
+    }).join('');
+  }
+
+  function formatTimeAgo(date){
+    const diffMs = Date.now() - date.getTime();
+    const diffH = Math.floor(diffMs/3600000);
+    if(diffH < 1) return 'Lige nu';
+    if(diffH < 24) return 'For '+diffH+' time'+(diffH===1?'':'r')+' siden';
+    const diffD = Math.floor(diffH/24);
+    if(diffD === 1) return 'I går';
+    if(diffD < 7) return 'For '+diffD+' dage siden';
+    return date.toLocaleDateString('da-DK');
+  }
+
+  function toggleNotifDropdown(){
+    const dd = document.getElementById('notif-dropdown');
+    const isOpen = dd.style.display === 'block';
+    dd.style.display = isOpen ? 'none' : 'block';
+    if(!isOpen){
+      window._sb.from('updates').select('id').order('created_at',{ascending:false}).limit(10).then(function(res){
+        if(res.data){
+          const ids = res.data.map(u=>u.id);
+          localStorage.setItem('iqsales_seen_updates', JSON.stringify(ids));
+          document.getElementById('bell-dot').style.display='none';
+        }
+      });
+    }
+  }
+
+  document.addEventListener('click', function(e){
+    const wrap = document.getElementById('bell-wrap');
+    const dd = document.getElementById('notif-dropdown');
+    if(dd && wrap && !wrap.contains(e.target) && !dd.contains(e.target) && dd.style.display==='block'){
+      dd.style.display = 'none';
+      window._sb.from('updates').select('id').order('created_at',{ascending:false}).limit(20).then(function(res){
+        if(res.data){
+          const ids = res.data.map(u=>u.id);
+          localStorage.setItem('iqsales_seen_updates', JSON.stringify(ids));
+          document.getElementById('bell-dot').style.display='none';
+        }
+      });
+    }
+  });
+  </script>
+</header>
+<!-- IQFACTS TICKER -->
+<div id="iqfacts-ticker" style="background:#1A3C2E;overflow:hidden;display:flex;align-items:center;height:34px;">
+  <div style="background:#1D9E75;color:#fff;font-size:11px;font-weight:500;padding:0 14px;height:100%;display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.15);">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect width="16" height="16" rx="4" fill="rgba(255,255,255,0.2)"/><path d="M8 3L9.2 5.5H11.8L9.8 7.1L10.5 9.5L8 8L5.5 9.5L6.2 7.1L4.2 5.5H6.8L8 3Z" fill="#9FE1CB"/></svg>
+    IQFacts
+  </div>
+  <div style="overflow:hidden;flex:1;">
+    <div id="iqfacts-track" style="display:flex;align-items:center;animation:iqfacts-scroll 25s linear infinite;white-space:nowrap;">
+      <span style="display:inline-flex;align-items:center;gap:7px;padding:0 24px;font-size:12px;color:rgba(255,255,255,0.85);"><span style="width:3px;height:3px;border-radius:50%;background:#5DCAA5;flex-shrink:0;display:inline-block;"></span>Indlæser statistikker...</span>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes iqfacts-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+#iqfacts-track:hover{animation-play-state:paused !important;}
+</style>
+
+<script>
+(function(){
+  async function loadTickerData() {
+    try {
+      const sb = window._sb;
+      if (!sb) return;
+
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const weekAgo = new Date(now - 7*24*60*60*1000).toISOString();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
+
+      const [
+        todayRes, weekCountRes, monthCountRes, totalRes, activeRes,
+        pairRes, typeRes,
+        weekDeptRes, monthDeptRes, yearDeptRes,
+        weekFbRes, monthFbRes, yearFbRes,
+        approvedFbRes, newTermsRes
+      ] = await Promise.all([
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed').gte('timestamp', weekAgo),
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed').gte('timestamp', monthStart),
+        sb.from('analytics').select('id', { count: 'exact', head: true }).eq('event_type','analysis_completed'),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('insurance_type, company_a, company_b').eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('insurance_type').eq('event_type','analysis_completed').gte('timestamp', todayStr),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', weekAgo).limit(2000),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', monthStart).limit(2000),
+        sb.from('analytics').select('user_id').eq('event_type','analysis_completed').gte('timestamp', yearStart).limit(2000),
+        sb.from('feedback').select('user_id').gte('created_at', weekAgo),
+        sb.from('feedback').select('user_id').gte('created_at', monthStart),
+        sb.from('feedback').select('user_id').gte('created_at', yearStart),
+        sb.from('feedback').select('id').eq('status','approved'),
+        sb.from('insurance_terms').select('id', { count: 'exact', head: true }).gte('updated_at', weekAgo)
+      ]);
+
+      // Helper: top department
+      async function topDept(userIds) {
+        if (!userIds.length) return null;
+        // Filter out non-UUID IDs (e.g. u_xxxx from localStorage) - only keep valid UUIDs
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const ids = [...new Set(userIds)].filter(id => uuidRegex.test(id));
+        if (!ids.length) return null;
+        // Exclude admins - only count sælgere
+        const { data: profiles } = await sb.from('profiles').select('id, department').in('id', ids).neq('role', 'admin');
+        if (!profiles) return null;
+        const counts = {};
+        userIds.forEach(uid => {
+          const p = profiles.find(x => x.id === uid);
+          if (p && p.department) counts[p.department] = (counts[p.department]||0)+1;
+        });
+        const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+        return sorted[0]?.[0] || null;
+      }
+
+      // Helper: top item from array of objects
+      function topItem(arr, key) {
+        const counts = {};
+        arr.forEach(r => { if(r[key]) counts[r[key]] = (counts[r[key]]||0)+1; });
+        return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+      }
+      function topPair(arr) {
+        const counts = {};
+        arr.forEach(r => {
+          if(r.company_a && r.company_b) {
+            const key = r.company_a + ' vs ' + r.company_b;
+            counts[key] = (counts[key]||0)+1;
+          }
+        });
+        return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+      }
+
+      const todayCount = todayRes.count || 0;
+      const weekCount = weekCountRes.count || 0;
+      const monthCount = monthCountRes.count || 0;
+      const totalCount = totalRes.count || totalRes.data?.length || 0;
+      const newTermsCount = newTermsRes.count || 0;
+      const activeToday = new Set((activeRes.data||[]).map(r=>r.user_id)).size;
+      const topPairToday = topPair(pairRes.data||[]);
+      const topTypeToday = topItem(typeRes.data||[], 'insurance_type');
+      const approvedFb = approvedFbRes.data?.length || 0;
+      const savedHours = Math.round(totalCount * 5 / 60);
+
+      const weekUserIds = (weekDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const monthUserIds = (monthDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const yearUserIds = (yearDeptRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const weekFbUserIds = (weekFbRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const monthFbUserIds = (monthFbRes.data||[]).map(r=>r.user_id).filter(Boolean);
+      const yearFbUserIds = (yearFbRes.data||[]).map(r=>r.user_id).filter(Boolean);
+
+      const [weekDept, monthDept, yearDept, weekFbDept, monthFbDept, yearFbDept] = await Promise.all([
+        topDept(weekUserIds), topDept(monthUserIds), topDept(yearUserIds),
+        topDept(weekFbUserIds), topDept(monthFbUserIds), topDept(yearFbUserIds)
+      ]);
+
+      // Build ticker items
+      const items = [];
+      if (todayCount > 0) items.push(todayCount + ' analyser lavet i dag');
+      if (weekCount > 0) items.push(weekCount + ' analyser lavet denne uge');
+      if (monthCount > 0) items.push(monthCount + ' analyser lavet denne måned');
+      if (topPairToday) items.push('Mest analyseret i dag: ' + topPairToday);
+      if (topTypeToday) items.push('Mest brugte type i dag: ' + topTypeToday);
+      if (activeToday > 0) items.push(activeToday + ' kolleger aktive i dag');
+      if (weekDept) items.push('Flest analyser denne uge: ' + weekDept);
+      if (monthDept) items.push('Flest analyser denne måned: ' + monthDept);
+      if (yearDept) items.push('Flest analyser i år: ' + yearDept);
+      if (totalCount > 0) items.push(totalCount + ' analyser siden IQSales blev lanceret');
+      if (savedHours > 0) items.push('Ca. ' + savedHours + ' timer sparet i analysetid');
+      if (weekFbDept) items.push('Flest feedback denne uge: ' + weekFbDept);
+      if (monthFbDept) items.push('Flest feedback denne måned: ' + monthFbDept);
+      if (yearFbDept) items.push('Flest feedback i år: ' + yearFbDept);
+      if (approvedFb > 0) items.push(approvedFb + ' dækninger forbedret via jeres feedback');
+      if (newTermsCount > 0) items.push(newTermsCount + ' nye betingelser uploadet denne uge');
+
+      if (!items.length) {
+        document.getElementById('iqfacts-ticker').style.display = 'none';
+        return;
+      }
+
+      // Double for seamless loop
+      const dot = '<span style="width:3px;height:3px;border-radius:50%;background:#5DCAA5;flex-shrink:0;display:inline-block;"></span>';
+      const html = [...items, ...items, ...items, ...items].map(function(txt){
+        return '<span style="display:inline-flex;align-items:center;gap:7px;padding:0 24px;font-size:12px;color:rgba(255,255,255,0.85);">' + dot + txt + '</span>';
+      }).join('');
+
+      document.getElementById('iqfacts-track').innerHTML = html;
+    } catch(e) {
+      console.error('IQFacts ticker error:', e);
+      document.getElementById('iqfacts-ticker').style.display = 'none';
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', function(){
+    setTimeout(loadTickerData, 1500);
+  });
+})();
+</script>
+
+<main>
+
+  <!-- INTERN BRUG DISCLAIMER -->
+  <div class="disclaimer-banner" id="global-disclaimer">
+    <i class="ti ti-shield-lock" aria-hidden="true"></i>
+    <span><strong>Kun til intern brug</strong> — Må ikke deles med kunder. Verificér altid i de officielle betingelser inden præsentation.</span>
+  </div>
+
+  <!-- KOLLEGA CACHE PANEL -->
+  <div class="cache-panel" id="cache-panel" style="display:none">
+    <div class="cache-panel-header" onclick="toggleCachePanel()">
+      <div class="cache-panel-title">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--accent2)" stroke-width="1.5"/><path d="M8 5v3l2 1.5" stroke="var(--accent2)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Dine kollegaer har analyseret
+        <span class="cache-panel-count" id="cache-count"></span>
+      </div>
+      <svg id="cache-panel-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" style="transition:transform .2s"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+    <div class="cache-panel-body" id="cache-panel-body"></div>
+  </div>
+
+  <div id="setup-area">
+    <div class="card">
+      <div class="section-lbl">1. Forsikringstyper <span style="font-weight:400;color:var(--muted)">(vælg op til 8)</span></div>
+      <div class="type-grid" style="grid-template-columns:repeat(6,1fr)">
+        <button class="type-btn" data-type="Husforsikring" onclick="toggleType(this)"><span class="type-icon">🏡</span>Hus</button>
+        <button class="type-btn" data-type="Bilforsikring" onclick="toggleType(this)"><span class="type-icon">🚗</span>Bil</button>
+        <button class="type-btn" data-type="Indboforsikring" onclick="toggleType(this)"><span class="type-icon">🏠</span>Indbo</button>
+        <button class="type-btn" data-type="Ulykkesforsikring" onclick="toggleType(this)"><span class="type-icon">🩹</span>Ulykke</button>
+        <button class="type-btn" data-type="Rejseforsikring" onclick="toggleType(this)"><span class="type-icon">✈️</span>Rejse</button>
+        <button class="type-btn" data-type="Hundeforsikring" onclick="toggleType(this)"><span class="type-icon">🐶</span>Hund</button>
+        <button class="type-btn" data-type="Fritidshusforsikring" onclick="toggleType(this)"><span class="type-icon">🏕️</span>Fritidshus</button>
+        <button class="type-btn" data-type="Motorcykelforsikring" onclick="toggleType(this)"><span class="type-icon">🏍️</span>Motorcykel</button>
+        <button class="type-btn" data-type="Lystfartøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🚤</span>Lystfartøj</button>
+        <button class="type-btn" data-type="Campingvognsforsikring" onclick="toggleType(this)"><span class="type-icon">🚐</span>Campingvogn</button>
+        <button class="type-btn" data-type="Sundhedsforsikring" onclick="toggleType(this)"><span class="type-icon">🏥</span>Sundhed</button>
+        <button class="type-btn" data-type="Veterankøretøjsforsikring" onclick="toggleType(this)"><span class="type-icon">🏎️</span>Veterankøretøj</button>
+      </div>
+      <div class="type-max-note" id="type-max-note">Du kan max vælge 8 forsikringstyper ad gangen</div>
+    </div>
+    <div class="card">
+      <div class="section-lbl">2. Vælg selskaber og upload betingelser</div>
+      <div class="two-col">
+        <div>
+          <div class="col-label-row">
+            <div class="col-label-badge col-label-yours" style="margin-bottom:0">Dit selskab — fordele fremhæves</div>
+            <a class="betingelser-link" id="link-a" href="#" target="_blank" rel="noopener">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7"/><path d="M8 1h3v3"/><line x1="11" y1="1" x2="5" y2="7"/></svg>
+              Hent betingelser
+            </a>
+          </div>
+          <div class="cdd" id="cdd-a">
+            <div class="cdd-trigger" id="cdd-a-trigger" onclick="toggleCdd('a')">
+              <div id="cdd-a-logo"></div>
+              <span class="cdd-label" id="cdd-a-label" style="color:var(--muted)">Vælg selskab...</span>
+              <span class="cdd-arrow"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+            </div>
+            <div class="cdd-menu" id="cdd-a-menu"></div>
+          </div>
+          <input type="text" id="custom-a" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('a')" onchange="onCustomInput('a')">
+          <div id="upload-zones-a-wrapper">
+            <div id="upload-zones-a"></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-label-row">
+            <div class="col-label-badge col-label-theirs" style="margin-bottom:0">Kundens nuværende selskab</div>
+            <a class="betingelser-link" id="link-b" href="#" target="_blank" rel="noopener">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7"/><path d="M8 1h3v3"/><line x1="11" y1="1" x2="5" y2="7"/></svg>
+              Hent betingelser
+            </a>
+          </div>
+          <div class="cdd" id="cdd-b">
+            <div class="cdd-trigger" id="cdd-b-trigger" onclick="toggleCdd('b')">
+              <div id="cdd-b-logo"></div>
+              <span class="cdd-label" id="cdd-b-label" style="color:var(--muted)">Vælg selskab...</span>
+              <span class="cdd-arrow"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+            </div>
+            <div class="cdd-menu" id="cdd-b-menu"></div>
+          </div>
+          <input type="text" id="custom-b" placeholder="Skriv selskabsnavn" style="margin-bottom:10px;display:none" oninput="onCustomInput('b')" onchange="onCustomInput('b')">
+          <div id="upload-zones-b-wrapper">
+            <div id="upload-zones-b"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+<button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+  Analysér og generér salgspitch <span class="btn-arrow">→</span>
+</button>
+      <button id="reset-btn" onclick="resetAnalysis()" style="display:none;padding:14px 20px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↩ Ny analyse</button>
+    </div>
+  </div>
+  <div id="result"></div>
+</main>
+
+<section style="background:var(--bg);border-top:1px solid #E3E1D9;padding:3rem 1.5rem;margin-top:2rem">
+  <div style="max-width:960px;margin:0 auto">
+
+    <div style="background:var(--surface);border:1px solid #E3E1D9;border-radius:14px;padding:1.5rem;margin-bottom:2rem;display:none">
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:#0A2540;margin-bottom:4px">💬 Giv os generel feedback</div>
+      <div style="font-size:13px;color:#7A7870;margin-bottom:1rem;line-height:1.6">Har du idéer til forbedringer, oplevet noget der ikke virker, eller vil du rose noget? Skriv det her — vi læser alt og bruger det til at gøre IQSales bedre.</div>
+      <textarea id="general-fb-text" placeholder="Skriv din feedback her..." style="width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 12px;border:1.5px solid #E3E1D9;border-radius:8px;resize:vertical;min-height:80px;margin-bottom:10px;color:#141412;background:var(--surface);outline:none" onfocus="this.style.borderColor='#1A3C2E'" onblur="this.style.borderColor='#E3E1D9'"></textarea>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button onclick="sendGeneralFb(this)" style="padding:9px 20px;font-size:13px;font-weight:500;border:none;border-radius:8px;cursor:pointer;background:var(--accent2);color:#fff;font-family:'DM Sans',sans-serif">Send feedback</button>
+        <div id="general-fb-success" style="display:none;font-size:13px;color:#1B7F4F;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,8 6,12 14,4" stroke="#1B7F4F" stroke-width="2" stroke-linecap="round" fill="none"/></svg> Tak! Vi læser din feedback.</div>
+      </div>
+    </div>
+
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:600;color:#7A7870;text-transform:uppercase;letter-spacing:.07em;margin-bottom:1.5rem">Ofte stillede spørgsmål</div>
+    <div id="faq-list" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</section>
+
+<script>
+const FAQS=[
+  {section:'Kom i gang'},
+  {q:'Hvordan bruger jeg IQSales?',a:'Vælg forsikringstype øverst, vælg dit selskab i venstre kolonne og kundens nuværende selskab i højre. Klik "Hent betingelser" for at gå til selskabets hjemmeside og download betingelserne som PDF. Upload begge PDF\'er og klik "Analysér". AI\'en sammenligner betingelserne og genererer en dækningsoversigt og et salgspitch på under et minut.'},
+  {q:'Hvor finder jeg betingelserne fra de forskellige selskaber?',a:'Klik på "Hent betingelser" linket ved siden af dropdown\'en — det sender dig direkte til selskabets hjemmeside. Find den relevante forsikringstype, download PDF\'en med betingelserne og upload den i IQSales. Betingelserne ligger typisk under "Forsikringer", "Betingelser" eller "Vilkår" på hjemmesiden.'},
+  {q:'Hvorfor skal man selv uploade betingelserne?',a:'Forsikringsbetingelser opdateres løbende af selskaberne. Ved at uploade dem selv sikrer du at analysen altid er baseret på de nyeste og mest præcise betingelser. Det tager under et minut og sikrer at du aldrig møder en kunde med forældet information.'},
+  {q:'Hvorfor ser jeg analyser fra mine kolleger?',a:'Øverst på siden under "Dine kollegaer har analyseret" kan du se hvilke selskabspar dine kolleger allerede har analyseret. Disse analyser er gemt i systemet og kan genbruges — det sparer tid og reducerer omkostningerne. Klik på en analyse for at åbne den direkte.'},
+
+  {section:'Funktioner'},
+  {q:'Hvad er Salgscoach og hvordan bruger jeg den?',a:'Salgscoach er en AI-assistent der kender hele din analyse. Du finder den i fanen "🤖 Salgscoach" øverst. Du kan stille den spørgsmål som "Hvad er vores stærkeste argument?" eller "Hvordan håndterer jeg indvendingen om pris?". Den genererer også mødeforberedelse, typiske kundeindvendinger med svar og et manus til remotivering af mødet.'},
+  {q:'Kan jeg stole 100% på analysen?',a:'Analysen er et salgsværktøj baseret på AI-gennemgang af forsikringsbetingelserne og skal ikke betragtes som juridisk rådgivning. Verificér altid vigtige dækninger direkte i betingelserne inden du præsenterer dem for kunden. Hvis du finder en fejl, brug feedback-knappen så vi kan rette det.'},
+
+  {section:'Forstå analysens begreber'},
+  {q:'Hvad betyder "Undtaget"?',a:'Et orange ⊘ "Undtaget" betyder at forsikringen normalt dækker denne type skade, men eksplicit undtager netop dette scenarie. Eksempel: "Stormskade dækkes — dog ikke hvis ejendommen har stået tom i over 60 dage." Det er altså ikke bare ikke dækket, men aktivt fravalgt under bestemte omstændigheder.'},
+  {q:'Hvad er forskellen på "Ikke dækket" og "Undtaget"?',a:'"Ikke dækket" (rødt ✗) betyder at forsikringen direkte siger at dette ikke dækkes — f.eks. "skader på løsøre er ikke dækket". "Undtaget" (orange ⊘) betyder at forsikringen normalt dækker den slags, men gør en specifik undtagelse — f.eks. "dækkes ikke ved ubeboet ejendom". Forskellen er vigtig i salget: undtagelser er noget kunden aktivt skal være opmærksom på.'},
+  {q:'Hvad betyder "INIB"?',a:'INIB står for "Ikke Nævnt I Betingelserne". Det betyder at betingelserne hverken bekræfter eller afviser dækningen — den er simpelthen ikke omtalt. Det kan betyde at dækningen ikke eksisterer, eller at den fremgår af et andet dokument. Brug altid feedback-knappen hvis du mener det er en fejl.'},
+
+  {section:'Feedback og fejl'},
+  {q:'Hvad betyder "Vigtig" og "Ligegyldig"?',a:'"👍 Vigtig" betyder at du bekræfter at denne forsikringsforskel er relevant og værd at fremhæve overfor kunden. "👎 Ligegyldig" betyder at du vurderer at forskellen ikke er betydningsfuld i praksis — f.eks. fordi beløbene er for små eller scenariet er usandsynligt. Din feedback bruges aktivt til at forbedre hvilke forskelle der fremhæves i fremtidige analyser.'},
+  {q:'Hvad gør jeg hvis jeg finder en fejl?',a:'Klik på det lille "⚑ Giv feedback" link under den pågældende dækning i tabellen. Vælg fejltype og beskriv hvad der er forkert. Din feedback sendes direkte til os og bruges til at forbedre analyserne løbende.'},
+  {q:'Hvornår skal jeg slette cache?',a:'Du behøver ikke selv slette cache — det håndteres af administratoren. Cache slettes typisk når der uploades nye betingelser eller der er kommet godkendt feedback der ændrer analyserne. Når cachen slettes, vil næste analyse af det pågældende selskabspar blive kørt igen med de nyeste data.'}
+];
+let faqIdx=0;
+FAQS.forEach((faq)=>{
+  const el=document.createElement('div');
+  if(faq.section){
+    el.style.cssText='font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:1rem 0 6px;margin-top:4px';
+    el.textContent=faq.section;
+  } else {
+    const i=faqIdx++;
+    el.style.cssText='background:var(--surface);border:1px solid #E3E1D9;border-radius:10px;overflow:hidden';
+    el.innerHTML=`<button onclick="toggleFaq(${i})" style="width:100%;text-align:left;padding:1rem 1.25rem;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:DM Sans,sans-serif"><span style="font-size:14px;font-weight:500;color:#141412">${faq.q}</span><svg id="faq-arrow-${i}" viewBox="0 0 12 8" fill="none" style="width:12px;height:8px;flex-shrink:0;transition:transform .2s"><path d="M1 1l5 5 5-5" stroke="#7A7870" stroke-width="1.5" stroke-linecap="round"/></svg></button><div id="faq-body-${i}" style="display:none;padding:0 1.25rem 1rem;font-size:13px;color:#7A7870;line-height:1.7;border-top:1px solid #E3E1D9">${faq.a}</div>`;
+  }
+  document.getElementById('faq-list').appendChild(el);
+});
+function toggleFaq(i){const body=document.getElementById('faq-body-'+i);const arrow=document.getElementById('faq-arrow-'+i);const open=body.style.display==='block';body.style.display=open?'none':'block';arrow.style.transform=open?'':'rotate(180deg)';}
+</script>
+
+<!-- Scope Selection Modal (Step 1) -->
+<div class="fb-modal-bg" id="fb-scope-modal-bg">
+  <div class="fb-modal" style="max-width: 500px;">
+    <div class="fb-modal-title">Hvem gælder denne feedback for?</div>
+    <div class="fb-modal-cat" id="fb-scope-cat" style="margin-bottom: 20px;"></div>
+    
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <label style="display: flex; align-items: start; padding: 14px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s;" class="scope-option">
+        <input type="radio" name="feedbackScope" value="specific" style="margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 4px;">Kun denne sammenligning</div>
+          <div style="font-size: 12px; color: var(--muted);" id="scope-specific-text">—</div>
+        </div>
+      </label>
+      
+      <label style="display: flex; align-items: start; padding: 14px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s;" class="scope-option">
+        <input type="radio" name="feedbackScope" value="company_a" checked style="margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 4px;">Alle analyser med <span id="scope-companyA-name">—</span></div>
+          <div style="font-size: 12px; color: var(--muted);">Anbefalet for generel information om selskabet</div>
+        </div>
+      </label>
+      
+      <label style="display: flex; align-items: start; padding: 14px; border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s;" class="scope-option">
+        <input type="radio" name="feedbackScope" value="company_b" style="margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 4px;">Alle analyser med <span id="scope-companyB-name">—</span></div>
+          <div style="font-size: 12px; color: var(--muted);">Anbefalet for generel information om selskabet</div>
+        </div>
+      </label>
+    </div>
+    
+    <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
+      <button class="fb-cancel" onclick="closeScopeFb()">Annuller</button>
+      <button class="fb-send" onclick="proceedToFeedbackForm()" style="padding: 10px 24px;">Næste →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback Details Modal (Step 2) -->
+<div class="fb-modal-bg" id="fb-modal-bg">
+  <div class="fb-modal">
+    <div class="fb-modal-title">Giv feedback på dækning</div>
+    <div class="fb-modal-cat" id="fb-cat"></div>
+    
+    <!-- Guide til god feedback -->
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px;margin-bottom:12px;font-size:11px;line-height:1.5;">
+      <div style="font-weight:600;color:#1E40AF;margin-bottom:4px;">💡 Tip til god feedback:</div>
+      <div style="color:#1E40AF;">
+        <strong>Vær konkret og faktuel!</strong><br>
+        ✅ Godt: "Alm. Brand dækker kun 50 km, ikke 100 km - jf. betingelser side 12"<br>
+        ✅ Godt: "Tryg's selvrisiko er 3.500 kr, ikke 2.500 kr"<br>
+        ❌ Undgå: "Tryg burde nok dække det her"<br>
+        ❌ Undgå: "Kig ekstra efter..."
+      </div>
+    </div>
+    
+    <div class="fb-type-grid">
+      <button class="fb-type-btn" data-type="forkert_fordel" onclick="setFbType(this)">Ikke en reel fordel</button>
+      <button class="fb-type-btn" data-type="mangler_info" onclick="setFbType(this)">Mangler information</button>
+      <button class="fb-type-btn" data-type="forkert_info" onclick="setFbType(this)">Forkert information</button>
+      <button class="fb-type-btn" data-type="andet" onclick="setFbType(this)">Andet</button>
+    </div>
+    <textarea class="fb-comment" id="fb-comment" placeholder="Beskriv hvad der er forkert eller mangler..."></textarea>
+    <div id="fb-success" class="fb-success hidden">Tak for din feedback! ✓</div>
+    <div class="fb-actions" id="fb-actions">
+      <button class="fb-cancel" onclick="closeFb()">Annuller</button>
+      <button class="fb-send" onclick="sendFb()">Send feedback</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://pnzpdgjstzuapgknagsa.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBuenBkZ2pzdHp1YXBna25hZ3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODM1MDUsImV4cCI6MjA5MjQ1OTUwNX0.sZzAvYGS3ks2mn11SAu704Ciq1Ij-s8RnN7paYipnuY';
+
+const BRAND_COLORS={'Alm. Brand':{bg:'#00AEEF',text:'#fff',initials:'AB'},'Tryg':{bg:'#E2001A',text:'#fff',initials:'TR'},'Topdanmark':{bg:'#12205F',text:'#fff',initials:'TD'},'Codan':{bg:'#2B3FDB',text:'#fff',initials:'CO'},'IF Forsikring':{bg:'#1A56DB',text:'#fff',initials:'IF'},'Gjensidige':{bg:'#1B2473',text:'#fff',initials:'GJ'},'LB Forsikring':{bg:'#004B87',text:'#fff',initials:'LB'},'Privatsikring':{bg:'#F5A623',text:'#fff',initials:'PS'},'Lærerstandens Brandforsikring':{bg:'#5B8DB8',text:'#fff',initials:'LB'},'GF Forsikring':{bg:'#2E8B2E',text:'#fff',initials:'GF'},'Vesta Forsikring':{bg:'#6EE7B7',text:'#1B4D3E',initials:'VE'},'Thisted Forsikring':{bg:'#1E5FA6',text:'#fff',initials:'TF'},'Runa Forsikring':{bg:'#D41A3A',text:'#fff',initials:'RU'},'Bauta Forsikring':{bg:'#4DB89A',text:'#fff',initials:'BA'},'Alka':{bg:'#5C5757',text:'#fff',initials:'AL'},'Vejle Brand':{bg:'#1E4D2B',text:'#fff',initials:'VB'},'Vestjylland Forsikring':{bg:'#2D4B7A',text:'#fff',initials:'VJ'},'Købstedernes Forsikring':{bg:'#C8102E',text:'#fff',initials:'KF'},'Jyske Forsikring':{bg:'#1A4D2E',text:'#fff',initials:'JF'},'Aros Forsikring':{bg:'#4A2D82',text:'#fff',initials:'AR'},'Nærsikring':{bg:'#4A90C4',text:'#fff',initials:'NS'},'Bornholms Brandforsikring':{bg:'#5C5757',text:'#fff',initials:'BB'},'Spira Forsikring':{bg:'#2D6A2D',text:'#fff',initials:'SP'},'Concordia Forsikring':{bg:'#1A56A0',text:'#fff',initials:'CF'},'IDA Forsikring':{bg:'#5B7499',text:'#fff',initials:'ID'},'TJM Forsikring':{bg:'#E85D0A',text:'#fff',initials:'TJ'},'Storstrom Forsikring':{bg:'#1A5C1A',text:'#fff',initials:'ST'},'OK Forsikring':{bg:'#C8102E',text:'#fff',initials:'OK'},'FDM Forsikring':{bg:'#1A5C8A',text:'#fff',initials:'FD'},'Himmerland Forsikring':{bg:'#C8102E',text:'#fff',initials:'HI'},'Forsia Forsikring':{bg:'#1A3A6B',text:'#fff',initials:'SJ'},'Frida Forsikring':{bg:'#E85D9A',text:'#fff',initials:'FR'},'Dansk Bilforsikring':{bg:'#1A5C8A',text:'#fff',initials:'DB'},'Gavmild':{bg:'#7FE6C3',text:'#2D3E3F',initials:'GA'}};
+
+let selectedTypes=[],docsA={},docsB={},allResults={};
+
+function getBrandEl(name,size=32,id=''){const brand=BRAND_COLORS[name];const initials=brand?brand.initials:name.substring(0,2).toUpperCase();const bg=brand?brand.bg:'#E3E1D9';const color=brand?brand.text:'#7A7870';const r=size>24?8:4;const idAttr=id?` id="${id}"`:'';return`<div${idAttr} style="width:${size}px;height:${size}px;border-radius:${r}px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size>24?11:9}px;font-weight:700;color:${color};font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:0.5px">${initials}</div>`;}
+function makeFallback(name,size,id){return getBrandEl(name,size,id);}
+function logoHtml(n,size=28){return getBrandEl(n,size);}
+
+const COMPANIES=['Alm. Brand','Tryg','Topdanmark','Codan','IF Forsikring','Gjensidige','LB Forsikring','Privatsikring','Lærerstandens Brandforsikring','GF Forsikring','Vesta Forsikring','Thisted Forsikring','Runa Forsikring','Bauta Forsikring','Alka','Vejle Brand','Vestjylland Forsikring','Købstedernes Forsikring','Jyske Forsikring','Aros Forsikring','Nærsikring','Bornholms Brandforsikring','Spira Forsikring','Concordia Forsikring','IDA Forsikring','TJM Forsikring','Storstrom Forsikring','OK Forsikring','FDM Forsikring','Himmerland Forsikring','Forsia Forsikring','Frida Forsikring','Dansk Bilforsikring','Gavmild'];
+const YOUR_COMPANIES=['Alm. Brand','Codan','Privatsikring'];
+const cddState={a:'',b:''};
+  
+let fbState={};
+function openFb(category,companyA,companyB,type,side){
+  fbState={category,companyA,companyB,type,side:side||'a',issueType:'',scopeType:'company_a'};
+  
+  // Populate scope modal
+  document.getElementById('fb-scope-cat').textContent=category;
+  document.getElementById('scope-specific-text').textContent=companyA+' vs '+companyB;
+  document.getElementById('scope-companyA-name').textContent=companyA;
+  document.getElementById('scope-companyB-name').textContent=companyB;
+  
+  // Reset radio selection
+  document.querySelector('input[name="feedbackScope"][value="company_a"]').checked=true;
+  
+  // Open scope selection modal (step 1)
+  document.getElementById('fb-scope-modal-bg').classList.add('open');
+}
+
+function closeScopeFb(){
+  document.getElementById('fb-scope-modal-bg').classList.remove('open');
+}
+
+function proceedToFeedbackForm(){
+  // Get selected scope
+  const selectedScope=document.querySelector('input[name="feedbackScope"]:checked').value;
+  fbState.scopeType=selectedScope;
+  
+  // Close scope modal
+  document.getElementById('fb-scope-modal-bg').classList.remove('open');
+  
+  // Open feedback details modal (step 2)
+  const sideLabel=fbState.side==='b'?' (→ '+fbState.companyB+')':'';
+  document.getElementById('fb-cat').textContent=fbState.category+sideLabel;
+  document.getElementById('fb-comment').value='';
+  document.getElementById('fb-success').classList.add('hidden');
+  document.getElementById('fb-actions').style.display='flex';
+  document.querySelectorAll('.fb-type-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('fb-modal-bg').classList.add('open');
+}
+function closeFb(){document.getElementById('fb-modal-bg').classList.remove('open');}
+function setFbType(btn){document.querySelectorAll('.fb-type-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');fbState.issueType=btn.dataset.type;}
+async function sendFb(){
+  if(!fbState.issueType){alert('Vælg venligst en fejltype.');return;}
+  const comment=document.getElementById('fb-comment').value.trim();
+  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:fbState.companyA,company_b:fbState.companyB,insurance_type:fbState.type,category:fbState.category,issue_type:fbState.issueType,comment:(comment||'')+(fbState.side==='b'?' [Feedback om '+fbState.companyB+']':''),user_id:getSupabaseUserId(),status:'pending',scope_type:fbState.scopeType})});}catch(e){}
+  document.getElementById('fb-success').classList.remove('hidden');
+  document.getElementById('fb-actions').style.display='none';
+  setTimeout(()=>closeFb(),1500);
+}
+
+// Quick feedback with thumbs up/down
+async function quickFeedback(category, type, sentiment) {
+  const btn = event.target.closest('button');
+  const originalHTML = btn.innerHTML;
+  
+  // Visual feedback on button
+  if (sentiment === 'important') {
+    btn.innerHTML = '✓ Tak!';
+    btn.style.borderColor = '#1D9E75';
+    btn.style.color = '#1D9E75';
+    btn.style.background = '#F0FDF4';
+  } else {
+    btn.innerHTML = '✓ Noteret';
+    btn.style.borderColor = '#DC2626';
+    btn.style.color = '#DC2626';
+    btn.style.background = '#FEF2F2';
+  }
+  
+  // Send to Supabase
   try {
-    // ── DALL-E billedgenerering ──────────────────────────────────
-    if (req.body.action === 'dalle') {
-      const { prompt, userId, insuranceType, coverageName, promptText, feedbackText } = req.body;
-      if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
-
-      // Indholdsfiltrering af feedback
-      if (feedbackText) {
-        const forbudt = [
-          'blod','blood','død','dead','dræb','kill','mord','murder','lig','corpse','selvmord','suicide',
-          'nøgen','naked','sex','erotisk','erotic','porno','porn','voldtægt','rape','bryst','breast',
-          'penis','vagina','nøgenbillede','intim','intimate','eksplicit','explicit',
-          'nazi','swastika','racis','terror','ekstremi'
-        ];
-        const feedbackLower = feedbackText.toLowerCase();
-        if (forbudt.some(ord => feedbackLower.includes(ord))) {
-          return res.status(400).json({ error: 'Feedback indeholder upassende indhold og kan ikke bruges.' });
-        }
-      }
-
-      // Tjek cache først (kun hvis brugeren IKKE har givet feedback — så vil de have noget nyt)
-      if (insuranceType && coverageName && !feedbackText) {
-        try {
-          const cacheCheck = await new Promise((resolve, reject) => {
-            require('https').get(
-              `${process.env.SUPABASE_URL}/rest/v1/skader_images?insurance_type=eq.${encodeURIComponent(insuranceType)}&coverage_name=eq.${encodeURIComponent(coverageName)}&feedback=is.null&select=image_url&order=created_at.desc&limit=1`,
-              {
-                headers: {
-                  'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                  'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-                }
-              },
-              r => {
-                let d = '';
-                r.on('data', chunk => d += chunk);
-                r.on('end', () => resolve(JSON.parse(d)));
-              }
-            ).on('error', reject);
-          });
-          if (cacheCheck && cacheCheck.length > 0 && cacheCheck[0].image_url) {
-            return res.status(200).json({ url: cacheCheck[0].image_url, cached: true });
-          }
-        } catch (cacheErr) {
-          console.error('Skader cache-tjek fejl:', cacheErr);
-          // Fortsæt til ny generering hvis cache-tjek fejler
-        }
-      }
-
-      // Start prediction
-      const startResult = await httpsPost(
-        'https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions',
-        {
-          input: {
-            prompt: prompt + '. Hyper-realistic insurance damage documentation photo, shot with a professional DSLR camera. Dramatic but tasteful. No people, no bodies, no blood, no gore, no victims. Focus on the physical damage to property only. Photojournalistic style, natural lighting.',
-            num_outputs: 1,
-            output_format: 'webp'
-          }
-        },
-        { 'Authorization': `Bearer ${process.env.REPLICATE_API_KEY}` }
-      );
-
-      if (startResult.status !== 201) {
-        console.error('Replicate start fejl:', JSON.stringify(startResult.data));
-        return res.status(500).json({ error: startResult.data.detail || 'Replicate fejl' });
-      }
-
-      // Poll for result
-      const predictionId = startResult.data.id;
-      let imageUrl = null;
-      for (let i = 0; i < 30; i++) {
-        await new Promise(r => setTimeout(r, 1000));
-        const pollResult = await new Promise((resolve, reject) => {
-          const options = {
-            hostname: 'api.replicate.com',
-            path: `/v1/predictions/${predictionId}`,
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${process.env.REPLICATE_API_KEY}` }
-          };
-          const req2 = require('https').request(options, res2 => {
-            let d = '';
-            res2.on('data', chunk => d += chunk);
-            res2.on('end', () => resolve(JSON.parse(d)));
-          });
-          req2.on('error', reject);
-          req2.end();
-        });
-
-        if (pollResult.status === 'succeeded') {
-          imageUrl = pollResult.output[0];
-          break;
-        } else if (pollResult.status === 'failed') {
-          return res.status(500).json({ error: 'Billedgenerering fejlede' });
-        }
-      }
-
-      if (!imageUrl) return res.status(500).json({ error: 'Timeout — prøv igen' });
-
-      // Log til Supabase
-      if (userId && insuranceType) {
-        try {
-          await httpsPost(
-            `${process.env.SUPABASE_URL}/rest/v1/skader_images`,
-            {
-              user_id: userId,
-              insurance_type: insuranceType,
-              coverage_name: coverageName || '',
-              image_url: imageUrl,
-              prompt: promptText || '',
-              feedback: feedbackText || null
-            },
-            {
-              'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-              'Prefer': 'return=minimal'
-            }
-          );
-        } catch(logErr) {
-          console.error('Skader log fejl:', logErr);
-        }
-      }
-
-      return res.status(200).json({ url: imageUrl });
-    }
-    // ── Ende DALL-E ──────────────────────────────────────────────
-
-    // ── Scenariegenerering ───────────────────────────────────────
-    if (req.body.action === 'scenario') {
-      const { prompt } = req.body;
-      if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
-
-      const msg = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }]
-      });
-
-      return res.status(200).json({ text: msg.content[0].text });
-    }
-    // ── Ende scenarie ────────────────────────────────────────────
-
-    const { companyA, companyB, type } = req.body;
-    
-    if (!companyA || !companyB || !type) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
- 
-    const startTime = Date.now();
-    let userId = null;
-    
-    // Get user ID from auth header — REQUIRED
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: 'Ikke autoriseret. Log ind for at bruge IQSales.' });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    try {
-      const verifyResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!verifyResponse.ok) {
-        return res.status(401).json({ error: 'Ugyldig session. Log ind igen.' });
-      }
-      const userData = await verifyResponse.json();
-      if (!userData.id) {
-        return res.status(401).json({ error: 'Ugyldig session. Log ind igen.' });
-      }
-      userId = userData.id;
-    } catch (error) {
-      console.error('Auth verification failed:', error);
-      return res.status(401).json({ error: 'Kunne ikke verificere login. Prøv igen.' });
-    }
- 
-    // Rate limit: maks 50 analyser pr. bruger pr. dag (150 for admins)
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const [rateLimitResponse, profileResponse] = await Promise.all([
-      fetch(
-        `${SUPABASE_URL}/rest/v1/analytics?user_id=eq.${userId}&event_type=eq.analysis_completed&timestamp=gte.${todayStart.toISOString()}&select=id`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      ),
-      fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      )
-    ]);
-
-    if (rateLimitResponse.ok && profileResponse.ok) {
-      const todayAnalyses = await rateLimitResponse.json();
-      const profileData = await profileResponse.json();
-      const isAdmin = profileData?.[0]?.role === 'admin';
-      const dailyLimit = isAdmin ? 150 : 50;
-      if (todayAnalyses.length >= dailyLimit) {
-        return res.status(429).json({ error: `Daglig grænse på ${dailyLimit} analyser nået. Prøv igen i morgen.` });
-      }
-    }
-
-    // Check cache first
-    const CACHE_VERSION = 'v2'; // bump this to invalidate cache (e.g. when prompt changes)
-    const cacheKey = `${CACHE_VERSION}-${type}-${companyA}-${companyB}`;
-    const cacheResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/analysis_cache?insurance_type=eq.${encodeURIComponent(type)}&company_a=eq.${encodeURIComponent(companyA)}&company_b=eq.${encodeURIComponent(companyB)}&select=*`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      }
-    );
- 
-    if (cacheResponse.ok) {
-      const cacheData = await cacheResponse.json();
-      if (cacheData && cacheData.length > 0) {
-        const cached = cacheData[0];
-
-        // Invalidate cache if result lacks source references (old format without page_a/section_a)
-        const firstItem = cached.result?.coverage?.[0];
-        const hasSourceRefs = firstItem && ('page_a' in firstItem);
-        if (!hasSourceRefs) {
-          console.log('🔄 Cache stale: missing source refs, re-analyzing...');
-          // Fall through to fresh analysis below
-        } else {
-
-        // Log cache hit
-        if (userId) {
-          await fetch(`${SUPABASE_URL}/rest/v1/analytics`, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              user_id: userId,
-              event_type: 'analysis_completed',
-              insurance_type: type,
-              company_a: companyA,
-              company_b: companyB,
-              cache_used: true,
-              response_time_ms: Date.now() - startTime,
-              tokens_used: 0,
-              cost_estimate: 0
-            })
-          });
-        }
- 
-        return res.status(200).json(cached.result);
-        }
-      }
-    }
- 
-    // Fetch PDFs from insurance_terms
-    const pdfAResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/insurance_terms?selskab=eq.${encodeURIComponent(companyA)}&produkt_type=eq.${encodeURIComponent(type)}&select=full_text,pdf_hash`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      }
-    );
- 
-    const pdfBResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/insurance_terms?selskab=eq.${encodeURIComponent(companyB)}&produkt_type=eq.${encodeURIComponent(type)}&select=full_text,pdf_hash`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      }
-    );
- 
-    if (!pdfAResponse.ok || !pdfBResponse.ok) {
-      throw new Error('PDFs not found in database');
-    }
- 
-    const [pdfA] = await pdfAResponse.json();
-    const [pdfB] = await pdfBResponse.json();
- 
-    if (!pdfA || !pdfB) {
-      throw new Error('PDFs not found in database');
-    }
- 
-    // Fetch approved feedback + vigtig/ligegyldig ratings for this insurance type
-    const [feedbackResponse, importantResponse, irrelevantResponse] = await Promise.all([
-      fetch(
-        `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(type)}&status=eq.approved&select=*`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      ),
-      fetch(
-        `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(type)}&issue_type=eq.priority_high&select=category`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      ),
-      fetch(
-        `${SUPABASE_URL}/rest/v1/feedback?insurance_type=eq.${encodeURIComponent(type)}&issue_type=eq.priority_low&select=category`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      )
-    ]);
-
-    const allFeedbacks = feedbackResponse.ok ? await feedbackResponse.json() : [];
-    const importantRaw = importantResponse.ok ? await importantResponse.json() : [];
-    const irrelevantRaw = irrelevantResponse.ok ? await irrelevantResponse.json() : [];
-
-    // Filtrer feedback på selskab — inkluder feedback der er generel (company=null) eller matcher et af de to selskaber
-    const feedbacks = allFeedbacks.filter(f => !f.company || f.company === companyA || f.company === companyB);
-
-    // Sorter: prioriterede feedback øverst
-    feedbacks.sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
-
-    // Kategorier fra prioriteret feedback skal altid med i coverage items
-    const mandatoryCategories = feedbacks.filter(f => f.priority).map(f => f.category);
-    // Count votes per category
-    const importantCounts = {};
-    importantRaw.forEach(f => { if(f.category) importantCounts[f.category] = (importantCounts[f.category]||0)+1; });
-    const irrelevantCounts = {};
-    irrelevantRaw.forEach(f => { if(f.category) irrelevantCounts[f.category] = (irrelevantCounts[f.category]||0)+1; });
-
-    // Top 5 vigtigste og top 5 mest ligegyldige
-    const topImportant = Object.entries(importantCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([cat])=>cat);
-    const topIrrelevant = Object.entries(irrelevantCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([cat])=>cat);
-
-    console.log(`📊 Vigtige dækninger: ${topImportant.join(', ')}`);
-    console.log(`📊 Ligegyldige dækninger: ${topIrrelevant.join(', ')}`);
- 
-    // Build prompt with type-specific instructions
-    let prompt = buildPrompt(companyA, companyB, type, pdfA.full_text, pdfB.full_text, feedbacks, topImportant, topIrrelevant, mandatoryCategories);
- 
-    console.log(`🔄 Starting analysis: ${companyA} vs ${companyB} for ${type}`);
- 
-    // Call Claude API with retry logic
-    let message;
-    let attempt = 0;
-    const maxAttempts = 2;
- 
-    while (attempt < maxAttempts) {
-      attempt++;
-      try {
-        console.log(`🔄 API attempt ${attempt}/${maxAttempts}`);
-        message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 30000,
-          system: getSystemPrompt(type),
-          messages: [{
-            role: 'user',
-            content: prompt
-          }]
-        });
-        break; // Success
-      } catch (apiError) {
-        console.error(`❌ API attempt ${attempt} failed:`, apiError.message);
-        if (attempt >= maxAttempts) {
-          throw new Error(`Claude API fejlede efter ${maxAttempts} forsøg: ${apiError.message}`);
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
- 
-    // Parse response - robust extraction
-    const txt = message.content.map(function(i) { return i.type === 'text' ? i.text : ''; }).join('\n');
-    let cleanedText = txt.replace(/```json|```/g, '').trim();
- 
-    // Extract first complete JSON object using bracket matching
-    let jsonStr = null;
-    let depth = 0;
-    let startIndex = -1;
-    for (let i = 0; i < cleanedText.length; i++) {
-      const char = cleanedText[i];
-      if (char === '{') {
-        if (depth === 0) startIndex = i;
-        depth++;
-      } else if (char === '}') {
-        depth--;
-        if (depth === 0 && startIndex !== -1) {
-          jsonStr = cleanedText.substring(startIndex, i + 1);
-          break;
-        }
-      }
-    }
- 
-    if (!jsonStr) {
-      console.error('❌ No complete JSON object found in response');
-      throw new Error('Claude returnerede ikke valid JSON format');
-    }
- 
-    // Sanitize and parse JSON
-    jsonStr = sanitizeJSON(jsonStr);
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch (parseError) {
-      console.error('❌ JSON Parse Error:', parseError.message);
-      console.log('🔄 Attempting aggressive JSON cleaning...');
-      try {
-        jsonStr = aggressiveJSONClean(jsonStr);
-        parsed = JSON.parse(jsonStr);
-        console.log('✅ Aggressive cleaning succeeded!');
-      } catch (secondError) {
-        console.error('❌ Aggressive cleaning also failed:', secondError.message);
-        throw new Error('Claude returnerede ugyldig JSON. Prøv igen eller kontakt support.');
-      }
-    }
- 
-    // ✨ POST-PROCESSING: Fix critical bugs
-    if (parsed.coverage && Array.isArray(parsed.coverage)) {
-      const beforeCount = parsed.coverage.length;
- 
-      parsed.coverage = parsed.coverage
-        .map(item => {
-          let status_a = item.status_a;
-          let status_b = item.status_b;
-          let winner = item.winner;
- 
-          // FIX 1: Fix status when amount text contradicts it
-          if (item.amount_a && typeof item.amount_a === 'string') {
-            const lower = item.amount_a.toLowerCase();
-            if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning') || lower.includes('undtaget')) {
-              status_a = 'no';
-            }
-          }
-          if (item.amount_b && typeof item.amount_b === 'string') {
-            const lower = item.amount_b.toLowerCase();
-            if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || lower.includes('ingen dækning') || lower.includes('undtaget')) {
-              status_b = 'no';
-            }
-          }
- 
-          // FIX 2: Fix winner when A covers and B explicitly excludes (or vice versa)
-          if (status_a === 'yes' && status_b === 'no') winner = 'a';
-          if (status_a === 'no' && status_b === 'yes') winner = 'b';
- 
-          // Resolve status safely - only fix truly missing/invalid statuses
-          // IMPORTANT: Run AFTER FIX 1 text-based corrections so we don't override them
-          const validStatuses = ['yes', 'no', 'inib', 'excluded'];
-          const resolveStatus = (st, amount) => {
-            // If already a valid status, keep it (respects FIX 1 corrections above)
-            if (st && validStatuses.includes(st.toLowerCase())) return st.toLowerCase();
-            // Status is missing or invalid - infer from amount text
-            if (amount && typeof amount === 'string') {
-              const lower = amount.toLowerCase().trim();
-              if (lower.length < 2) return 'inib';
-              // Text indicates not covered
-              if (lower.includes('ikke dækket') || lower.includes('dækkes ikke') || 
-                  lower.includes('ingen dækning') || lower.includes('undtaget') ||
-                  lower === 'ikke dækket') return 'no';
-              // Has real content - assume covered
-              return 'yes';
-            }
-            if (amount && typeof amount === 'object') return 'yes';
-            return 'inib';
-          };
-          status_a = resolveStatus(status_a, item.amount_a);
-          status_b = resolveStatus(status_b, item.amount_b);
- 
-          return {
-            ...item,
-            status_a,
-            status_b,
-            winner,
-            sales_tip: item.sales_tip || '',
-            objection_tip: item.objection_tip || '',
-            customer_explanation: item.customer_explanation || ''
-          };
-        })
-        // FIX 3: Remove items where both explicitly exclude (no vs no) - no difference to show
-        .filter(item => {
-          if (item.status_a === 'no' && item.status_b === 'no') {
-            console.log(`❌ Filtered: Both exclude "${item.category}"`);
-            return false;
-          }
-          if (item.status_a === 'inib' && item.status_b === 'inib') {
-            console.log(`❌ Filtered: Both INIB "${item.category}"`);
-            return false;
-          }
-          return true;
-        });
- 
-      console.log(`✅ Processed: ${beforeCount} → ${parsed.coverage.length} items (removed ${beforeCount - parsed.coverage.length})`);
-    }
- 
-    // Cache the result
-    await fetch(`${SUPABASE_URL}/rest/v1/analysis_cache`, {
+    await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback', {
       method: 'POST',
       headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
         'Prefer': 'return=minimal'
       },
       body: JSON.stringify({
         insurance_type: type,
-        company_a: companyA,
-        company_b: companyB,
-        result: parsed
+        category: category,
+        issue_type: sentiment === 'important' ? 'priority_high' : 'priority_low',
+        comment: sentiment === 'important' ? 'Vigtig dækning - skal med' : 'Ligegyldig dækning - kan udelades',
+        user_id: getSupabaseUserId(),
+        company_a: getName('a'),
+        company_b: getName('b'),
+        status: 'pending',
+        scope_type: 'general'
       })
     });
- 
-    // Log analytics
-    if (userId) {
-      const responseTime = Date.now() - startTime;
-      const tokensUsed = message.usage.input_tokens + message.usage.output_tokens;
-      const costEstimate = (message.usage.input_tokens * 0.003 / 1000) + (message.usage.output_tokens * 0.015 / 1000);
- 
-      await fetch(`${SUPABASE_URL}/rest/v1/analytics`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          event_type: 'analysis_completed',
-          insurance_type: type,
-          company_a: companyA,
-          company_b: companyB,
-          cache_used: false,
-          response_time_ms: responseTime,
-          tokens_used: tokensUsed,
-          cost_estimate: costEstimate
-        })
-      });
-    }
- 
-    return res.status(200).json(parsed);
- 
-  } catch (error) {
-    console.error('Analysis failed:', error);
     
-    // Log failure
-    if (req.body.userId) {
-      await fetch(`${SUPABASE_URL}/rest/v1/analytics`, {
-        method: 'POST',
+    // Show success toast
+    showFeedbackToast();
+    
+  } catch(e) {
+    console.error('Quick feedback failed:', e);
+  }
+  
+  // Reset button after 2 seconds
+  setTimeout(() => {
+    btn.innerHTML = originalHTML;
+    btn.style.borderColor = '#E3E1D9';
+    btn.style.color = '#5F5E5A';
+    btn.style.background = 'white';
+  }, 2000);
+}
+
+// Show success toast notification
+function showFeedbackToast() {
+  // Create toast if it doesn't exist
+  let toast = document.getElementById('feedback-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'feedback-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, #1D9E75 0%, #16875F 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(29, 158, 117, 0.3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+    `;
+    toast.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="9" stroke="white" stroke-width="1.5" fill="none"/>
+        <polyline points="6,10 9,13 14,7" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span>Tak for din feedback - det hjælper os med at gøre analyserne bedre for dig som bruger</span>
+    `;
+    document.body.appendChild(toast);
+  }
+  
+  // Show toast with animation
+  setTimeout(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  }, 10);
+  
+  // Hide after 4 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+  }, 4000);
+}
+
+// Fetch approved feedback for use in analysis
+async function fetchApprovedFeedback(type, companyA, companyB) {
+  try {
+    // Fetch all approved feedback for this insurance type
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/feedback?insurance_type=eq.' + type + '&status=eq.approved',
+      {
         headers: {
           'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      }
+    );
+    if (!res.ok) return [];
+    const allFeedback = await res.json();
+    
+    // Filter to match scopes:
+    // 1. specific: exact match on both companies
+    // 2. company_a: matches company_a (regardless of company_b)
+    // 3. company_b: matches company_b (regardless of company_a)
+    const matchingFeedback = allFeedback.filter(f => {
+      if (f.scope_type === 'specific') {
+        return f.company_a === companyA && f.company_b === companyB;
+      } else if (f.scope_type === 'company_a') {
+        return f.company_a === companyA;
+      } else if (f.scope_type === 'company_b') {
+        return f.company_b === companyB;
+      }
+      // Legacy feedback without scope_type defaults to specific matching
+      return f.company_a === companyA && f.company_b === companyB;
+    });
+    
+    return matchingFeedback;
+  } catch(e) {
+    console.error('Could not fetch approved feedback:', e);
+    return [];
+  }
+}
+
+// Show feedback badge on tab when approved feedback is used
+function showFeedbackBadge(type, count) {
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  const tabBtn = document.getElementById('mtab-' + shortName);
+  
+  if (tabBtn && !tabBtn.querySelector('.feedback-badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'feedback-badge';
+    badge.textContent = '🔍 ' + count;
+    badge.style.cssText = 'background: #ECFDF5; color: #065F46; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 6px;';
+    tabBtn.appendChild(badge);
+  }
+}
+
+// ============================================================
+// ANALYTICS TRACKING
+// ============================================================
+
+// Track events to analytics table
+async function trackEvent(eventType, data) {
+  try {
+    const userId = getSupabaseUserId();
+    // Use user's access token for authenticated requests
+    const token = getAccessToken();
+    
+    await fetch(SUPABASE_URL + '/rest/v1/analytics', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + (token || SUPABASE_KEY),
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        event_type: eventType,
+        user_id: userId,
+        insurance_type: data.insurance_type || null,
+        company_a: data.company_a || null,
+        company_b: data.company_b || null,
+        tokens_used: data.tokens_used || null,
+        cost_estimate: data.cost_estimate || null,
+        cache_used: data.cache_used || false,
+        response_time_ms: data.response_time_ms || null,
+        metadata: data.metadata || null,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch(e) {
+    console.error('Analytics tracking failed:', e);
+  }
+}
+
+// Calculate cost based on tokens (Claude Sonnet 4.6 pricing)
+function calculateCost(inputTokens, outputTokens) {
+  // Claude Sonnet 4.6: $3 per 1M input tokens, $15 per 1M output tokens
+  const inputCost = (inputTokens / 1000000) * 3;
+  const outputCost = (outputTokens / 1000000) * 15;
+  const totalUSD = inputCost + outputCost;
+  const totalDKK = totalUSD * 7.5; // USD to DKK conversion
+  return totalDKK;
+}
+
+// Track page view on load
+window.addEventListener('load', function() {
+  trackEvent('page_view', {
+    metadata: { url: window.location.pathname }
+  });
+});
+
+const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://www.tryg.dk','Topdanmark':'https://www.topdanmark.dk','Codan':'https://www.codan.dk','IF Forsikring':'https://www.if.dk','Gjensidige':'https://www.gjensidige.dk','LB Forsikring':'https://www.lb.dk','Privatsikring':'https://www.privatsikring.dk','Lærerstandens Brandforsikring':'https://www.lb.dk','GF Forsikring':'https://www.gfforsikring.dk','Vesta Forsikring':'https://www.vesta.dk','Thisted Forsikring':'https://www.thistedforsikring.dk','Runa Forsikring':'https://www.lb.dk','Bauta Forsikring':'https://www.lb.dk','Alka':'https://www.alka.dk','Vejle Brand':'https://www.vejlebrand.dk','Vestjylland Forsikring':'https://www.vestjyllandforsikring.dk','Købstedernes Forsikring':'https://www.kforsikring.dk','Jyske Forsikring':'https://www.jyskeforsikring.dk','Aros Forsikring':'https://www.arosforsikring.dk','Nærsikring':'https://www.naersikring.dk','Bornholms Brandforsikring':'https://www.bornholmsbrand.dk','Spira Forsikring':'https://www.spiraforsikring.dk','Concordia Forsikring':'https://www.concordia.dk','IDA Forsikring':'https://www.idaforsikring.dk','TJM Forsikring':'https://www.tjm.dk','Storstrom Forsikring':'https://www.storstromforsikring.dk','OK Forsikring':'https://www.ok.dk','FDM Forsikring':'https://www.fdm.dk','Himmerland Forsikring':'https://www.himmerlandforsikring.dk','Forsia Forsikring':'https://www.sonderjyskforsikring.dk','Frida Forsikring':'https://www.fridaforsikring.dk','Dansk Bilforsikring':'https://www.danskbilforsikring.dk'};
+
+function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[side];const link=document.getElementById('link-'+side);if(!link)return;const url=BETINGELSER_LINKS[name];if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}else{link.href='#';link.style.display='none';}});}
+
+async function buildCoachSystem(companyA, companyB, types, topA, topB) {
+  // Saml PDF-tekst fra alle valgte typer (maks ~60k tegn total for at holde omkostning nede)
+  const MAX_CHARS = 60000;
+  let pdfSection = '';
+  let totalChars = 0;
+  const typeList = Array.isArray(types) ? types : (types || '').split(',').map(t => t.trim());
+
+  for (const type of typeList) {
+    // Forsøg at bruge allerede indlæst tekst
+    let textA = (docsA[type]?.data && docsA[type].data !== 'cached') ? docsA[type].data : null;
+    let textB = (docsB[type]?.data && docsB[type].data !== 'cached') ? docsB[type].data : null;
+
+    // Hvis cached, hent tekst direkte fra Supabase insurance_terms
+    if (!textA || !textB) {
+      try {
+        const companies = [];
+        if (!textA) companies.push(companyA);
+        if (!textB) companies.push(companyB);
+        const inFilter = `selskab=in.(${companies.join(',')})`;
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/insurance_terms?insurance_type=eq.${encodeURIComponent(type)}&${inFilter}&updated_at=gte.${thirtyDaysAgo}&select=selskab,full_text`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${getAuthToken()}` } }
+        );
+        if (res.ok) {
+          const rows = await res.json();
+          for (const row of rows) {
+            if (row.selskab === companyA && !textA) textA = row.full_text;
+            if (row.selskab === companyB && !textB) textB = row.full_text;
+          }
+        }
+      } catch(e) {
+        console.error('Coach PDF-hentning fejlede:', e);
+      }
+    }
+
+    if (textA && totalChars < MAX_CHARS) {
+      pdfSection += `\n\n=== ${companyA} ${type} betingelser ===\n${textA.substring(0, 30000)}`;
+      totalChars += textA.length;
+    }
+    if (textB && totalChars < MAX_CHARS) {
+      pdfSection += `\n\n=== ${companyB} ${type} betingelser ===\n${textB.substring(0, 30000)}`;
+      totalChars += textB.length;
+    }
+  }
+
+  const hasPdf = pdfSection.length > 0;
+
+  return `Du er en erfaren dansk forsikringssælger med 15+ års erfaring. Du hjælper en kollega med at sælge ${companyA} til kunder hos ${companyB}.
+
+Analysen dækker: ${Array.isArray(types) ? types.join(', ') : types}.
+${companyA} er stærkere på: ${topA}.
+${companyB} er stærkere på: ${topB}.
+${hasPdf ? `\nDu har adgang til de fulde betingelsestekster nedenfor og KAN svare på detaljerede spørgsmål om specifikke dækninger, selvrisici, beløb og begrænsninger direkte fra betingelserne. Citér gerne konkret fra teksten når det er relevant.` : '\nDu har ikke adgang til de fulde betingelsestekster denne gang — svar kun baseret på analysen ovenfor.'}
+
+Tal som en erfaren kollega. Svar på dansk.${hasPdf ? pdfSection : ''}`;
+}
+
+function resetAnalysis(){ window.location.href = window.location.pathname + '?r=' + Date.now(); }
+
+// ============================================================
+// USER PREFERENCES (Favoritter + Sortering)
+// ============================================================
+
+async function loadPreferences(nameA, nameB, type){
+  const token=getAuthToken();
+  if(!token)return{favorites:[],sort_order:[]};
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/user_preferences?user_id=eq.'+getUserId()+'&company_a=eq.'+encodeURIComponent(nameA)+'&company_b=eq.'+encodeURIComponent(nameB)+'&insurance_type=eq.'+encodeURIComponent(type)+'&select=favorites,sort_order',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}
+    });
+    const rows=await res.json();
+    if(!Array.isArray(rows)||rows.length===0)return{favorites:[],sort_order:[]};
+    return{favorites:rows[0].favorites||[],sort_order:rows[0].sort_order||[]};
+  }catch(e){return{favorites:[],sort_order:[]};}
+}
+
+async function savePreferences(nameA, nameB, type, favorites, sortOrder){
+  const token=getAuthToken();
+  if(!token)return;
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/user_preferences',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({user_id:getUserId(),company_a:nameA,company_b:nameB,insurance_type:type,favorites:favorites,sort_order:sortOrder,updated_at:new Date().toISOString()})
+    });
+  }catch(e){}
+}
+
+function getUserId(){
+  try{
+    const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');
+    if(raw){const p=JSON.parse(raw);return p.user?.id||p.sub||'anonymous';}
+  }catch(e){}
+  return'anonymous';
+}
+
+async function buildMenus(){
+  let companyRanks={};
+  // Load ranks async and rebuild menus when ready
+  const token=getAuthToken();
+  if(token){
+    fetch(SUPABASE_URL+'/rest/v1/analyses?select=company_a,company_b',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}})
+    .then(r=>r.json()).then(data=>{
+      if(Array.isArray(data)){data.forEach(a=>{if(a.company_a)companyRanks[a.company_a]=(companyRanks[a.company_a]||0)+1;if(a.company_b)companyRanks[a.company_b]=(companyRanks[a.company_b]||0)+1;});buildMenusWithRanks(companyRanks);}
+    }).catch(()=>{});
+  }
+
+  const sorted=[...COMPANIES].sort((a,b)=>{const diff=(companyRanks[b]||0)-(companyRanks[a]||0);return diff!==0?diff:a.localeCompare(b,'da');});
+  const popular=sorted.filter(n=>companyRanks[n]>0);
+  const rest=sorted.filter(n=>!companyRanks[n]);
+
+  ['a','b'].forEach(side=>{
+    const menu=document.getElementById('cdd-'+side+'-menu');
+    const isYourSide = side === 'a';
+    const sideCompanies = isYourSide ? YOUR_COMPANIES : COMPANIES;
+    const sideSorted = isYourSide ? YOUR_COMPANIES : sorted;
+    const sidePopular = isYourSide ? [] : popular.filter(n => YOUR_COMPANIES.indexOf(n) === -1 ? true : false);
+    const sideRest = isYourSide ? YOUR_COMPANIES : rest;
+
+    // Build search input safely
+    const searchDiv=document.createElement('div');
+    searchDiv.className='cdd-search';
+    const searchInput=document.createElement('input');
+    searchInput.type='text';
+    searchInput.placeholder='Søg selskab...';
+    searchInput.oninput=function(){filterCdd(side,this.value);};
+    searchInput.onclick=function(e){e.stopPropagation();};
+    searchDiv.appendChild(searchInput);
+
+    // Build options HTML
+    let optionsHtml='';
+    if(isYourSide){
+      optionsHtml=YOUR_COMPANIES.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
+    } else if(popular.length>0){
+      optionsHtml+='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Hyppigt brugte</div>';
+      optionsHtml+=popular.map(name=>{
+        const count=companyRanks[name]?'<span style="font-size:10px;color:var(--muted);margin-left:auto;padding-left:8px">'+companyRanks[name]+'x</span>':'';
+        return'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span>'+count+'</div>';
+      }).join('');
+      if(rest.length>0){
+        optionsHtml+='<hr class="cdd-divider"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Alle selskaber</div>';
+        optionsHtml+=rest.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
+      }
+    }else{
+      optionsHtml=sorted.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
+    }
+    optionsHtml+='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
+
+    menu.innerHTML='';
+    if(!isYourSide) menu.appendChild(searchDiv);
+    if(isYourSide){
+      menu.insertAdjacentHTML('beforeend','<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Dit selskab</div>');
+    }
+    menu.insertAdjacentHTML('beforeend',optionsHtml);
+    if(!isYourSide) menu.insertAdjacentHTML('beforeend','<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>');
+    menu.addEventListener('click',e=>{const opt=e.target.closest('.cdd-option');if(!opt)return;selectCdd(opt.dataset.side,opt.dataset.name);});
+  });
+  updateCddDisplay('a');
+  updateCddDisplay('b');
+}
+
+// Filter company dropdown options based on search
+function filterCdd(side, query) {
+  const menu = document.getElementById('cdd-' + side + '-menu');
+  if (!menu) return;
+  
+  const lowerQuery = query.toLowerCase().trim();
+  const options = menu.querySelectorAll('.cdd-option');
+  
+  options.forEach(opt => {
+    const name = opt.dataset.name;
+    if (!name) return;
+    
+    if (name === 'andet' || name.toLowerCase().includes(lowerQuery)) {
+      opt.style.display = '';
+    } else {
+      opt.style.display = 'none';
+    }
+  });
+}
+
+function buildMenusWithRanks(companyRanks){
+  const sorted=[...COMPANIES].sort((a,b)=>{const diff=(companyRanks[b]||0)-(companyRanks[a]||0);return diff!==0?diff:a.localeCompare(b,'da');});
+  const popular=sorted.filter(n=>companyRanks[n]>0);
+  const rest=sorted.filter(n=>!companyRanks[n]);
+  ['a','b'].forEach(side=>{
+    const isYourSide = side === 'a';
+    const menu=document.getElementById('cdd-'+side+'-menu');
+    if(!menu)return;
+    const searchDiv=menu.querySelector('.cdd-search');
+    let optionsHtml='';
+    if(isYourSide){
+      optionsHtml='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Dit selskab</div>';
+      optionsHtml+=YOUR_COMPANIES.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');
+    } else if(popular.length>0){
+      optionsHtml+='<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Hyppigt brugte</div>';
+      optionsHtml+=popular.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span><span style="font-size:10px;color:var(--muted);margin-left:auto;padding-left:8px">'+companyRanks[name]+'x</span></div>').join('');
+      if(rest.length>0){optionsHtml+='<hr class="cdd-divider"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 3px;background:#FAFAF8">Alle selskaber</div>';optionsHtml+=rest.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');}
+    }else{optionsHtml=sorted.map(name=>'<div class="cdd-option" data-side="'+side+'" data-name="'+name+'">'+getBrandEl(name,24)+'<span class="cdd-option-label">'+name+'</span></div>').join('');}
+    if(!isYourSide) optionsHtml+='<hr class="cdd-divider"><div class="cdd-option" data-side="'+side+'" data-name="andet"><div class="cdd-option-logo-fb">+</div><span class="cdd-option-label">Andet selskab...</span></div>';
+    menu.innerHTML='';
+    if(!isYourSide && searchDiv) menu.appendChild(searchDiv);
+    menu.insertAdjacentHTML('beforeend',optionsHtml);
+  });
+}
+
+function toggleCdd(side){const trigger=document.getElementById('cdd-'+side+'-trigger');const menu=document.getElementById('cdd-'+side+'-menu');const isOpen=trigger.classList.contains('open');document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));if(!isOpen){trigger.classList.add('open');menu.classList.add('open');}}
+function selectCdd(side,value){cddState[side]=value;document.getElementById('cdd-'+side+'-trigger').classList.remove('open');document.getElementById('cdd-'+side+'-menu').classList.remove('open');document.getElementById('custom-'+side).style.display=value==='andet'?'block':'none';updateCddDisplay(side);updateBetingelsesLinks();checkCacheStatus();}
+function updateCddDisplay(side){const value=cddState[side];const logoSlot=document.getElementById('cdd-'+side+'-logo');const labelEl=document.getElementById('cdd-'+side+'-label');if(!value||value===''){logoSlot.outerHTML=`<div id="cdd-${side}-logo" style="width:24px;height:24px;border-radius:4px;background:#E3E1D9;display:flex;align-items:center;justify-content:center;font-size:18px;color:#7A7870;flex-shrink:0">?</div>`;labelEl.textContent='Vælg selskab...';labelEl.style.color='var(--muted)';}else if(value==='andet'){logoSlot.outerHTML=`<div id="cdd-${side}-logo" style="width:24px;height:24px;border-radius:4px;background:#E3E1D9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#7A7870;font-family:'Syne',sans-serif;flex-shrink:0">?</div>`;labelEl.textContent='Andet selskab...';labelEl.style.color='var(--text)';}else{logoSlot.outerHTML=getBrandEl(value,24,'cdd-'+side+'-logo');labelEl.textContent=value;labelEl.style.color='var(--text)';}document.querySelectorAll(`#cdd-${side}-menu .cdd-option`).forEach(opt=>{opt.classList.toggle('active',opt.querySelector('.cdd-option-label')?.textContent===value);});}
+function onCustomInput(side){const val=document.getElementById('custom-'+side).value.trim();document.getElementById('cdd-'+side+'-label').textContent=val||'Andet selskab...';}
+function getName(side){if(cddState[side]==='andet')return document.getElementById('custom-'+side).value.trim()||'Selskab '+side.toUpperCase();return cddState[side];}
+document.addEventListener('click',e=>{if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-trigger').forEach(t=>t.classList.remove('open'));document.querySelectorAll('.cdd-menu').forEach(m=>m.classList.remove('open'));}});
+
+function toggleType(btn){const type=btn.dataset.type;if(selectedTypes.includes(type)){selectedTypes=selectedTypes.filter(t=>t!==type);btn.classList.remove('selected');delete docsA[type];delete docsB[type];}else{if(selectedTypes.length>=8){document.getElementById('type-max-note').classList.add('show');setTimeout(()=>document.getElementById('type-max-note').classList.remove('show'),2000);return;}selectedTypes.push(type);btn.classList.add('selected');// Gendan upload zones hvis de er foldet sammen
+const wA=document.getElementById('upload-zones-a-wrapper');const wB=document.getElementById('upload-zones-b-wrapper');if(wA&&!document.getElementById('upload-zones-a')){wA.innerHTML='<div id="upload-zones-a"></div>';}if(wB&&!document.getElementById('upload-zones-b')){wB.innerHTML='<div id="upload-zones-b"></div>';}}renderUploadZones();}
+
+const TYPE_LABELS={'Husforsikring':'Hus','Bilforsikring':'Bil','Indboforsikring':'Indbo','Ulykkesforsikring':'Ulykke','Rejseforsikring':'Rejse','Hundeforsikring':'Hund','Fritidshusforsikring':'Fritidshus','Motorcykelforsikring':'Motorcykel','Lystfartøjsforsikring':'Lystfartøj','Campingvognsforsikring':'Campingvogn','Sundhedsforsikring':'Sundhed','Veterankøretøjsforsikring':'Veterankøretøj'};
+
+const TYPE_EMOJI={'Husforsikring':'🏡','Bilforsikring':'🚗','Indboforsikring':'🏠','Ulykkesforsikring':'🩹','Rejseforsikring':'✈️','Hundeforsikring':'🐶','Fritidshusforsikring':'🏕️','Motorcykelforsikring':'🏍️','Lystfartøjsforsikring':'🚤','Campingvognsforsikring':'🚐','Sundhedsforsikring':'🏥','Veterankøretøjsforsikring':'🏎️'};
+
+  // ==================== BONUS FEATURES: TOAST + SOUND + PAUSE ====================
+  
+  // Toast container
+  let toastContainer = null;
+  function getToastContainer() {
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+  }
+  
+  // Show toast notification
+  function showToast(type, title, message, onClick) {
+    const container = getToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+      success: '✅',
+      error: '❌',
+      celebration: '🎉'
+    };
+    
+    toast.innerHTML = `
+      <div class="toast-icon">${icons[type] || '💡'}</div>
+      <div class="toast-content">
+        <div class="toast-title">${title}</div>
+        ${message ? `<div class="toast-message">${message}</div>` : ''}
+      </div>
+      <div class="toast-close">×</div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Show animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Click handler
+    if (onClick) {
+      toast.style.cursor = 'pointer';
+      toast.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('toast-close')) {
+          onClick();
+        }
+      });
+    }
+    
+    // Close button
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.classList.add('hide');
+      setTimeout(() => toast.remove(), 300);
+    });
+    
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      toast.classList.add('hide');
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+    
+    return toast;
+  }
+  
+  // Sound Effects using Web Audio API
+  const audioContext = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
+  let soundsEnabled = localStorage.getItem('soundsEnabled') !== 'false'; // Default true
+  
+  function playSound(type) {
+    if (!soundsEnabled || !audioContext) return;
+    
+    try {
+      if (type === 'success') {
+        // Pleasant chime
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.setValueAtTime(800, audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 0.5);
+      } else if (type === 'celebration') {
+        // Ta-da with notes
+        const notes = [
+          { freq: 523.25, time: 0, duration: 0.15 },
+          { freq: 659.25, time: 0.15, duration: 0.15 },
+          { freq: 783.99, time: 0.3, duration: 0.3 },
+          { freq: 1046.50, time: 0.6, duration: 0.4 }
+        ];
+        notes.forEach(note => {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          osc.frequency.setValueAtTime(note.freq, audioContext.currentTime + note.time);
+          gain.gain.setValueAtTime(0.25, audioContext.currentTime + note.time);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.time + note.duration);
+          osc.start(audioContext.currentTime + note.time);
+          osc.stop(audioContext.currentTime + note.time + note.duration);
+        });
+      } else if (type === 'error') {
+        // Soft bonk
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.setValueAtTime(150, audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 0.2);
+      }
+    } catch (err) {
+      console.error('Sound play failed:', err);
+    }
+  }
+  
+  function toggleSounds() {
+    soundsEnabled = !soundsEnabled;
+    localStorage.setItem('soundsEnabled', soundsEnabled);
+    
+    // Update button text
+    const btn = document.getElementById('sound-toggle-btn');
+    if (btn) {
+      btn.innerHTML = `🔊 Lyd ${soundsEnabled ? 'til' : 'fra'}`;
+    }
+    
+    // Show feedback
+    showToast('success', soundsEnabled ? '🔊 Lyde aktiveret' : '🔇 Lyde deaktiveret', '');
+    
+    return soundsEnabled;
+  }
+  
+  // Pause/Resume Analysis
+  let analysisPaused = false;
+  let pausedTypes = [];
+  
+  function pauseAnalysis() {
+    analysisPaused = true;
+    // Update UI
+    const pauseBtn = document.getElementById('pause-analysis-btn');
+    if (pauseBtn) {
+      pauseBtn.innerHTML = '▶️ Fortsæt';
+      pauseBtn.onclick = resumeAnalysis;
+    }
+    showToast('success', '⏸️ Analyse sat på pause', 'Klik "Fortsæt" for at genoptage');
+  }
+  
+  function resumeAnalysis() {
+    analysisPaused = false;
+    const pauseBtn = document.getElementById('pause-analysis-btn');
+    if (pauseBtn) {
+      pauseBtn.innerHTML = '⏸️ Pause';
+      pauseBtn.onclick = pauseAnalysis;
+    }
+    showToast('success', '▶️ Analyse genoptaget', 'Fortsætter hvor vi slap...');
+  }
+  
+  function stopAnalysis() {
+    if (confirm('Er du sikker på du vil stoppe analysen? Dette kan ikke fortrydes.')) {
+      analysisPaused = true;
+      if (progressModal) {
+        closeProgressModal();
+      }
+      showToast('error', '⏹️ Analyse stoppet', 'Du kan starte forfra når du er klar');
+    }
+  }
+
+  // ==================== CACHE STATUS FUNCTIONS ====================
+
+let cacheStatusData = {};
+
+async function checkCacheStatus() {
+  // Check Supabase for existing terms for both companies
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  if (!nameA || !nameB || nameA === 'andet' || nameB === 'andet') {
+    cacheStatusData = {};
+    return;
+  }
+  
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/insurance_terms?select=*&selskab=in.(${encodeURIComponent(nameA)},${encodeURIComponent(nameB)})`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      cacheStatusData = {};
+      return;
+    }
+    
+    const data = await response.json();
+    
+    // Build cache status map
+    cacheStatusData = {};
+    data.forEach(row => {
+      const key = `${row.selskab}:${row.produkt_type}`;
+      // Use created_at since parsed_at may be null for manual uploads
+      const uploadDate = row.created_at || row.parsed_at || row.updated_at;
+      const ageDays = uploadDate ? Math.floor((Date.now() - new Date(uploadDate).getTime()) / (1000 * 60 * 60 * 24)) : 999;
+      
+      cacheStatusData[key] = {
+        status: ageDays <= 14 ? 'fresh' : ageDays <= 30 ? 'stale' : 'old',
+        ageInDays: ageDays,
+        fullText: row.full_text,
+        parsedAt: uploadDate
+      };
+    });
+    
+   // Auto-load fresh cache into docsA/docsB
+Object.keys(cacheStatusData).forEach(key => {
+  const [company, type] = key.split(':');
+  const cache = cacheStatusData[key];
+  if (cache && cache.status === 'fresh') {
+    const side = company === getName('a') ? 'a' : company === getName('b') ? 'b' : null;
+    if (side) useExistingCache(side, type);
+  }
+});
+    
+  } catch(err) {
+    console.error('Failed to check cache:', err);
+    cacheStatusData = {};
+  }
+  renderUploadZones();
+}
+
+async function useExistingCache(side, type) {
+  const name = getName(side);
+  const key = `${name}:${type}`;
+  const cache = cacheStatusData[key];
+  
+  if (!cache || !cache.fullText) {
+    return;
+  }
+  
+  try {
+    const base64 = btoa(unescape(encodeURIComponent(cache.fullText)));
+    const store = side === 'a' ? docsA : docsB;
+    store[type] = {
+      name: `${name} - ${type} (fra database)`,
+      data: base64,
+      fromCache: true
+    };
+    console.log('✓ Loaded cache into docs' + side.toUpperCase() + ' for', type, '- size:', base64.length);
+
+    // Update UI: find the stale zone and replace with confirmed state
+    const zoneWrap = document.querySelector(`[data-zone="${side}-${type}"]`);
+    if (zoneWrap) {
+      const label = type;
+      zoneWrap.innerHTML = `
+        <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+        <div class="upload-zone cache-fresh" style="padding:.75rem 1rem">
+          <div class="uz-title" style="font-size:12px">✓ ${name} – ${type} (fra database)</div>
+          <div class="uz-hint" style="color:#059669">Betingelserne er klar til analyse</div>
+          <div class="cache-status-badge">✓ Klar til brug</div>
+        </div>
+        <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+      `;
+    }
+    // Also update the status indicator below company selector
+    renderUploadZones();
+  } catch (err) {
+    console.error('Failed to convert cache to base64:', err);
+  }
+}
+
+function handleUploadClick(side, type) {
+  document.getElementById(`file-${side}-${type}`).click();
+}
+
+function getCacheStatus(side, type) {
+  const name = getName(side);
+  if (!name || name === 'andet') return 'missing';
+  
+  const key = `${name}:${type}`;
+  const cache = cacheStatusData[key];
+  
+  if (!cache) return 'missing';
+  return cache.status === 'fresh' ? 'fresh' : cache.status === 'stale' ? 'stale' : 'missing';
+}
+
+function getCacheAge(side, type) {
+  const name = getName(side);
+  const key = `${name}:${type}`;
+  const cache = cacheStatusData[key];
+  return cache ? cache.ageInDays : null;
+}
+     function renderMultiResult(nameA, nameB) {
+  const types = Object.keys(allResults);
+  if (types.length === 0) {
+    const overviewEl = document.getElementById('tab-overview');
+    if (overviewEl) overviewEl.innerHTML = '<div class="status-box" style="color:var(--danger)">Ingen analyser lykkedes.</div>';
+    return;
+  }
+ 
+  // Collect strong advantages for nameA
+  const strongA = [];
+  types.forEach(t => {
+    const d = allResults[t];
+    if (!d || !d.coverage) return;
+    
+    d.coverage.filter(c => c.winner === 'a' && (c.status_b === 'no' || c.status_b === 'excluded' || c.status_b === 'inib' || c.sales_tip)).slice(0, 2).forEach(c => {
+      strongA.push({
+        type: TYPE_LABELS[t] || d.type || t,
+        category: c.category,
+        detail: (typeof c.amount_a === 'string' ? c.amount_a : (c.amount_a?.text || c.amount_a?.description || JSON.stringify(c.amount_a) || '')),
+        tip: c.sales_tip || ''
+      });
+    });
+  });
+ 
+  // Collect points where nameB is stronger
+  const strongB = [];
+  types.forEach(t => {
+    const d = allResults[t];
+    if (!d || !d.coverage) return;
+    
+    d.coverage.filter(c => c.winner === 'b').slice(0, 2).forEach(c => {
+      strongB.push({
+        type: TYPE_LABELS[t] || d.type || t,
+        category: c.category,
+        detail: (typeof c.amount_b === 'string' ? c.amount_b : (c.amount_b?.text || c.amount_b?.description || JSON.stringify(c.amount_b) || '')),
+        tip: c.objection_tip || ''
+      });
+    });
+  });
+ 
+  // Top advantages across all types
+  const allAdvA = [];
+  types.forEach(t => {
+    const d = allResults[t];
+    if (!d || !d.pitch) return;
+    
+    (d.pitch.advantages_a || []).slice(0, 2).forEach(a => {
+      allAdvA.push({ label: TYPE_LABELS[t] || d.type || t, text: a });
+    });
+  });
+ 
+  const overviewHtml = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+
+      <div style="background:var(--surface);border:1px solid #C6E5B3;border-radius:var(--r);overflow:hidden">
+        <div style="padding:10px 14px;border-bottom:1px solid #C6E5B3;display:flex;align-items:center;gap:8px;background:#EAF3DE">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1.5,7 5,10.5 12.5,3.5" stroke="#3B6D11" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+          <span style="font-size:12px;font-weight:600;color:#3B6D11;text-transform:uppercase;letter-spacing:.06em">Dine stærkeste kort — ${nameA}</span>
+        </div>
+        <div style="padding:8px 14px">
+          ${strongA.slice(0, 5).map(s => `
+            <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:11px;color:#3B6D11;font-weight:600;margin-bottom:3px">${s.type} · ${s.category}</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.55">${(typeof s.detail==='string'?s.detail:(s.detail?.text||s.detail?.description||'')).substring(0,100)}${(typeof s.detail==='string'?s.detail:(s.detail?.text||s.detail?.description||'')).length>100?'...':''}</div>
+              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:#3B6D11;font-style:italic;line-height:1.5">→ "${s.tip}"</div>` : ''}
+            </div>
+          `).join('')}
+          ${strongA.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Kør en analyse for at se dine stærkeste kort</div>` : ''}
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid #F09595;border-radius:var(--r);overflow:hidden">
+        <div style="padding:10px 14px;border-bottom:1px solid #F09595;display:flex;align-items:center;gap:8px;background:#FCEBEB">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L1.5 11.5h11L7 2z" stroke="#A32D2D" stroke-width="1.4" fill="none"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="#A32D2D" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10" r=".7" fill="#A32D2D"/></svg>
+          <span style="font-size:12px;font-weight:600;color:#A32D2D;text-transform:uppercase;letter-spacing:.06em">Vær forberedt på — ${nameB}</span>
+        </div>
+        <div style="padding:8px 14px">
+          ${strongB.slice(0, 5).map(s => `
+            <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:11px;color:#A32D2D;font-weight:600;margin-bottom:3px">${s.type} · ${s.category}</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.55">${(typeof s.detail==='string'?s.detail:(s.detail?.text||s.detail?.description||'')).substring(0,100)}${(typeof s.detail==='string'?s.detail:(s.detail?.text||s.detail?.description||'')).length>100?'...':''}</div>
+              ${s.tip ? `<div style="margin-top:5px;font-size:12px;color:#A32D2D;font-style:italic;line-height:1.5">↩ "${s.tip}"</div>` : ''}
+            </div>
+          `).join('')}
+          ${strongB.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Ingen væsentlige ulemper fundet</div>` : ''}
+        </div>
+      </div>
+    </div>
+
+    ${allAdvA.length > 0 ? `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-2,#F8F6F1);">
+        <span style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:.06em;">Top salgsargumenter på tværs af alle produkter</span>
+      </div>
+      <div style="padding:8px 14px;">
+        ${allAdvA.map(a => `<div style="padding:7px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start;">
+          <span style="color:#3B6D11;font-weight:600;flex-shrink:0;margin-top:1px;">→</span>
+          <div><span style="font-size:11px;font-weight:600;color:#3B6D11;margin-right:6px;">[${a.label}]</span><span style="font-size:13px;color:var(--text);">${a.text}</span></div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}`;
+ 
+  const overviewEl = document.getElementById('tab-overview');
+  if (overviewEl) overviewEl.innerHTML = overviewHtml;
+}
+function renderUploadZones(){
+  ['a','b'].forEach(side=>{
+    const container=document.getElementById('upload-zones-'+side);
+    if(!container)return;
+    container.innerHTML=selectedTypes.map(type=>{
+      const label=TYPE_LABELS[type]||type;
+      const hasFile=side==='a'?docsA[type]:docsB[type];
+      const cacheStatus = getCacheStatus(side, type);
+      const cacheAge = getCacheAge(side, type);
+      
+      // If file already uploaded, show ready state
+      if (hasFile) {
+        return`<div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+          <div class="upload-zone ready" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem">
+            <div class="uz-title" style="font-size:12px">✓ ${hasFile.name}</div>
+          </div>
+          <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+        </div>`;
+      }
+      
+      // Cache status rendering
+      if (cacheStatus === 'fresh') {
+        return`<div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+          <div class="upload-zone cache-fresh" style="padding:.75rem 1rem">
+            <div class="uz-title" style="font-size:12px">✓ Uploadet for ${cacheAge} ${cacheAge === 1 ? 'dag' : 'dage'} siden</div>
+            <div class="uz-hint" style="color:#059669">Betingelserne er klar i systemet</div>
+            <div class="cache-status-badge">✓ Klar til brug</div>
+          </div>
+          <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+        </div>`;
+      }
+      
+      const isOld = cacheAge > 30;
+      if (cacheStatus === 'stale' || isOld) {
+        const zoneClass = isOld ? 'cache-old' : 'cache-stale';
+        const icon = isOld ? '✕' : '⚠';
+        const hintColor = isOld ? '#A32D2D' : '#92400E';
+        return`<div style="margin-bottom:8px" data-zone="${side}-${type}">
+          <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+          <div class="upload-zone ${zoneClass}" style="padding:.75rem 1rem">
+            <div class="uz-title" style="font-size:12px">${icon} Uploadet for ${cacheAge} dage siden</div>
+            <div class="uz-hint" style="color:${hintColor}">Klik "Brug eksisterende" for at fortsætte, eller upload nye</div>
+            <div class="cache-status-badge">${icon} ${cacheAge} dage gammel</div>
+            <div class="cache-actions">
+              <div class="iq-tooltip" style="flex:1">
+                <button class="cache-btn cache-btn-use" style="width:100%" onclick="event.stopPropagation();useExistingCache('${side}','${type}')">Brug eksisterende</button>
+                <span class="iq-tooltiptext">Anvender betingelserne der allerede ligger i systemet. Husk at verificere vigtige punkter manuelt da betingelserne kan være opdateret siden.</span>
+              </div>
+              <div class="iq-tooltip" style="flex:1">
+                <button class="cache-btn cache-btn-upload" style="width:100%" onclick="event.stopPropagation();handleUploadClick('${side}','${type}')">Upload nye</button>
+                <span class="iq-tooltiptext">Upload en ny PDF med de nyeste betingelser. Alle kolleger får automatisk adgang til den nye version.</span>
+              </div>
+            </div>
+          </div>
+          <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+        </div>`;
+      }
+      
+      // Missing - need upload
+      return`<div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+        <div class="upload-zone cache-missing" id="zone-${side}-${type}" onclick="document.getElementById('file-${side}-${type}').click()" style="padding:.75rem 1rem">
+          <div class="uz-title" style="font-size:12px">⬆ Klik for at uploade PDF</div>
+          <div class="uz-hint">Ingen betingelser i systemet</div>
+          <div class="cache-status-badge">! Kræver upload</div>
+        </div>
+        <input type="file" id="file-${side}-${type}" accept=".pdf" style="display:none" data-side="${side}" data-type="${type}" onchange="handleFileMulti(this)">
+      </div>`;
+    }).join('');
+  });
+}
+
+function removeFile(event,side,type,idx){
+  event.stopPropagation();
+  const store=side==='a'?docsA:docsB;
+  if(store[type])store[type].splice(idx,1);
+  renderUploadZones();
+}
+
+function handleDrop(event,side,type){
+  event.preventDefault();
+  const zone=document.getElementById('zone-'+side+'-'+type);
+  if(zone)zone.classList.remove('drag-over');
+  const files=Array.from(event.dataTransfer.files).filter(f=>f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length){alert('Træk venligst PDF-filer ind.');return;}
+  const store=side==='a'?docsA:docsB;
+  if(!store[type])store[type]=[];
+  let loaded=0;
+  files.forEach(file=>{
+    if(file.size>15*1024*1024){loaded++;if(loaded===files.length)renderUploadZones();return;}
+    const reader=new FileReader();
+    reader.onload=e=>{
+      store[type].push({name:file.name,data:e.target.result.split(',')[1]});
+      loaded++;
+      if(loaded===files.length)renderUploadZones();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function handleFileMulti(input){
+  const side=input.dataset.side;
+  const type=input.dataset.type;
+  const file=input.files[0];
+  if(!file)return;
+  const mb=(file.size/1024/1024).toFixed(1);
+  if(file.size>15*1024*1024){
+    alert(`Filen er ${mb} MB — for stor. Max ca. 15 MB.`);
+    input.value='';return;
+  }
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const base64 = e.target.result.split(',')[1];
+    const store=side==='a'?docsA:docsB;
+    store[type]={name:file.name,data:base64};
+    
+    // Save to Supabase insurance_terms table with proper UPSERT
+    try {
+      const companyName = getName(side);
+      const fullText = await extractPdfText(base64);
+      
+      // Use Supabase UPSERT: will INSERT if new, UPDATE if exists
+      // The unique constraint on (selskab, produkt_type) handles conflict resolution
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/insurance_terms?on_conflict=selskab,produkt_type`, {
+        method: 'POST',
+        headers: {
           'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify({
+          selskab: companyName,
+          produkt_type: type,
+          full_text: fullText,
+          parsed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          pdf_url: 'manual-upload',
+          parsed_data: {}
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('❌ Supabase save failed:', error);
+      } else {
+        console.log('✓ Saved to Supabase:', companyName, type);
+      }
+    } catch(err) {
+      console.error('Failed to save to Supabase:', err);
+    }
+    
+    renderUploadZones();
+  };
+  reader.readAsDataURL(file);
+}
+
+function getUserId(){let id=localStorage.getItem('iqsales_uid');if(!id){id='u_'+Math.random().toString(36).substring(2,10);localStorage.setItem('iqsales_uid',id);}return id;}
+function getAccessToken(){try{const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(raw){const p=JSON.parse(raw);return p.access_token||null;}}catch(e){}return null;}
+function getSupabaseUserId(){try{const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(raw){const p=JSON.parse(raw);return p.user?.id||null;}}catch(e){}return null;}
+async function logAnalysis(a,b,t){try{await fetch(SUPABASE_URL+'/rest/v1/analyses',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:a,company_b:b,insurance_type:t,user_id:getSupabaseUserId()})});}catch(e){}}
+
+ async function extractPdfText(base64data) {
+  try {
+    // Use PDF.js for proper PDF parsing
+    if (typeof pdfjsLib !== 'undefined') {
+      console.log('🔵 Using PDF.js for extraction');
+      
+      // Convert base64 to Uint8Array
+      const binaryString = atob(base64data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Load PDF with PDF.js
+      const loadingTask = pdfjsLib.getDocument({ data: bytes });
+      const pdf = await loadingTask.promise;
+      
+      console.log('📄 PDF loaded, pages:', pdf.numPages);
+      
+      // Extract text from all pages
+      let fullText = '';
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      // Clean up text
+      fullText = fullText.replace(/\s+/g, ' ').trim();
+      
+      console.log('✅ PDF.js extraction complete, length:', fullText.length);
+      
+      // Truncate if too long
+      const MAX_CHARS = 100000;
+      if (fullText.length > MAX_CHARS) {
+        fullText = fullText.substring(0, MAX_CHARS) + '\n[afkortet]';
+      }
+      
+      return fullText;
+    }
+  } catch (e) {
+    console.warn('⚠️ PDF.js extraction failed, falling back to simple method:', e.message);
+  }
+  
+  // Fallback: Simple extraction (original method)
+  console.log('🔶 Using fallback extraction method');
+  const binary = atob(base64data);
+  
+  let text = '';
+  for (let i = 0; i < binary.length; i++) {
+    const char = binary.charCodeAt(i);
+    if ((char >= 32 && char <= 126) || char >= 128) {
+      text += binary[i];
+    } else if (char === 10 || char === 13) {
+      text += ' ';
+    }
+  }
+  
+  text = text.replace(/\s+/g, ' ').trim();
+  
+  const MAX_CHARS = 100000;
+  if (text.length > MAX_CHARS) {
+    text = text.substring(0, MAX_CHARS) + '\n[afkortet]';
+  }
+  
+  return text;
+}
+
+// ============================================================
+// DELT SUPABASE CACHE
+// ============================================================
+
+function getAuthToken(){
+  try{const raw=localStorage.getItem('sb-pnzpdgjstzuapgknagsa-auth-token');if(raw){const p=JSON.parse(raw);return p.access_token||null;}}catch(e){}return null;
+}
+
+async function saveSupabaseCache(nameA,nameB,type,data){
+  const token=getAuthToken();if(!token)return;
+  try{await fetch(SUPABASE_URL+'/rest/v1/analysis_cache',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({company_a:nameA,company_b:nameB,insurance_type:type,result:data})});}catch(e){}
+}
+
+async function loadSupabaseCache(nameA,nameB,type){
+  const token=getAuthToken();if(!token)return null;
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/analysis_cache?company_a=eq.'+encodeURIComponent(nameA)+'&company_b=eq.'+encodeURIComponent(nameB)+'&insurance_type=eq.'+encodeURIComponent(type)+'&select=result,created_at',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}});
+    const rows=await res.json();
+    if(!Array.isArray(rows)||rows.length===0)return null;
+    const row=rows[0];
+    const age=(Date.now()-new Date(row.created_at).getTime())/(1000*60*60*24);
+    if(age>14)return null;
+    return{data:row.result,created_at:row.created_at,age_days:Math.floor(age)};
+  }catch(e){return null;}
+}
+
+async function loadAllCacheGroups(){
+  const token=getAuthToken();if(!token)return[];
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/analysis_cache?select=company_a,company_b,insurance_type,created_at&order=created_at.desc&limit=100',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}});
+    const rows=await res.json();
+    if(!Array.isArray(rows))return[];
+    const now=Date.now();const groups={};
+    rows.forEach(r=>{
+      const age=(now-new Date(r.created_at).getTime())/(1000*60*60*24);
+      if(age>14)return;
+      const key=r.company_a+'|||'+r.company_b;
+      if(!groups[key]){groups[key]={company_a:r.company_a,company_b:r.company_b,products:[],latest:r.created_at};}
+      groups[key].products.push({type:r.insurance_type,created_at:r.created_at,age_days:Math.floor(age)});
+      if(new Date(r.created_at)>new Date(groups[key].latest))groups[key].latest=r.created_at;
+    });
+    return Object.values(groups).sort((a,b)=>new Date(b.latest)-new Date(a.latest)).slice(0,20);
+  }catch(e){return[];}
+}
+
+function getFreshnessInfo(age_days){
+  if(age_days<=14)return{dot:'fresh-green',text:'fresh-green-text',label:age_days===0?'I dag':age_days===1?'1 dag gammel':age_days+' dage gammel'};
+  if(age_days<=30)return{dot:'fresh-yellow',text:'fresh-yellow-text',label:age_days+' dage — overvej at opdatere'};
+  return{dot:'fresh-red',text:'fresh-red-text',label:'Udløbet'};
+}
+  async function hashText(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+}
+
+async function getCacheKey(textA, textB, nameA, nameB, type) {
+  const combined = textA + textB + nameA + nameB + type;
+  return 'cache_' + await hashText(combined);
+}
+
+function saveCache(key, data) {
+  try {
+    const item = { data, timestamp: Date.now() };
+    localStorage.setItem(key, JSON.stringify(item));
+  } catch(e) {}
+}
+
+function loadCache(key) {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+    const parsed = JSON.parse(item);
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    if (Date.now() - parsed.timestamp > thirtyDays) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return parsed.data;
+  } catch(e) { return null; }
+}
+
+async function renderCachePanel(){
+  const groups=await loadAllCacheGroups();
+  const panel=document.getElementById('cache-panel');
+  const body=document.getElementById('cache-panel-body');
+  const count=document.getElementById('cache-count');
+  if(!groups||groups.length===0){panel.style.display='none';return;}
+  panel.style.display='block';
+  count.textContent='('+groups.length+' selskabspar)';
+  body.innerHTML=groups.map((g,gi)=>{
+    const latestDate=new Date(g.latest).toLocaleDateString('da-DK',{day:'numeric',month:'short'});
+    const products=g.products.map(p=>{
+      const f=getFreshnessInfo(p.age_days);
+      const label=TYPE_LABELS[p.type]||p.type;
+      return`<div class="cache-product-row"><div class="cache-product-left"><div class="freshness-dot ${f.dot}"></div><span class="cache-product-label">${label}</span><span class="freshness-text ${f.text}">${f.label}</span></div><button class="cache-load-btn" onclick="loadFromCache('${g.company_a.replace(/'/g,"\'")}','${g.company_b.replace(/'/g,"\'")}','${p.type}')">Åbn →</button></div>`;
+    }).join('');
+    return`<div class="cache-group"><div class="cache-group-header" onclick="toggleCacheGroup(${gi})"><div class="cache-group-left">${getBrandEl(g.company_a,24)}${getBrandEl(g.company_b,24)}<span class="cache-group-companies">${g.company_a} vs. ${g.company_b}</span></div><span class="cache-group-date">${latestDate}</span><span class="cache-group-arrow" id="cg-arrow-${gi}">▼</span></div><div class="cache-products" id="cg-products-${gi}">${products}</div></div>`;
+  }).join('');
+}
+
+function toggleCachePanel(){
+  const body=document.getElementById('cache-panel-body');
+  const arrow=document.getElementById('cache-panel-arrow');
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  arrow.style.transform=isOpen?'':'rotate(180deg)';
+}
+
+function toggleCacheGroup(gi){
+  const products=document.getElementById('cg-products-'+gi);
+  const arrow=document.getElementById('cg-arrow-'+gi);
+  const isOpen=products.classList.contains('open');
+  products.classList.toggle('open',!isOpen);
+  arrow.classList.toggle('open',!isOpen);
+}
+
+async function loadFromCache(nameA,nameB,type){
+  const cached=await loadSupabaseCache(nameA,nameB,type);
+  if(!cached||!cached.data){alert('Analysen er ikke tilgængelig. Lav en ny analyse.');return;}
+const shortName = type.replace('forsikring', '').toLowerCase();
+allResults[shortName]=cached.data;
+if(COMPANIES.includes(nameA))selectCdd('a',nameA);
+if(COMPANIES.includes(nameB))selectCdd('b',nameB);
+selectedTypes=[type];
+docsA[type]={name:nameA+' - '+type+' (fra database)',data:'cached',fromCache:true};
+docsB[type]={name:nameB+' - '+type+' (fra database)',data:'cached',fromCache:true};
+renderUploadZones();
+  const skaderTab = `<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>`;
+  const tabsHtml=`<button class="tab active" id="mtab-overview" onclick="switchToOverview()"><span class="tab-emoji">📊</span><span class="tab-label">Samlet overblik</span></button><button class="tab" id="mtab-${type}" onclick="switchMultiTab('${type}')"><span class="tab-emoji">${TYPE_EMOJI[type]}</span><span class="tab-label">${TYPE_LABELS[type]} ✓</span></button><div class="tabs-divider"></div><button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button><button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>${skaderTab}`;
+  document.getElementById('result').innerHTML=`<div class="result-section"><div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsHtml}</div><div id="tab-overview" class="multi-tab-content"></div><div id="tab-${type}" class="multi-tab-content" style="display:none"></div><div id="tab-coach" class="multi-tab-content" style="display:none"></div><div id="tab-send" class="multi-tab-content" style="display:none"></div><div id="tab-skader" class="multi-tab-content" style="display:none"></div></div>`;
+  renderMultiResult(nameA,nameB);renderTypeInTab(type);switchMultiTab(type);
+  document.getElementById('reset-btn').style.display='block';
+  window.scrollTo({top:document.getElementById('result').offsetTop-20,behavior:'smooth'});
+}
+// =================================================================
+// KOMPLET RETTET analyzeType OG enableTypeTab FUNKTION
+// =================================================================
+// Kopiér HELE denne kode og erstat de eksisterende funktioner
+// =================================================================
+
+// ============================================
+// PROGRESS MODAL FUNCTIONS
+// ============================================
+
+let progressModal = null;
+let progressState = {};
+
+function showProgressModal(types) {
+  // Initialize progress state
+  progressState = {
+    types: types,
+    completed: 0,
+    total: types.length,
+    items: {},
+    startTime: Date.now(),  // ✨ TILFØJET: Track total start tid
+    avgTimePerType: 25000   // ✨ TILFØJET: Gennemsnitlig tid per analyse (25 sek)
+  };
+  
+  types.forEach(type => {
+    progressState.items[type] = {
+      status: 'waiting', // waiting, reading, analyzing, complete, error
+      progress: 0,
+      error: null,
+      startTime: null  // ✨ TILFØJET: Track individuel start tid
+    };
+  });
+  
+  // Create modal HTML
+  const modalHTML = `
+    <div class="progress-modal-overlay" id="progress-modal-overlay">
+      <div class="progress-modal">
+        <div class="progress-modal-title">Analyserer forsikringer</div>
+        <div class="progress-modal-subtitle">${types.length} ${types.length === 1 ? 'forsikring' : 'forsikringer'} bliver sammenlignet</div>
+        
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-percentage" id="progress-percentage">0%</div>
+        <div class="progress-time-left" id="time-left-text" style="font-size: 13px; color: var(--muted); margin-top: 6px; text-align: center;">Starter analyse...</div>
+        
+        <div class="progress-items" id="progress-items">
+          ${types.map(type => `
+            <div class="progress-item" id="progress-item-${type}" data-type="${type}">
+              <div class="progress-item-icon" id="progress-icon-${type}">⏳</div>
+              <div class="progress-item-content">
+                <div class="progress-item-name">${TYPE_LABELS[type]}</div>
+                <div class="progress-item-status" id="progress-status-${type}">Venter...</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="progress-controls">
+          <button class="progress-control-btn" id="pause-analysis-btn" onclick="pauseAnalysis()">
+            ⏸️ Pause
+          </button>
+          <button class="progress-control-btn danger" onclick="stopAnalysis()">
+            ⏹️ Stop
+          </button>
+          <button class="progress-control-btn" onclick="toggleSounds()" id="sound-toggle-btn">
+            🔊 Lyd ${soundsEnabled ? 'til' : 'fra'}
+          </button>
+        </div>
+        
+        <div id="progress-error-container"></div>
+        <div id="progress-success-container"></div>
+      </div>
+    </div>
+  `;
+  
+  // Add to DOM - ensure it's on body
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  progressModal = document.getElementById('progress-modal-overlay');
+  document.body.style.overflow = 'hidden';
+}
+
+function updateProgressItem(type, status, message) {
+  progressState.items[type].status = status;
+  
+  const item = document.getElementById(`progress-item-${type}`);
+  const icon = document.getElementById(`progress-icon-${type}`);
+  const statusEl = document.getElementById(`progress-status-${type}`);
+  
+  if (!item || !icon || !statusEl) return;
+  
+  // Remove all status classes
+  item.classList.remove('active', 'complete', 'error');
+  
+  // Update based on status
+  switch(status) {
+    case 'reading':
+      item.classList.add('active');
+      icon.innerHTML = '📄';
+      statusEl.innerHTML = message || 'Læser PDFer...';
+      progressState.items[type].progress = 10;
+      updateOverallProgress();
+      break;
+    case 'analyzing':
+      item.classList.add('active');
+      icon.innerHTML = '🤖';
+      statusEl.innerHTML = message || 'IQSales analyserer...';
+      // Progress is set by simulated updates
+      updateOverallProgress();
+      break;
+    case 'complete':
+      item.classList.add('complete');
+      icon.innerHTML = '✅';
+      statusEl.innerHTML = 'Færdig!';
+      progressState.items[type].progress = 100;
+      progressState.completed++;
+      updateOverallProgress();
+      checkIfAllComplete(); // ✨ Vis success box når første er klar
+      break;
+    case 'error':
+      item.classList.add('error');
+      icon.innerHTML = '❌';
+      statusEl.innerHTML = message || 'Fejl';
+      progressState.items[type].error = message;
+      break;
+    default:
+      icon.innerHTML = '⏳';
+      statusEl.innerHTML = 'Venter...';
+      progressState.items[type].progress = 0;
+  }
+}
+
+function updateOverallProgress() {
+  // Calculate average progress across all items
+  let totalProgress = 0;
+  Object.keys(progressState.items).forEach(type => {
+    totalProgress += progressState.items[type].progress || 0;
+  });
+  
+  const percentage = Math.round(totalProgress / progressState.total);
+  const bar = document.getElementById('progress-bar-fill');
+  const percentText = document.getElementById('progress-percentage');
+  const timeLeftEl = document.getElementById('time-left-text');
+  
+  if (bar) bar.style.width = percentage + '%';
+  if (percentText) percentText.textContent = percentage + '%';
+  
+  if (!timeLeftEl) return;
+  
+  // ✅ FORBEDRET: Håndter forskellige tilstande
+  if (percentage >= 100) {
+    // Alle analyser færdige - vis total tid
+    const totalTime = Math.round((Date.now() - progressState.startTime) / 1000);
+    if (totalTime > 60) {
+      const mins = Math.floor(totalTime / 60);
+      const secs = totalTime % 60;
+      timeLeftEl.textContent = `✓ Færdig på ${mins} min ${secs} sek`;
+    } else {
+      timeLeftEl.textContent = `✓ Færdig på ${totalTime} sekunder`;
+    }
+    timeLeftEl.style.color = 'var(--accent2)';
+    timeLeftEl.style.fontWeight = '500';
+  } else if (percentage > 0) {
+    // I gang med analyse - beregn estimeret tid
+    const elapsed = Date.now() - progressState.startTime;
+    const estimatedTotal = (elapsed / percentage) * 100;
+    const timeLeft = Math.max(0, Math.round((estimatedTotal - elapsed) / 1000));
+    
+    // Hvis flere forsikringer, vis samlet estimeret tid
+    const typesText = progressState.total > 1 ? ` (${progressState.total} forsikringer)` : '';
+    
+    if (timeLeft > 60) {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      timeLeftEl.textContent = `Ca. ${mins} min ${secs} sek tilbage${typesText}`;
+    } else if (timeLeft > 0) {
+      timeLeftEl.textContent = `Ca. ${timeLeft} sekunder tilbage${typesText}`;
+    } else {
+      timeLeftEl.textContent = `Afslutter...`;
+    }
+    timeLeftEl.style.color = 'var(--muted)';
+    timeLeftEl.style.fontWeight = '400';
+  }
+}
+
+function showProgressError(type, errorMessage, errorType = 'generic') {
+  const container = document.getElementById('progress-error-container');
+  if (!container) return;
+  
+  let userMessage = '';
+  let canRetry = true;
+  
+  switch(errorType) {
+    case 'network':
+      userMessage = 'Kunne ikke forbinde til serveren. Tjek din internetforbindelse.';
+      break;
+    case 'timeout':
+      userMessage = 'Analysen tog for lang tid. Dette kan skyldes midlertidig høj belastning på serveren.';
+      break;
+    case 'auth':
+      userMessage = 'Din session er udløbet. Log venligst ind igen.';
+      canRetry = false;
+      break;
+    case 'json':
+      userMessage = 'Serveren returnerede ugyldig data. Prøv igen om lidt.';
+      break;
+    default:
+      userMessage = errorMessage || 'Der opstod en uventet fejl. Prøv igen.';
+  }
+  
+  container.innerHTML = `
+    <div class="progress-error-box">
+      <div class="progress-error-title">
+        ⚠️ ${TYPE_LABELS[type]} fejlede
+      </div>
+      <div class="progress-error-message">${userMessage}</div>
+      <div class="progress-error-actions">
+        ${canRetry ? `<button class="primary" onclick="retryAnalysis('${type}')">Prøv igen</button>` : ''}
+        <button class="secondary" onclick="skipAnalysis('${type}')">Spring over</button>
+        ${progressState.completed > 0 ? `<button class="secondary" onclick="closeProgressModal()">Se resultater</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function showProgressSuccess() {
+  const container = document.getElementById('progress-success-container');
+  if (!container) return;
+  
+  const allDone = Object.values(progressState.items).every(item => 
+    item.status === 'complete' || item.status === 'error'
+  );
+  
+  container.innerHTML = `
+    <div class="progress-success-box">
+      <div class="progress-success-icon">🎉</div>
+      <div class="progress-success-title">Analyse ${allDone ? 'færdig' : 'klar'}!</div>
+      <div class="progress-success-subtitle">
+        ${progressState.completed} ${allDone ? '' : `af ${progressState.total}`} ${progressState.completed === 1 ? 'forsikring' : 'forsikringer'} ${allDone ? 'analyseret' : 'klar - resten loader'}
+      </div>
+      <button class="progress-success-button" onclick="closeProgressModal()">
+        ${allDone ? 'Se resultater' : 'Se hvad der er klar'} →
+      </button>
+    </div>
+  `;
+}
+
+function closeProgressModal() {
+  if (progressModal) {
+    progressModal.style.animation = 'fadeOut 0.2s forwards';
+    document.body.style.overflow = '';
+    setTimeout(() => {
+      if (progressModal && progressModal.parentNode) {
+        progressModal.parentNode.removeChild(progressModal);
+      }
+      progressModal = null;
+    }, 200);
+  }
+}
+
+function retryAnalysis(type) {
+  // Re-run analysis for this type
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  // Clear error
+  const errorContainer = document.getElementById('progress-error-container');
+  if (errorContainer) errorContainer.innerHTML = '';
+  
+  // Reset item
+  updateProgressItem(type, 'waiting', 'Forsøger igen...');
+  
+  // Re-run
+  analyzeType(type, nameA, nameB);
+}
+
+function skipAnalysis(type) {
+  // Mark as skipped
+  updateProgressItem(type, 'complete', 'Sprunget over');
+  
+  // Clear error
+  const errorContainer = document.getElementById('progress-error-container');
+  if (errorContainer) errorContainer.innerHTML = '';
+  
+  // Check if all done
+  checkIfAllComplete();
+}
+
+function checkIfAllComplete() {
+  const allDone = Object.values(progressState.items).every(item => 
+    item.status === 'complete' || item.status === 'error'
+  );
+  
+  // Show success box when FIRST analysis is ready (not wait for all)
+  if (progressState.completed >= 1 && !document.querySelector('.progress-success-box')) {
+    showProgressSuccess();
+  }
+  
+  // Update success box text as more complete
+  if (progressState.completed > 0) {
+    const successBox = document.querySelector('.progress-success-box');
+    if (successBox) {
+      const subtitle = successBox.querySelector('.progress-success-subtitle');
+      if (subtitle) {
+        if (allDone) {
+          subtitle.textContent = `${progressState.completed} ${progressState.completed === 1 ? 'forsikring' : 'forsikringer'} analyseret`;
+        } else {
+          subtitle.textContent = `${progressState.completed} af ${progressState.total} klar - resten loader`;
+        }
+      }
+    }
+  }
+  
+  // 🎉 CELEBRATION når ALLE er færdige
+  if (allDone && progressState.completed > 1 && progressState.completed === progressState.total) {
+    playSound('celebration');
+    showToast('celebration', '🎉 Alle analyser færdige!', `${progressState.completed} forsikringer klar til brug`, () => {
+      closeProgressModal();
+    });
+  }
+}
+
+// Add fadeOut animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeOut {
+    to { opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
+async function analyze() {
+  // Fold upload zones sammen og vis kompakt opsummering
+  const nameA = getName('a'), nameB = getName('b');
+  if (nameA === nameB) {
+    alert('Vælg to forskellige selskaber.');
+    return;
+  }
+
+  // Check that at least one type has both files uploaded
+  const typesToAnalyze = selectedTypes.filter(t => docsA[t] && docsB[t]);
+  if (typesToAnalyze.length === 0) {
+    alert('Upload betingelser for mindst én forsikringstype fra begge selskaber.');
+    return;
+  }
+
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  window._nameA = nameA;
+  window._nameB = nameB;
+  resetCoachHistory();
+
+  // Fold upload zones sammen automatisk
+  const wrapperA = document.getElementById('upload-zones-a-wrapper');
+  const wrapperB = document.getElementById('upload-zones-b-wrapper');
+  if (wrapperA) {
+    const count = typesToAnalyze.length;
+    wrapperA.innerHTML = `<div style="font-size:13px;color:#1D9E75;padding:6px 0;">✓ ${nameA} — ${count} forsikring${count !== 1 ? 'er' : ''} klar</div>`;
+  }
+  if (wrapperB) {
+    const count = typesToAnalyze.length;
+    wrapperB.innerHTML = `<div style="font-size:13px;color:#1D9E75;padding:6px 0;">✓ ${nameB} — ${count} forsikring${count !== 1 ? 'er' : ''} klar</div>`;
+  }
+
+  console.log('🚀 Types to analyze:', typesToAnalyze);
+
+  // Show progress modal
+  showProgressModal(typesToAnalyze);
+
+  // Get result div
+  const resultDiv = document.getElementById('result');
+  if (!resultDiv) {
+    console.error('❌ Result div not found!');
+    return;
+  }
+
+  // Init result area with tabs upfront
+  const tabsInitHtml = `
+    <button class="tab active" id="mtab-overview" onclick="switchToOverview()"><span class="tab-emoji">📊</span><span class="tab-label">Samlet overblik</span></button>
+    ${typesToAnalyze.map(t => {
+      const shortName = t.replace('forsikring','').toLowerCase(); 
+      return `<button class="tab" id="mtab-${shortName}" onclick="switchMultiTab('${shortName}')" style="opacity:.5;cursor:not-allowed" disabled><span class="tab-emoji">${TYPE_EMOJI[t]}</span><span class="tab-label">${TYPE_LABELS[t]} <span style="color:var(--muted);font-size:10px">⏳</span></span></button>`;
+    }).join('')}
+    <div class="tabs-divider"></div>
+    <button class="tab" id="mtab-coach" onclick="switchToCoach()"><span class="tab-emoji">🤖</span><span class="tab-label">Salgscoach</span></button>
+    <button class="tab" id="mtab-send" onclick="switchToSend()"><span class="tab-emoji">📧</span><span class="tab-label">Send til kunde</span></button>
+    '<div class="tabs-divider"></div><button class="tab" id="mtab-skader" onclick="switchToSkader()"><span class="tab-emoji">🔥</span><span class="tab-label">Skadeseksempler</span></button>`;
+
+  resultDiv.innerHTML = `
+    <div class="result-section">
+      <div id="type-status" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+        ${typesToAnalyze.map(t => {const shortName = t.replace('forsikring','').toLowerCase(); return `<span id="status-${shortName}" style="font-size:12px;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${TYPE_LABELS[t]} ⏳</span>`;}).join('')}
+      </div>
+      <div class="tabs" style="margin-bottom:1rem" id="multi-tabs">${tabsInitHtml}</div>
+      <div id="tab-overview" class="multi-tab-content"><div class="status-box" style="padding:2rem">Analyserer — resultater vises her efterhånden som de er klar<div class="dots"><span></span><span></span><span></span></div></div></div>
+      <div id="tab-coach" class="multi-tab-content" style="display:none"></div>
+      <div id="tab-send" class="multi-tab-content" style="display:none"></div>
+      <div id="tab-skader" class="multi-tab-content" style="display:none"></div>
+      ${typesToAnalyze.map(t => `<div id="tab-${t}" class="multi-tab-content" style="display:none"><div class="status-box">Analyserer ${TYPE_LABELS[t]}...<div class="dots"><span></span><span></span><span></span></div></div></div>`).join('')}
+    </div>`;
+
+  console.log('✅ Result HTML set, length:', resultDiv.innerHTML.length);
+
+  btn.innerHTML = 'Analyserer... <span class="btn-arrow">⟳</span>';
+
+  // Run all analyses in parallel - update UI as each completes
+  try {
+    await Promise.all(typesToAnalyze.map(type => analyzeType(type, nameA, nameB)));
+    
+    console.log('✅ All analyses complete');
+    console.log('allResults:', allResults);
+    
+    // Show success
+    showProgressSuccess();
+    
+    renderMultiResult(nameA, nameB);
+    
+    document.getElementById('reset-btn').style.display = 'block';
+  } catch (error) {
+    console.error('❌ Analysis failed:', error);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Analysér og generér salgspitch <span class="btn-arrow">→</span>';
+  }
+}
+  
+async function analyzeType(type, nameA, nameB) {
+  console.log('🔴 analyzeType STARTED for:', type, nameA, nameB);
+  
+  // Track start time for response time calculation
+  const startTime = Date.now();
+  
+  // Update status to running
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  const statusEl = document.getElementById('status-' + shortName);
+  if (statusEl) statusEl.innerHTML = `${TYPE_LABELS[type]} ⟳`;
+ 
+  // =================================================================
+  // CHECK SUPABASE CACHE FØRST
+  // =================================================================
+  // ✨ FORBEDRET: Vis "Henter cache..." kortvarigt
+  updateProgressItem(type, 'reading', 'Henter cache...');
+  
+  const cacheResult = await loadSupabaseCache(nameA, nameB, type);
+  const cached = cacheResult ? cacheResult.data : null;
+  
+  console.log('🔍 Cache check for', type, '- cached:', cached ? 'FOUND' : 'null');
+  
+  if (cached) {
+    console.log('📦 Using cached data for', type);
+    allResults[shortName] = cached;
+    
+    // Track cache hit
+    const responseTime = Date.now() - startTime;
+    trackEvent('analysis_completed', {
+      insurance_type: type,
+      company_a: nameA,
+      company_b: nameB,
+      cache_used: true,
+      response_time_ms: responseTime
+    });
+    
+    // ✨ FORBEDRET: Hop direkte til complete (ingen "Beregner...")
+    updateProgressItem(type, 'complete');
+    
+    if (statusEl) {
+      statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
+      statusEl.style.background = 'var(--accent-light)';
+      statusEl.style.color = 'var(--accent2)';
+      statusEl.style.borderColor = 'var(--accent2)';
+    }
+    enableTypeTab(type);
+    return;
+  }
+ 
+  console.log('🔴 No cache found - calling API for fresh analysis');
+
+  // =================================================================
+  // API CALL - API handles PDF extraction and feedback
+  // =================================================================
+
+  let progressInterval; // ⚡ Definer uden for try/catch så vi kan clear den i error handler
+
+  try {
+    // ✨ TILFØJET: Track start tid for denne specifikke analyse
+    progressState.items[type].startTime = Date.now();
+    
+    updateProgressItem(type, 'analyzing', 'IQSales analyserer betingelser...');
+    updateTypeTabStatus(type, 'analyzing', 25); // ⚡ Estimeret 25 sekunder
+    
+    // Start simulated progress updates
+    let currentProgress = 10;
+    progressInterval = setInterval(() => {
+      currentProgress += Math.random() * 15; // Increment by 5-15%
+      if (currentProgress > 90) currentProgress = 90; // Cap at 90%
+      
+      // Update progress in state
+      progressState.items[type].progress = currentProgress;
+      
+      // Beregn estimeret tid tilbage baseret på faktisk elapsed tid
+      const elapsed = (Date.now() - progressState.items[type].startTime) / 1000; // i sekunder
+      const estimatedTotal = (elapsed / currentProgress) * 100;
+      const timeLeft = Math.max(0, Math.ceil(estimatedTotal - elapsed));
+      
+      // Update tab med estimeret tid
+      updateTypeTabStatus(type, 'analyzing', timeLeft);
+      
+      // Update status message based on progress
+      let statusMessage = 'IQSales analyserer betingelser...';
+      if (currentProgress > 70) {
+        statusMessage = 'Næsten færdig...';
+      } else if (currentProgress > 40) {
+        statusMessage = 'IQSales analyserer betingelser...';
+      }
+      
+      updateProgressItem(type, 'analyzing', statusMessage);
+    }, 2000); // Update every 2 seconds
+    
+    console.log('🔴 Calling API...');
+    
+    // Get auth token
+    const { data: { session } } = await _sb.auth.getSession();
+    
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || ''}`
+      },
+      body: JSON.stringify({ 
+        companyA: nameA,
+        companyB: nameB,
+        type: type
+      })
+    });
+    
+    // Stop progress simulation
+    clearInterval(progressInterval);
+    
+    // ✨ FORBEDRET: Check response status før JSON parsing
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('❌ API returned non-OK status:', res.status, errorText);
+      
+      // Parse error message hvis det er JSON
+      let errorMessage = 'Server fejl';
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error || errorJson.message || errorText;
+      } catch {
+        errorMessage = errorText;
+      }
+      
+      throw new Error(`${errorMessage}`);
+    }
+    
+    // ✨ FORBEDRET: Try/catch omkring JSON parsing
+    let data;
+    try {
+      const responseText = await res.text();
+      console.log('📄 Raw response length:', responseText.length, 'chars');
+      
+      data = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.error('❌ JSON parse error:', jsonError);
+      console.error('❌ This usually means Claude API returned malformed JSON');
+      
+      // Brugervenlig besked
+      throw new Error('Claude API returnerede ugyldig data. Dette kan skyldes: 1) Meget komplekse betingelser, 2) Uventet format i PDF, eller 3) Midlertidig serverfejl. Prøv igen.');
+    }
+    
+    console.log('✅ API response received');
+    
+    if (data.error) throw new Error(data.error);
+    
+    // Data is already parsed JSON from API
+    const parsed = data;
+    
+    console.log('✅ Parsed data successfully');
+    console.log('🔴 BEFORE assignment - allResults:', allResults);
+    console.log('🔴 BEFORE assignment - shortName:', shortName);
+    
+    // Store result
+    allResults[shortName] = parsed;
+    
+    console.log('✅ AFTER assignment - allResults:', allResults);
+    console.log('✅ AFTER assignment - allResults[shortName]:', allResults[shortName]);
+    
+    // Cache is saved by API to Supabase analysis_cache table
+    console.log('✅ Saved to cache');
+    
+    // Update progress - complete!
+    updateProgressItem(type, 'complete');
+    checkIfAllComplete();
+    
+    // Log analysis
+    logAnalysis(nameA, nameB, type);
+    
+    // Track completed analysis with token usage
+    const responseTime = Date.now() - startTime;
+    const usage = data.usage || {};
+    const inputTokens = usage.input_tokens || 0;
+    const outputTokens = usage.output_tokens || 0;
+    const totalTokens = inputTokens + outputTokens;
+    const cost = calculateCost(inputTokens, outputTokens);
+    
+    trackEvent('analysis_completed', {
+      insurance_type: type,
+      company_a: nameA,
+      company_b: nameB,
+      tokens_used: totalTokens,
+      cost_estimate: cost,
+      cache_used: false,
+      response_time_ms: responseTime
+    });
+    
+    // Update UI
+    if (statusEl) {
+      statusEl.innerHTML = `${TYPE_LABELS[type]} ✓`;
+      statusEl.style.background = 'var(--accent-light)';
+      statusEl.style.color = 'var(--accent2)';
+      statusEl.style.borderColor = 'var(--accent2)';
+    }
+    
+    enableTypeTab(type);
+    console.log('✅ analyzeType COMPLETED for:', type);
+    
+  } catch (err) {
+    console.error('❌ Analysis error:', err);
+    
+    // Stop progress simulation hvis den kører
+    if (progressInterval) clearInterval(progressInterval);
+    
+    // Determine error type
+    let errorType = 'generic';
+    let errorMessage = err.message;
+    
+    if (err.message.includes('fetch') || err.message.includes('network')) {
+      errorType = 'network';
+    } else if (err.message.includes('JSON') || err.message.includes('parse')) {
+      errorType = 'json';
+    } else if (err.message.includes('auth') || err.message.includes('401')) {
+      errorType = 'auth';
+    } else if (err.message.includes('timeout')) {
+      errorType = 'timeout';
+    }
+    
+    // Update progress with error
+    updateProgressItem(type, 'error', errorMessage);
+    updateTypeTabStatus(type, 'error'); // ⚡ Opdater tab til error state
+    showProgressError(type, errorMessage, errorType);
+    
+    // Track failed analysis
+    const responseTime = Date.now() - startTime;
+    trackEvent('analysis_failed', {
+      insurance_type: type,
+      company_a: nameA,
+      company_b: nameB,
+      response_time_ms: responseTime,
+      metadata: { error: err.message }
+    });
+    
+    if (statusEl) {
+      statusEl.innerHTML = `${TYPE_LABELS[type]} ✗`;
+      statusEl.style.color = 'var(--danger)';
+    }
+  }
+}
+
+function enableTypeTab(type){
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  
+  const tabBtn = document.getElementById('mtab-' + shortName);
+  if(tabBtn){
+    tabBtn.disabled = false;
+    tabBtn.style.opacity = '1';
+    tabBtn.style.cursor = 'pointer';
+    tabBtn.innerHTML = `<span class="tab-emoji">${TYPE_EMOJI[type]}</span><span class="tab-label">${TYPE_LABELS[type]} <span style="color:var(--accent2)">✓</span></span>`;
+  }
+  renderTypeInTab(type);
+  
+  // 🎉 TOAST + SOUND når færdig
+  playSound('success');
+  showToast('success', `${TYPE_LABELS[type]} klar!`, 'Klik for at se analysen', () => {
+    switchMultiTab(shortName);
+    closeProgressModal();
+  });
+}
+
+// NY: Opdater tab med loading status + estimeret tid
+function updateTypeTabStatus(type, status, estimatedSeconds) {
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  const tabBtn = document.getElementById('mtab-' + shortName);
+  if (!tabBtn) return;
+  
+  const emoji = TYPE_EMOJI[type];
+  const label = TYPE_LABELS[type];
+  
+  switch(status) {
+    case 'waiting':
+      tabBtn.innerHTML = `<span class="tab-emoji">${emoji}</span><span class="tab-label">${label} <span style="color:var(--muted);font-size:10px">⏳</span></span>`;
+      tabBtn.disabled = true;
+      tabBtn.style.opacity = '0.5';
+      tabBtn.style.cursor = 'not-allowed';
+      break;
+      
+    case 'analyzing':
+      const timeText = estimatedSeconds > 60 
+        ? `~${Math.ceil(estimatedSeconds/60)} min`
+        : `~${Math.ceil(estimatedSeconds)} sek`;
+      tabBtn.innerHTML = `<span class="tab-emoji">${emoji}</span><span class="tab-label">${label} <span style="color:var(--muted);font-size:10px">⏳ ${timeText}</span></span>`;
+      tabBtn.disabled = true;
+      tabBtn.style.opacity = '0.7';
+      tabBtn.style.cursor = 'wait';
+      break;
+      
+    case 'complete':
+      tabBtn.innerHTML = `<span class="tab-emoji">${emoji}</span><span class="tab-label">${label} <span style="color:var(--accent2)">✓</span></span>`;
+      tabBtn.disabled = false;
+      tabBtn.style.opacity = '1';
+      tabBtn.style.cursor = 'pointer';
+      break;
+      
+    case 'error':
+      tabBtn.innerHTML = `<span class="tab-emoji">${emoji}</span><span class="tab-label">${label} <span style="color:var(--danger)">✗</span></span>`;
+      tabBtn.disabled = false; // Lad brugeren klikke for at retry
+      tabBtn.style.opacity = '1';
+      tabBtn.style.cursor = 'pointer';
+      
+      // Show error content in tab
+      const tabContent = document.getElementById(`tab-${type}`);
+      if (tabContent) {
+        tabContent.innerHTML = `
+          <div style="padding:2rem;text-align:center;background:var(--danger-light);border:1px solid var(--danger);border-radius:8px">
+            <div style="font-size:3rem;margin-bottom:1rem">❌</div>
+            <div style="font-size:18px;font-weight:600;margin-bottom:0.5rem;color:var(--danger)">
+              Analyse fejlede
+            </div>
+            <div style="font-size:14px;color:var(--muted);margin-bottom:1.5rem">
+              ${TYPE_LABELS[type]} kunne ikke analyseres
+            </div>
+            <button class="btn-primary" onclick="retryType('${type}')" style="background:var(--accent2);border-color:var(--accent2)">
+              🔄 Prøv igen
+            </button>
+          </div>
+        `;
+      }
+      
+      // 🎯 TOAST + SOUND ved fejl
+      playSound('error');
+      showToast('error', `${TYPE_LABELS[type]} fejlede`, 'Klik for at prøve igen', () => {
+        retryType(type);
+      });
+      break;
+  }
+}
+
+// NY: Retry en specifik forsikringstype
+async function retryType(type) {
+  const nameA = getName('a');
+  const nameB = getName('b');
+  
+  // Reset tab status
+  updateTypeTabStatus(type, 'analyzing', 25);
+  
+  // Show analyzing message in tab content
+  const tabContent = document.getElementById(`tab-${type}`);
+  if (tabContent) {
+    tabContent.innerHTML = `
+      <div class="status-box">
+        Analyserer ${TYPE_LABELS[type]}...
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+    `;
+  }
+  
+  // Re-run analysis
+  try {
+    await analyzeType(type, nameA, nameB);
+  } catch (err) {
+    console.error('Retry failed:', err);
+    updateTypeTabStatus(type, 'error');
+  }
+}
+
+
+ function renderIndividualTab(typeKey, data) {
+  if (!typeKey || !data || !data.coverage) {
+    console.error('❌ renderIndividualTab: missing data for', typeKey);
+    return '<div style="padding:2rem;text-align:center;color:#6B7280;">Ingen analysedata tilgængelig</div>';
+  }
+  const shortName = typeKey.replace('forsikring', '').toLowerCase();
+  
+  // Count winners
+  const aWins = data.coverage.filter(c => c.winner === 'a' || c.winner === 'A').length;
+  const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
+  const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
+  
+  // Sort: A wins first, then B wins, then ties
+  const sorted = [
+    ...data.coverage.filter(c => c.winner === 'a' || c.winner === 'A'),
+    ...data.coverage.filter(c => c.winner === 'b' || c.winner === 'B'),
+    ...data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie')
+  ];
+  
+  // Generate coverage cards HTML
+  const coverageCardsHtml = sorted.map((c, idx) => {
+    const isWinner = c.winner === 'a' || c.winner === 'A';
+    const isLoser = c.winner === 'b' || c.winner === 'B';
+    const isTie = c.winner === 'equal' || c.winner === 'tie';
+    
+    let headerBg, headerBorder, badgeBg, badgeColor, badgeText, showBadge;
+    
+    if (isWinner) {
+      headerBg = '#E8F5F0';
+      headerBorder = '#1D9E75';
+      badgeBg = '#1D9E75';
+      badgeColor = '#FFFFFF';
+      badgeText = 'Din fordel';
+      showBadge = true;
+    } else if (isLoser) {
+      headerBg = '#FFF4E6';
+      headerBorder = '#BA7517';
+      badgeBg = '#BA7517';
+      badgeColor = '#FFFFFF';
+      badgeText = data.companyB + ' fordel';
+      showBadge = true;
+    } else {
+      headerBg = '#FFFFFF';
+      headerBorder = '#D1D5DB';
+      showBadge = false;
+    }
+    
+    const textAId = 'text-' + idx + '-a';
+    const textBId = 'text-' + idx + '-b';
+    const btnAId = 'btn-' + idx + '-a';
+    const btnBId = 'btn-' + idx + '-b';
+    
+    // Helper function to get detail text with INIB explanation
+    
+function buildSourceRef(page, section) {
+  if (!page && !section) return '';
+  var parts = [];
+  if (page) parts.push('Side ' + page);
+  if (section) parts.push('Afsnit ' + section);
+  return '<div class="source-ref"><i class="ti ti-file-text" aria-hidden="true"></i>' + parts.join(' · ') + '</div>';
+}
+function getDetailText(amount, status) {
+      if (status === 'inib') {
+        return 'Ikke nævnt i betingelserne. Selskabet kan vælge at dække eller afvise i tilfælde af skade – en gråzone du bør få afklaret med kunden, så kunden forstår risici.';
+      }
+      return amount || 'Ingen detaljer';
+    }
+    
+    const cardId = 'card-body-' + shortName + '-' + idx;
+    const chevronId = 'chevron-' + cardId;
+    return '<div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">' +
+      '<div onclick="toggleCard(\'' + cardId + '\', \'' + chevronId + '\')" style="background: ' + headerBg + '; border: 2px solid ' + headerBorder + '; border-radius: 8px; margin: 10px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none;">' +
+        '<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">' +
+          '<h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">' + (c.category||'Ukendt dækning') + '</h3>' +
+          (showBadge ? '<span style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: ' + badgeBg + '; color: ' + badgeColor + '; letter-spacing: 0.03em; text-transform: uppercase;">' + badgeText + '</span>' : '') +
+        '</div>' +
+        '<span id="' + chevronId + '" style="font-size: 12px; color: #9CA3AF; transition: transform 0.2s; flex-shrink: 0; display: inline-block;">▼</span>' +
+      '</div>' +
+      '<div id="' + cardId + '" style="display: none; padding: 0 12px 16px 12px;">' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">' +
+          
+          '<div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">' +
+            '<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">' +
+              logoHtml(data.companyA, 20) +
+              data.companyA +
+            '</div>' +
+            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.status_a) + '; color: ' + getStatusColor(c.status_a) + '; border: 1px solid ' + getStatusBorder(c.status_a) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
+              getStatusIcon(c.status_a) + ' ' + getStatusLabel(c.status_a) +
+            '</div>' +
+            '<div style="position: relative;">' +
+              '<p id="' + textAId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + getDetailText(c.amount_a, c.status_a) + '</p>' +
+              ((c.amount_a && c.amount_a.length > 150) ? '<button onclick="toggleText(\'' + textAId + '\', \'' + btnAId + '\')" id="' + btnAId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+              buildSourceRef(c.page_a, c.section_a) +
+            '</div>' +
+            ((c.sales_tip && isWinner) ? 
+              '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
+                '<div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #1D9E75; cursor: help; padding: 4px 8px; background: #E8F5F0; border-radius: 6px; border: 1px solid #1D9E75;">💡 Salgstip</div>' +
+                '<div class="tooltip-content">' + c.sales_tip + '</div>' +
+              '</div>' : '') +
+                        '' +
+          '</div>' +
+          
+          '<div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">' +
+            '<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">' +
+              logoHtml(data.companyB, 20) +
+              data.companyB +
+            '</div>' +
+            '<div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ' + getStatusBg(c.status_b) + '; color: ' + getStatusColor(c.status_b) + '; border: 1px solid ' + getStatusBorder(c.status_b) + '; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">' +
+              getStatusIcon(c.status_b) + ' ' + getStatusLabel(c.status_b) +
+            '</div>' +
+            '<div style="position: relative;">' +
+              '<p id="' + textBId + '" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">' + getDetailText(c.amount_b, c.status_b) + '</p>' +
+              ((c.amount_b && c.amount_b.length > 150) ? '<button onclick="toggleText(\'' + textBId + '\', \'' + btnBId + '\')" id="' + btnBId + '" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>' : '') +
+              buildSourceRef(c.page_b, c.section_b) +
+            '</div>' +
+            ((c.objection_tip && isLoser) ? 
+              '<div class="tooltip-wrapper" style="margin-top: 0.75rem;">' +
+                '<div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #BA7517; cursor: help; padding: 4px 8px; background: #FFF4E6; border-radius: 6px; border: 1px solid #BA7517;">⚠️ Indsigelse</div>' +
+                '<div class="tooltip-content">' + c.objection_tip + '</div>' +
+              '</div>' : '') +
+                        '' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #F5F4F1;">' +
+          '<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;">' +
+            '<div>' +
+              '<div style="font-size: 11px; color: #A09E96; margin-bottom: 5px;">Er denne forskel vigtig for din salgssamtale?</div>' +
+              '<div style="display: flex; gap: 6px;">' +
+                '<button onclick="quickFeedback(\'' + (c.category||'').replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'important\')" style="padding: 5px 10px; font-size: 11px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A; transition: all 0.2s;" onmouseover="this.style.borderColor=\'#1D9E75\'; this.style.color=\'#1D9E75\'; this.style.background=\'#F0FDF4\';" onmouseout="this.style.borderColor=\'#E3E1D9\'; this.style.color=\'#5F5E5A\'; this.style.background=\'white\';">👍 Vigtig</button>' +
+                '<button onclick="quickFeedback(\'' + (c.category||'').replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'irrelevant\')" style="padding: 5px 10px; font-size: 11px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A; transition: all 0.2s;" onmouseover="this.style.borderColor=\'#DC2626\'; this.style.color=\'#DC2626\'; this.style.background=\'#FEF2F2\';" onmouseout="this.style.borderColor=\'#E3E1D9\'; this.style.color=\'#5F5E5A\'; this.style.background=\'white\';">👎 Ligegyldig</button>' +
+              '</div>' +
+            '</div>' +
+            '<div style="text-align: right;">' +
+              '<div style="font-size: 11px; color: #A09E96; margin-bottom: 5px;">Passer dækningen ikke, eller skal noget ændres?</div>' +
+              '<button onclick="openFb(\'' + (c.category||'').replace(/'/g, "\\'") + '\',\'' + data.companyA.replace(/'/g, "\\'") + '\',\'' + data.companyB.replace(/'/g, "\\'") + '\',\'' + data.type + '\',\'a\')" style="padding: 5px 10px; font-size: 11px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A; transition: all 0.2s;" onmouseover="this.style.borderColor=\'#378ADD\'; this.style.color=\'#378ADD\';" onmouseout="this.style.borderColor=\'#E3E1D9\'; this.style.color=\'#5F5E5A\';">⚑ Giv feedback</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  
+  return `
+    <div class="individual-tab-container">
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="switchSubTab('coverage-${shortName}', this)">📊 Dækningsoversigt</button>
+      </div>
+      
+      <div id="coverage-${shortName}" class="sub-tab-content active">
+        <div class="comparison-summary">
+          <div>
+            <span style="color: #1D9E75;">${aWins}</span>
+            <span>${data.companyA} fordele</span>
+          </div>
+          <div>
+            <span style="color: #BA7517;">${bWins}</span>
+            <span>${data.companyB} fordele</span>
+          </div>
+          <div>
+            <span style="color: #378ADD;">${equal}</span>
+            <span>Ens niveau</span>
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 0.75rem;">
+          <button onclick="expandAll('${shortName}')" style="padding: 5px 12px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A;">▼ Udvid alle</button>
+          <button onclick="collapseAll('${shortName}')" style="padding: 5px 12px; font-size: 12px; font-weight: 500; border: 1.5px solid #E3E1D9; border-radius: 6px; background: white; cursor: pointer; color: #5F5E5A;">▲ Fold alle</button>
+        </div>
+        
+        ${coverageCardsHtml}
+        
+        <div class="badge-legend">
+          <div class="badge-legend-item">
+            <div class="badge-legend-icon" style="background: #EAF3DE; color: #3B6D11; border: 1px solid #C6E5B3;">✓</div>
+            <span>Dækket</span>
+          </div>
+          <div class="badge-legend-item">
+            <div class="badge-legend-icon" style="background: #FCEBEB; color: #791F1F; border: 1px solid #F5C6CB;">✗</div>
+            <span>Undtaget</span>
+          </div>
+          <div class="badge-legend-item">
+            <div class="badge-legend-icon" style="background: #FEF9C3; color: #854D0E; border: 1px solid #FDE047;">?</div>
+            <span>INIB</span>
+          </div>
+        </div>
+      </div>
+      
+      <div id="pitch-${shortName}" class="sub-tab-content">
+        <div style="padding: 1rem 0;">
+
+          <!-- AI Salgscoach chatbot -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px;">
+            <div style="background: #1A3C2E; padding: 12px 16px; display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/><circle cx="9" cy="16" r="1" fill="#95D5B2" stroke="none"/><circle cx="15" cy="16" r="1" fill="#95D5B2" stroke="none"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: white;">AI Salgscoach</div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Kender din analyse — stil alt hvad du vil vide</div>
+              </div>
+            </div>
+
+            <div id="chat-messages-${shortName}" style="padding: 16px; min-height: 160px; max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #1A3C2E; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg>
+                </div>
+                <div style="background: var(--surface-2, #F8F6F1); border-radius: 0 12px 12px 12px; padding: 10px 14px; font-size: 13px; color: var(--text); line-height: 1.65; max-width: 85%;">
+                  Hej! Jeg kender din analyse. Hvad vil du gerne have hjælp til? Du kan spørge om alt fra salgstips til konkrete formuleringer.
+                </div>
+              </div>
+            </div>
+
+            <div style="padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+              <input id="chat-input-${shortName}" placeholder="Stil et spørgsmål til din salgscoach..." style="flex: 1; font-size: 13px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; background: var(--bg); color: var(--text);" onkeydown="if(event.key==='Enter'){sendCoachMessage('${shortName}','${data.companyA}','${data.companyB}','${data.type}');}">
+              <button onclick="sendCoachMessage('${shortName}','${data.companyA}','${data.companyB}','${data.type}')" style="padding: 8px 14px; background: #1A3C2E; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px;">Send</button>
+            </div>
+
+            <div style="padding: 8px 12px 10px; border-top: 1px solid var(--border); display: flex; gap: 6px; flex-wrap: wrap;">
+              <span style="font-size: 11px; color: var(--muted); padding-top: 3px; margin-right: 2px;">Hurtigspørgsmål:</span>
+              ${['Stærkeste argument?','Bedste åbningssætning?','Hvad er vi svage på?'].map(q =>
+                `<button onclick="document.getElementById('chat-input-${shortName}').value='${q}';sendCoachMessage('${shortName}','${data.companyA}','${data.companyB}','${data.type}');" style="font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 20px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit;">${q}</button>`
+              ).join('')}
+            </div>
+          </div>
+
+          <!-- Mødeforberedelse -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px;">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A3C2E" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h2m-2 4h2m4-4h2m-2 4h2"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Mødeforberedelse</div>
+                <div style="font-size: 11px; color: var(--muted);">De vigtigste punkter til dette møde · ⏱️ ca. 10 sek.</div>
+              </div>
+              <button id="prep-toggle-${shortName}" onclick="toggleCoachSection('prep-body-${shortName}','prep-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit; white-space: nowrap;">Generer ▼</button>
+            </div>
+            <div id="prep-body-${shortName}" style="display: none; padding: 14px 16px;">
+              <span id="prep-loading-${shortName}" style="color:var(--muted);font-size:13px;">Genererer...</span>
+            </div>
+          </div>
+
+          <!-- Indvendingsbehandling -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 16px;">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4m0 4h.01"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Indvendingsbehandling</div>
+                <div style="font-size: 11px; color: var(--muted);">Typiske indsigelser og hvordan du håndterer dem · ⏱️ ca. 10 sek.</div>
+              </div>
+              <button id="obj-toggle-${shortName}" onclick="toggleCoachSection('obj-body-${shortName}','obj-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit; white-space: nowrap;">Generer ▼</button>
+            </div>
+            <div id="obj-body-${shortName}" style="display: none; padding: 14px 16px;">
+              <span id="obj-loading-${shortName}" style="color:var(--muted);font-size:13px;">Genererer...</span>
+            </div>
+          </div>
+
+          <!-- Remotivering -->
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text);">Remotivering af mødet</div>
+                <div style="font-size: 11px; color: var(--muted);">Manus til opkaldet inden mødet · ⏱️ ca. 10 sek.</div>
+              </div>
+              <button id="remot-toggle-${shortName}" onclick="toggleCoachSection('remot-body-${shortName}','remot-toggle-${shortName}')" style="margin-left: auto; font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); font-family: inherit; white-space: nowrap;">Generer ▼</button>
+            </div>
+            <div id="remot-body-${shortName}" style="display: none; padding: 14px 16px;">
+              <span id="remot-loading-${shortName}" style="color:var(--muted);font-size:13px;">Genererer...</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// FIXED generateCoverageHTML function
+function generateCoverageHTML(data) {
+  if (!data || !data.coverage) return '<p>Ingen data tilgængelig</p>';
+  
+  const aWins = data.coverage.filter(c => c.winner === 'a' || c.winner === 'A').length;
+  const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
+  const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
+  
+  const sorted = [
+    ...data.coverage.filter(c => c.winner === 'a' || c.winner === 'A'),
+    ...data.coverage.filter(c => c.winner === 'b' || c.winner === 'B'),
+    ...data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie')
+  ];
+  
+  const summaryHtml = `
+    <div class="comparison-summary">
+      <div>
+        <span style="color: #1D9E75;">${aWins}</span>
+        <span>${data.companyA} fordele</span>
+      </div>
+      <div>
+        <span style="color: #BA7517;">${bWins}</span>
+        <span>${data.companyB} fordele</span>
+      </div>
+      <div>
+        <span style="color: #378ADD;">${equal}</span>
+        <span>Ens niveau</span>
+      </div>
+    </div>
+  `;
+  
+  const cardsHtml = sorted.map((c, idx) => {
+    const isWinner = c.winner === 'a' || c.winner === 'A';
+    const isLoser = c.winner === 'b' || c.winner === 'B';
+    const isTie = c.winner === 'equal' || c.winner === 'tie';
+    
+    let headerBg, headerBorder, badgeBg, badgeColor, badgeText, showBadge;
+    
+    if (isWinner) {
+      headerBg = '#E8F5F0';
+      headerBorder = '#1D9E75';
+      badgeBg = '#1D9E75';
+      badgeColor = '#FFFFFF';
+      badgeText = 'Din fordel';
+      showBadge = true;
+    } else if (isLoser) {
+      headerBg = '#FFF4E6';
+      headerBorder = '#BA7517';
+      badgeBg = '#BA7517';
+      badgeColor = '#FFFFFF';
+      badgeText = `${data.companyB} fordel`;
+      showBadge = true;
+    } else {
+      headerBg = '#FFFFFF';
+      headerBorder = '#D1D5DB';
+      badgeBg = '';
+      badgeColor = '';
+      badgeText = '';
+      showBadge = false;
+    }
+    
+    const textAId = `text-${idx}-a`;
+    const textBId = `text-${idx}-b`;
+    const btnAId = `btn-${idx}-a`;
+    const btnBId = `btn-${idx}-b`;
+    
+    // Helper function to get detail text with INIB explanation
+    const getDetailText = (amount, status) => {
+      if (status === 'inib') {
+        return 'Ikke nævnt i betingelserne. Selskabet kan vælge at dække eller afvise i tilfælde af skade – en gråzone du bør få afklaret med kunden, så kunden forstår risici.';
+      }
+      return amount || 'Ingen detaljer';
+    };
+    
+    return `
+      <div style="background: var(--surface); border: 1px solid #E3E1D9; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        
+        <div style="background: ${headerBg}; border: 2px solid ${headerBorder}; border-radius: 8px; margin: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
+          <h3 style="font-size: 16px; font-weight: 600; color: #141412; margin: 0; text-align: center;">${c.category||'Ukendt dækning'}</h3>
+          ${showBadge ? `<span style="font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor}; letter-spacing: 0.03em; text-transform: uppercase;">${badgeText}</span>` : ''}
+        </div>
+        
+        <div style="padding: 0 12px 16px 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            
+            <div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
+                ${logoHtml(data.companyA, 20)}
+                ${data.companyA}
+              </div>
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.status_a)}; color: ${getStatusColor(c.status_a)}; border: 1px solid ${getStatusBorder(c.status_a)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                ${getStatusIcon(c.status_a)} ${getStatusLabel(c.status_a)}
+              </div>
+              <div style="position: relative;">
+                <p id="${textAId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_a, c.status_a)}</p>
+                ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                ${buildSourceRef(c.page_a, c.section_a)}
+              </div>
+              
+              ${(c.sales_tip && isWinner) ? `
+                <div class="tooltip-wrapper" style="margin-top: 0.75rem;">
+                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #1D9E75; cursor: help; padding: 4px 8px; background: #E8F5F0; border-radius: 6px; border: 1px solid #1D9E75;">
+                    💡 Salgstip
+                  </div>
+                  <div class="tooltip-content" style="display: none;">
+                    ${c.sales_tip}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <button onclick="openFb('${(c.category||'').replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','a')" class="card-feedback-btn">⚑ Giv feedback</button>
+            </div>
+            
+            <div style="background: #FFFFFF; border: 1.5px solid #E3E1D9; border-radius: 8px; padding: 14px; position: relative;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #141412; margin-bottom: 0.75rem;">
+                ${logoHtml(data.companyB, 20)}
+                ${data.companyB}
+              </div>
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: ${getStatusBg(c.status_b)}; color: ${getStatusColor(c.status_b)}; border: 1px solid ${getStatusBorder(c.status_b)}; width: fit-content; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                ${getStatusIcon(c.status_b)} ${getStatusLabel(c.status_b)}
+              </div>
+              <div style="position: relative;">
+                <p id="${textBId}" style="font-size: 13px; line-height: 1.5; color: #5F5E5A; margin: 0; max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_b, c.status_b)}</p>
+                ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+                ${buildSourceRef(c.page_b, c.section_b)}
+              </div>
+              
+              ${(c.objection_tip && isLoser) ? `
+                <div class="tooltip-wrapper" style="margin-top: 0.75rem;">
+                  <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #BA7517; cursor: help; padding: 4px 8px; background: #FFF4E6; border-radius: 6px; border: 1px solid #BA7517;">
+                    ⚠️ Indsigelse
+                  </div>
+                  <div class="tooltip-content" style="display: none;">
+                    ${c.objection_tip}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <button onclick="openFb('${(c.category||'').replace(/'/g, "\\'")}','${data.companyA.replace(/'/g, "\\'")}','${data.companyB.replace(/'/g, "\\'")}','${data.type}','b')" class="card-feedback-btn">⚑ Giv feedback</button>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  const legendHtml = `
+    <div class="badge-legend">
+      <div class="badge-legend-item">
+        <div class="badge-legend-icon" style="background: #EAF3DE; color: #3B6D11; border: 1px solid #C6E5B3;">✓</div>
+        <span>Dækket</span>
+      </div>
+      <div class="badge-legend-item">
+        <div class="badge-legend-icon" style="background: #FCEBEB; color: #791F1F; border: 1px solid #F5C6CB;">✗</div>
+        <span>Undtaget</span>
+      </div>
+      <div class="badge-legend-item">
+        <div class="badge-legend-icon" style="background: #FEF9C3; color: #854D0E; border: 1px solid #FDE047;">?</div>
+        <span>INIB</span>
+      </div>
+    </div>
+  `;
+  
+  return summaryHtml + '<div style="display: grid; gap: 0;">' + cardsHtml + '</div>' + legendHtml;
+}
+
+function getStatusIcon(status) {
+  if (status === 'yes') return '✓';
+  if (status === 'no') return '✗';
+  if (status === 'excluded') return '⊘';
+  if (status === 'inib') return '?';
+  return '−';
+}
+
+function getStatusLabel(status) {
+  if (status === 'yes') return 'Dækket';
+  if (status === 'no') return 'Ikke dækket';
+  if (status === 'excluded') return 'Undtaget';
+  if (status === 'inib') return 'INIB';
+  return 'Ukendt';
+}
+
+function getStatusBg(status) {
+  if (status === 'yes') return '#EAF3DE';
+  if (status === 'no') return '#FCEBEB';
+  if (status === 'excluded') return '#FFF4ED';
+  if (status === 'inib') return '#FEF9C3';
+  return '#F8F9FA';
+}
+
+function getStatusColor(status) {
+  if (status === 'yes') return '#3B6D11';
+  if (status === 'no') return '#791F1F';
+  if (status === 'excluded') return '#9A3412';
+  if (status === 'inib') return '#854D0E';
+  return '#6C757D';
+}
+
+function getStatusBorder(status) {
+  if (status === 'yes') return '#C6E5B3';
+  if (status === 'no') return '#F5C6CB';
+  if (status === 'excluded') return '#FDBA74';
+  if (status === 'inib') return '#FDE047';
+  return '#DEE2E6';
+}
+
+function getStatusIcon(status) {
+  if (status === 'yes') return '✓';
+  if (status === 'no') return '✗';
+  if (status === 'excluded') return '⊘';
+  if (status === 'inib') return '?';
+  return '−';
+}
+
+function getStatusLabel(status) {
+  if (status === 'yes') return 'Dækket';
+  if (status === 'no') return 'Ikke dækket';
+  if (status === 'excluded') return 'Undtaget';
+  if (status === 'inib') return 'INIB';
+  return 'Ukendt';
+}
+
+function getStatusBg(status) {
+  if (status === 'yes') return '#EAF3DE';
+  if (status === 'no') return '#FCEBEB';
+  if (status === 'excluded') return '#FFF4ED';
+  if (status === 'inib') return '#FEF9C3';
+  return '#FEF9C3';
+}
+
+function getStatusColor(status) {
+  if (status === 'yes') return '#3B6D11';
+  if (status === 'no') return '#791F1F';
+  if (status === 'excluded') return '#9A3412';
+  if (status === 'inib') return '#854D0E';
+  return '#854D0E';
+}
+ 
+  function getStatusBorder(status) {
+  if (status === 'yes') return '#C6E5B3';
+  if (status === 'no') return '#F5C6CB';
+  if (status === 'excluded') return '#FDBA74';
+  if (status === 'inib') return '#FDE047';
+  return '#DEE2E6';
+}
+  
+function toggleCard(id, chevronId) {
+  const body = document.getElementById(id);
+  const chevron = document.getElementById(chevronId);
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function expandAll(shortName) {
+  document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
+    el.style.display = 'block';
+    const chevron = document.getElementById('chevron-' + el.id);
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
+  });
+}
+
+function collapseAll(shortName) {
+  document.querySelectorAll('[id^="card-body-' + shortName + '-"]').forEach(el => {
+    el.style.display = 'none';
+    const chevron = document.getElementById('chevron-' + el.id);
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+  });
+}
+
+function toggleText(textId, btnId) {
+  const text = document.getElementById(textId);
+  const btn = document.getElementById(btnId);
+  if (text.style.maxHeight === '60px' || !text.style.maxHeight) {
+    text.style.maxHeight = '1000px';
+    btn.textContent = 'Vis mindre ↑';
+  } else {
+    text.style.maxHeight = '60px';
+    btn.textContent = 'Vis mere ↓';
+  }
+}
+
+function switchSubTab(tabId, btn) {
+  const container = btn.closest('.individual-tab-container');
+  container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  container.querySelectorAll('.sub-tab-content').forEach(c => c.style.display = 'none');
+  btn.classList.add('active');
+  document.getElementById(tabId).style.display = 'block';
+}
+
+function generateCoverageHTML(data) {
+  if (!data || !data.coverage) return '<p>Ingen data tilgængelig</p>';
+  
+  const aWins = data.coverage.filter(c => c.winner === 'a' || c.winner === 'A').length;
+  const bWins = data.coverage.filter(c => c.winner === 'b' || c.winner === 'B').length;
+  const equal = data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie').length;
+  
+  // Sort: A wins first, then B wins, then ties
+  const sorted = [
+    ...data.coverage.filter(c => c.winner === 'a' || c.winner === 'A'),
+    ...data.coverage.filter(c => c.winner === 'b' || c.winner === 'B'),
+    ...data.coverage.filter(c => c.winner === 'equal' || c.winner === 'tie')
+  ];
+  
+  // Summary
+  const summaryHtml = `
+    <div class="comparison-summary">
+      <div>
+        <span style="color: #1D9E75;">${aWins}</span>
+        <span>${data.companyA} fordele</span>
+      </div>
+      <div>
+        <span style="color: #BA7517;">${bWins}</span>
+        <span>${data.companyB} fordele</span>
+      </div>
+      <div>
+        <span style="color: #378ADD;">${equal}</span>
+        <span>Ens niveau</span>
+      </div>
+    </div>
+  `;
+  
+  // Cards
+  const cardsHtml = sorted.map((c, idx) => {
+    const isWinner = c.winner === 'a' || c.winner === 'A';
+    const isLoser = c.winner === 'b' || c.winner === 'B';
+    const isTie = c.winner === 'equal' || c.winner === 'tie';
+    
+    let cardClass = 'coverage-card';
+    if (isWinner) cardClass += ' winner-card';
+    else if (isLoser) cardClass += ' loser-card';
+    else cardClass += ' tie-card';
+    
+    let badgeText = 'Samme niveau';
+    let badgeBg = '#E6F1FB';
+    let badgeColor = '#0C447C';
+    
+    if (isWinner) {
+      badgeText = 'Din fordel';
+      badgeBg = '#E1F5EE';
+      badgeColor = '#0F6E56';
+    } else if (isLoser) {
+      badgeText = `${data.companyB} fordel`;
+      badgeBg = '#FAEEDA';
+      badgeColor = '#633806';
+    }
+    
+    const textAId = `text-${idx}-a`;
+    const textBId = `text-${idx}-b`;
+    const btnAId = `btn-${idx}-a`;
+    const btnBId = `btn-${idx}-b`;
+    
+    // Helper function to get detail text with INIB explanation
+    const getDetailText = (amount, status) => {
+      if (status === 'inib') {
+        return 'Ikke nævnt i betingelserne. Selskabet kan vælge at dække eller afvise i tilfælde af skade – en gråzone du bør få afklaret med kunden, så kunden forstår risici.';
+      }
+      return amount || 'Ingen detaljer';
+    };
+    
+    return `
+      <div class="${cardClass}">
+        <div class="card-header" style="background: ${isTie ? '#FFFFFF' : (isWinner ? '#E1F5EE' : '#FAEEDA')};">
+          <h3 style="font-size: 15px; font-weight: 600; color: #141412; margin: 0;">${c.category||'Ukendt dækning'}</h3>
+          ${!isTie ? `<span style="font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor};">${badgeText}</span>` : ''}
+        </div>
+        
+        <div class="card-body">
+          <div class="company-comparison">
+            
+            <!-- Company A -->
+            <div class="company-column">
+              <div class="company-label">
+                ${logoHtml(data.companyA, 20)}
+                ${data.companyA}
+              </div>
+              <div class="coverage-status status-${c.status_a}">
+                ${getStatusIcon(c.status_a)} ${getStatusLabel(c.status_a)}
+              </div>
+              <p id="${textAId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_a, c.status_a)}</p>
+              ${(c.amount_a && c.amount_a.length > 150) ? `<button onclick="toggleText('${textAId}', '${btnAId}')" id="${btnAId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+            </div>
+            
+            <!-- Company B -->
+            <div class="company-column">
+              <div class="company-label">
+                ${logoHtml(data.companyB, 20)}
+                ${data.companyB}
+              </div>
+              <div class="coverage-status status-${c.status_b}">
+                ${getStatusIcon(c.status_b)} ${getStatusLabel(c.status_b)}
+              </div>
+              <p id="${textBId}" class="coverage-detail" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s;">${getDetailText(c.amount_b, c.status_b)}</p>
+              ${(c.amount_b && c.amount_b.length > 150) ? `<button onclick="toggleText('${textBId}', '${btnBId}')" id="${btnBId}" style="font-size: 12px; color: #378ADD; background: none; border: none; padding: 4px 0; margin-top: 4px; cursor: pointer; font-weight: 500;">Vis mere ↓</button>` : ''}
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  return summaryHtml + '<div class="coverage-grid">' + cardsHtml + '</div>';
+}
+
+function switchMultiTab(type){
+  console.log('🔴 Switching to tab:', type);
+  
+  const shortName = type;
+  
+  // Hide all tabs
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  
+  // Remove active from all buttons
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  
+  // Show selected tab - try both naming conventions
+  const fullType = shortName.charAt(0).toUpperCase() + shortName.slice(1) + 'forsikring';
+  const tabElement = document.getElementById('tab-' + fullType) || 
+                     document.getElementById('tab-' + shortName);
+  
+  if (tabElement) {
+    tabElement.style.display = 'block';
+    console.log('✅ Tab displayed:', tabElement.id);
+  } else {
+    console.error('❌ Tab not found for:', shortName, fullType);
+    const availableTabs = Array.from(document.querySelectorAll('.multi-tab-content')).map(t => t.id);
+    console.log('Available tabs:', availableTabs);
+  }
+  
+  // Activate button
+  const btnElement = document.getElementById('mtab-' + shortName);
+  if (btnElement) {
+    btnElement.classList.add('active');
+  }
+  
+  // Render content if not already done
+  if(allResults[shortName]) {
+    renderTypeInTab(fullType);
+  }
+}
+
+  function switchToOverview(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-overview').style.display='block';
+  document.getElementById('mtab-overview').classList.add('active');
+}
+
+function switchToCoach(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  const coachTab = document.getElementById('tab-coach');
+  coachTab.style.display='block';
+  const coachBtn = document.getElementById('mtab-coach');
+  if(coachBtn) coachBtn.classList.add('active');
+  if(!coachTab.dataset.initialized) {
+    renderGlobalCoach();
+    coachTab.dataset.initialized = '1';
+  }
+}
+
+function switchToSend(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  const sendTab = document.getElementById('tab-send');
+  if(!sendTab) return;
+  sendTab.style.display='block';
+  const sendBtn = document.getElementById('mtab-send');
+  if(sendBtn) sendBtn.classList.add('active');
+  if(!sendTab.dataset.initialized) {
+    renderGlobalSend();
+    sendTab.dataset.initialized = '1';
+  }
+}
+
+function switchToSkader(){
+  document.querySelectorAll('.multi-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  const tab = document.getElementById('tab-skader');
+  if(!tab) return;
+  tab.style.display='block';
+  const btn = document.getElementById('mtab-skader');
+  if(btn) btn.classList.add('active');
+  if(!tab.dataset.initialized) {
+    renderSkader(tab);
+    tab.dataset.initialized = '1';
+  }
+}
+
+function renderSkader(container){
+  const nameA = window._nameA || 'Selskab A';
+  const nameB = window._nameB || 'Selskab B';
+  const coverages = [];
+  Object.keys(allResults||{}).forEach(shortName=>{
+    const res = allResults[shortName];
+    if(!res||!res.coverage) return;
+    const typeName = Object.keys(TYPE_LABELS).find(k=>k.replace('forsikring','').toLowerCase()===shortName)||shortName;
+    res.coverage.forEach(cat=>{
+      if(cat.winner && cat.winner === 'a') {
+        const winnerName = cat.winner === 'a' ? nameA : nameB;
+        coverages.push({
+          type: TYPE_LABELS[typeName]||shortName,
+          name: cat.category||'Dækning',
+          detail: cat.customer_explanation||cat.reason||'',
+          winner: winnerName,
+          winnerKey: cat.winner,
+          nameA, nameB, shortName
+        });
+      }
+    });
+  });
+
+  if(coverages.length===0){
+    container.innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted)">Kør en analyse først for at se dækningsforskelle her.</div>`;
+    return;
+  }
+
+  container.innerHTML=`
+    <div style="padding:1rem 0">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem">
+        <label style="font-size:13px;color:var(--muted);white-space:nowrap">Vis scenarier for:</label>
+        <select id="skader-type-filter" onchange="filterSkaderCards()" style="flex:1;max-width:260px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
+          <option value="">Alle forsikringstyper</option>
+          ${[...new Set(coverages.map(c=>c.type))].map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1.5rem" id="skader-grid">
+        ${coverages.map((c,i)=>`
+          <div class="skader-card" data-idx="${i}" data-type="${c.type}" onclick="selectSkaderCard(this,${i})" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:all .15s">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${c.type}</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text)">${c.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">${c.winner} har fordelen</div>
+          </div>`).join('')}
+      </div>
+      <div id="skader-result" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr">
+          <div id="skader-img-wrap" style="background:#e0e0e0;min-height:240px;display:flex;align-items:center;justify-content:center">
+            <div id="skader-img-inner" style="text-align:center;padding:2rem">
+              <div style="font-size:32px">🔥</div>
+              <div style="font-size:13px;color:#888;margin-top:8px">Vælg en dækning for at generere billede</div>
+            </div>
+          </div>
+          <div style="padding:1.25rem">
+            <div id="skader-label" style="font-size:11px;color:var(--muted);margin-bottom:6px">SKADESEKSEMPEL</div>
+            <div id="skader-title" style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">—</div>
+            <div id="skader-desc" style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:14px">—</div>
+            <div id="skader-comparison" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+            <button onclick="generateSkaderImage()" id="skader-gen-btn" style="width:100%;background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">
+              🎨 Generér billede
+            </button>
+            <div id="skader-feedback-area" style="display:none;margin-top:10px">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Ikke tilfreds? Beskriv hvad du ønsker anderledes:</div>
+              <div style="display:flex;gap:8px">
+                <input type="text" id="skader-feedback-input" placeholder="fx 'mere dramatisk, vis vandet tydeligere'" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+                <button onclick="submitSkaderFeedback()" style="background:#1A3C2E;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">Prøv igen</button>
+              </div>
+            </div>
+            <div id="skader-limit-msg" style="display:none;margin-top:10px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400E">
+              🔒 Du har nået den daglige grænse på 3 billeder for denne forsikringstype. Grænsen nulstilles automatisk kl. 06.00.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  window._skaderCoverages = coverages;
+}
+
+function filterSkaderCards(){
+  const val = document.getElementById('skader-type-filter').value;
+  document.querySelectorAll('.skader-card').forEach(card=>{
+    card.style.display = (!val || card.dataset.type === val) ? '' : 'none';
+  });
+}
+
+function selectSkaderCard(el, idx){
+  document.querySelectorAll('.skader-card').forEach(c=>{
+    c.style.background='var(--surface)';
+    c.style.border='1px solid var(--border)';
+  });
+  el.style.background='#EAF3DE';
+  el.style.border='2px solid #1A3C2E';
+  const c = window._skaderCoverages[idx];
+  window._selectedSkader = c;
+  document.getElementById('skader-result').style.display='block';
+  document.getElementById('skader-label').textContent='SKADESEKSEMPEL — '+c.name.toUpperCase();
+  document.getElementById('skader-title').textContent='Genererer scenarie...';
+  document.getElementById('skader-desc').textContent='';
+  document.getElementById('skader-comparison').innerHTML='';
+  document.getElementById('skader-img-inner').innerHTML='<div style="font-size:13px;color:#888">Klik "Generér billede" for at starte</div>';
+  generateSkaderScenario(c);
+}
+
+async function generateSkaderScenario(c){
+  const prompt = `Du er forsikringsekspert. Baseret på denne forsikringsforskel skal du generere et kort, konkret skadeseksempel til brug i et salgsmøde.
+
+Dækning: ${c.name}
+Forsikringstype: ${c.type}
+${c.winner} har fordelen på denne dækning.
+
+Returner KUN JSON (ingen markdown) med disse felter:
+{
+  "title": "Kort overskrift på skadeseksemplet (max 10 ord)",
+  "description": "Konkret scenariebeskrivelse på 2-3 sætninger. Beskriv hvad der sker og hvad det koster.",
+  "winner_text": "Hvad ${c.winner} dækker i dette tilfælde (1 sætning)",
+  "loser_text": "Hvad det andet selskab IKKE dækker (1 sætning)",
+  "image_prompt": "Hyper-realistic DSLR photo of the physical damage. No people, no bodies, no blood. Focus on property damage only. Natural dramatic lighting. Max 25 words."
+}`;
+
+  try {
+    const res = await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'scenario', prompt})
+    });
+    const data = await res.json();
+    if(!data.text) throw new Error(data.error||'Ingen respons');
+    const text = data.text.replace(/```json|```/g,'').trim();
+    const json = JSON.parse(text);
+    window._selectedSkader._scenario = json;
+    document.getElementById('skader-title').textContent = json.title;
+    document.getElementById('skader-desc').textContent = json.description;
+    const loser = c.winnerKey === 'a' ? c.nameB : c.nameA;
+    document.getElementById('skader-comparison').innerHTML=`
+      <div style="background:#EAF3DE;border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;color:#3B6D11;font-weight:600;margin-bottom:2px">${c.winner.toUpperCase()}</div>
+        <div style="font-size:13px;color:#27500A">${json.winner_text}</div>
+      </div>
+      <div style="background:#FCEBEB;border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;color:#A32D2D;font-weight:600;margin-bottom:2px">${loser.toUpperCase()}</div>
+        <div style="font-size:13px;color:#791F1F">${json.loser_text}</div>
+      </div>`;
+  } catch(e){
+    document.getElementById('skader-title').textContent='Kunne ikke generere scenarie';
+    document.getElementById('skader-desc').textContent='Prøv igen.';
+  }
+}
+
+async function generateSkaderImage(feedbackText){
+  const c = window._selectedSkader;
+  if(!c||!c._scenario) return;
+
+  const isAdmin = window._userRole === 'admin';
+  const today = new Date().toISOString().slice(0,10);
+  const limitKey = `skader_limit_${c.type}_${today}`;
+  const count = parseInt(localStorage.getItem(limitKey)||'0');
+  const MAX = 3;
+
+  if(!isAdmin && count >= MAX && !feedbackText){
+    showSkaderLimitMessage(c.type);
+    return;
+  }
+
+  const cacheKey = `skader_img_${c.type}_${c.name}`;
+  if(!feedbackText && window._skaderImageCache && window._skaderImageCache[cacheKey]){
+    showSkaderImage(window._skaderImageCache[cacheKey], count, MAX, c.type);
+    return;
+  }
+
+  const btn = document.getElementById('skader-gen-btn');
+  btn.textContent='⏳ Genererer billede...';
+  btn.disabled=true;
+  const feedbackArea = document.getElementById('skader-feedback-area');
+  if(feedbackArea) feedbackArea.style.display='none';
+
+  const imgWrap = document.getElementById('skader-img-inner');
+  if(imgWrap) imgWrap.innerHTML='<div style="font-size:13px;color:#888">Genererer billede — 10-20 sekunder...</div>';
+
+  const prompt = feedbackText
+    ? c._scenario.image_prompt + '. User feedback: ' + feedbackText
+    : c._scenario.image_prompt;
+
+  try {
+    const res = await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        action:'dalle',
+        prompt,
+        userId: isAdmin ? null : getUserId(),
+        insuranceType: c.type,
+        coverageName: c.name,
+        promptText: c._scenario.image_prompt,
+        feedbackText: feedbackText || null
+      })
+    });
+    const data = await res.json();
+    if(!data.url) throw new Error(data.error||'Ingen URL');
+
+    if(!window._skaderImageCache) window._skaderImageCache = {};
+    window._skaderImageCache[cacheKey] = data.url;
+    const newCount = isAdmin ? count : count + 1;
+    if(!isAdmin) localStorage.setItem(limitKey, String(newCount));
+
+    showSkaderImage(data.url, newCount, MAX, c.type, isAdmin);
+
+    if(!isAdmin && newCount >= MAX){
+      btn.textContent = '🔒 Daglig grænse nået';
+      btn.disabled = true;
+      showSkaderLimitMessage(c.type);
+    } else {
+      btn.textContent = '🎨 Generér nyt billede';
+      btn.disabled = false;
+    }
+  } catch(e){
+    const el = document.getElementById('skader-img-inner');
+    if(el) el.innerHTML='<div style="font-size:13px;color:#888">Kunne ikke generere billede: '+e.message+'</div>';
+    btn.textContent='🎨 Generér nyt billede';
+    btn.disabled=false;
+  }
+}
+
+function showSkaderImage(url, count, max, type, isAdmin){
+  const wrap = document.getElementById('skader-img-wrap');
+  if(!wrap) return;
+  const remaining = max - count;
+  wrap.innerHTML=`<div style="position:relative;width:100%;height:100%">
+    <img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block;min-height:240px" alt="Skadeseksempel">
+    ${!isAdmin ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.5);color:#fff;font-size:11px;padding:3px 8px;border-radius:4px">${remaining} tilbage i dag</div>` : ''}
+  </div>`;
+  const feedbackArea = document.getElementById('skader-feedback-area');
+  if(feedbackArea && remaining > 0) feedbackArea.style.display='block';
+}
+
+function showSkaderLimitMessage(type){
+  const feedbackArea = document.getElementById('skader-feedback-area');
+  if(feedbackArea) feedbackArea.style.display='none';
+  const limitMsg = document.getElementById('skader-limit-msg');
+  if(limitMsg) limitMsg.style.display='block';
+}
+
+function submitSkaderFeedback(){
+  const input = document.getElementById('skader-feedback-input');
+  const text = input ? input.value.trim() : '';
+  if(!text) return;
+  input.value = '';
+  generateSkaderImage(text);
+}
+
+function renderTypeInTab(type){
+  const container=document.getElementById('tab-'+type);
+  const shortName = type.replace('forsikring', '').toLowerCase();
+  if(!container||!allResults[shortName])return;
+  
+  // Load user favorites
+  const userId=getUserId();
+  const prefs={favorites:userId?loadFavorites(userId,type):[]};
+  
+  const html = renderIndividualTab(type, allResults[shortName], prefs);
+container.innerHTML = html;
+  
+  const subTabs = container.querySelectorAll('.sub-tab');
+  subTabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-tab');
+      
+      // Remove active from all sub-tabs and contents in THIS container
+      container.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+      container.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+      
+      // Add active to clicked tab and its content
+      this.classList.add('active');
+      const targetContent = document.getElementById(targetId);
+      if(targetContent) targetContent.classList.add('active');
+    });
+  });
+}
+
+function ico(s){if(s==='yes')return`<svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#15803D" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;if(s==='no')return`<svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#B91C1C" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='excluded')return`<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" stroke="#9A3412" stroke-width="1.8" fill="none"/><line x1="2" y1="8" x2="8" y2="2" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round"/></svg>`;if(s==='inib')return`<svg viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="6" stroke="#92400E" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="8.5" r="1" fill="#92400E"/></svg>`;return`<svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5" stroke="#92400E" stroke-width="2" stroke-linecap="round"/></svg>`;}
+function dotCls(s){return s==='yes'?'dy':s==='no'?'dn':s==='excluded'?'dn':'dp';}
+function inibBadge(type){const label=type==='inib'?'INIB':'Undtaget';const tipText=type==='inib'?'Denne dækning er ikke nævnt i betingelserne overhovedet — hverken dækket eller fravalgt.':'Denne dækning er eksplicit undtaget eller afvist i betingelserne.';return`<div class="inib-wrap"><span class="chip ${type==='inib'?'ch-inib':'ch-exc'}">${ico(type)}&nbsp;${label}</span><div class="inib-tip">${tipText}</div></div>`;}
+
+function buildResultHtml(d,prefs){
+  prefs=prefs||{favorites:[],sort_order:[]};
+  window._prefs=prefs;
+  const aW=d.coverage.filter(c=>c.winner==='a').length;
+  const bW=d.coverage.filter(c=>c.winner==='b').length;
+  const eq=d.coverage.filter(c=>c.winner==='equal').length;
+  const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>(c.category||'').toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));};
+  const topRank=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return'★';const r=top3raw.findIndex(t=>c.category.toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));return r!==-1?r+1:null;};
+
+  // Apply saved sort order and favorites
+  let coverage=[...d.coverage];
+  if(prefs.sort_order&&prefs.sort_order.length>0){
+    const orderMap={};prefs.sort_order.forEach((cat,i)=>orderMap[cat]=i);
+    coverage.sort((a,b)=>{
+      const ai=orderMap[a.category]!==undefined?orderMap[a.category]:999;
+      const bi=orderMap[b.category]!==undefined?orderMap[b.category]:999;
+      return ai-bi;
+    });
+  }
+  // Favorites always on top
+  if(prefs.favorites&&prefs.favorites.length>0){
+    const favSet=new Set(prefs.favorites);
+    const favs=coverage.filter(c=>favSet.has(c.category));
+    const rest=coverage.filter(c=>!favSet.has(c.category));
+    coverage=[...favs,...rest];
+  }
+
+  const rows=coverage.map((c,rowIdx)=>{
+    const isTop=isTopA(c);const rank=topRank(c);
+    const aCls=dotCls(c.status_a);const aTop=isTop?' is-top':'';
+    let aBadges=`<div class="cv-badges">`;
+    if(c.status_a==='inib'||c.status_a==='no'||c.status_a==='excluded')aBadges+=inibBadge(c.status_a);
+    if(isTop&&c.status_a!=='inib'&&c.status_a!=='no'){aBadges+=`<div class="badge-tip"><span class="top-badge"><span class="top-num">${rank}</span> Top fordel</span><div class="tip-box">Dette er en af de vigtigste fordele ${d.companyA} har over ${d.companyB} på ${d.type}. ${c.amount_a.substring(0,200)}${c.amount_a.length>100?'...':''}</div></div>`;}
+    else if(c.winner==='a'&&!isTop)aBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyA} er bedre: ${c.amount_a.substring(0,200)}${c.amount_a.length>120?'...':''}</div></div>`;
+    aBadges+=`</div>`;
+    const aSalesTip=c.sales_tip&&(isTop||c.winner==='a')?`<div class="sales-hint"><span class="sales-hint-icon">→</span><p>${c.sales_tip}</p></div>`:'';
+    const confBadge=window._isAdmin&&c.confidence&&c.confidence!=='high'?`<span class="conf-badge conf-${c.confidence}">${c.confidence==='medium'?'⚠ Middel':'⚠ Lav'}</span>`:'';
+    const confTip=window._isAdmin&&c.confidence_reason?`<div style="font-size:11px;color:#92400E;margin-top:3px;font-style:italic">Admin: ${c.confidence_reason}</div>`:'';
+    const cat=(c.category||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const coA=d.companyA.replace(/'/g,"\\'");const coB=d.companyB.replace(/'/g,"\\'");
+    const fbBtn=`<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}')">⚑ Giv feedback</button>`;
+    const isFav=window._prefs&&window._prefs.favorites&&window._prefs.favorites.includes(c.category);
+    const favBtn=`<button class="fav-btn${isFav?' active':''}" onclick="toggleFav('${cat}','${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" title="${isFav?'Fjern favorit':'Tilføj favorit'}">★</button>`;
+    const dragHandle=`<span class="drag-handle" draggable="true" ondragstart="rowDragStart(event,${rowIdx})" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')" ondragend="rowDragEnd(event)">⋮⋮</span>`;
+    const bCls=dotCls(c.status_b);const bWeak=c.winner==='a'?' is-yours-weak':'';
+    let bBadges=`<div class="cv-badges">`;
+    if(c.status_b==='inib'||c.status_b==='no'||c.status_b==='excluded')bBadges+=inibBadge(c.status_b);
+    else if(c.winner==='b')bBadges+=`<div class="badge-tip"><span class="chip ch-b">Bedre dækning</span><div class="tip-box">${d.companyB} er bedre: ${c.amount_b.substring(0,200)}${c.amount_b.length>120?'...':''}</div></div>`;
+    else if(c.winner==='a')bBadges+=`<div class="badge-tip"><span class="chip ch-w">Svagere dækning</span><div class="tip-box">${d.companyB} er svagere her: ${c.amount_b.substring(0,200)}${c.amount_b.length>120?'...':''}</div></div>`;
+    bBadges+=`</div>`;
+    const bObjTip=c.objection_tip&&c.winner==='b'?`<div class="sales-hint objection-hint"><span class="sales-hint-icon">↩</span><p>${c.objection_tip}</p></div>`:'';
+    return`<tr class="${isFav?'fav-row':''}" data-category="${cat}" data-row="${rowIdx}" data-winner="${c.winner||'equal'}" ondragover="rowDragOver(event)" ondrop="rowDrop(event,${rowIdx},'${d.companyA.replace(/'/g,"\'")}','${d.companyB.replace(/'/g,"\'")}','${d.type}')"><td><div class="cv-cell${aTop}"><div class="cv-cat">${dragHandle}${favBtn}<div class="dot ${aCls}">${ico(c.status_a)}</div>${c.category}${confBadge}</div><div class="cv-det">${c.amount_a}</div>${confTip}${aBadges}${aSalesTip}${fbBtn}</div></td><td><div class="cv-cell${bWeak}"><div class="cv-cat"><div class="dot ${bCls}">${ico(c.status_b)}</div>${c.category}</div><div class="cv-det">${c.amount_b}</div>${bBadges}${bObjTip}<button class="fb-btn" onclick="openFb('${cat}','${coA}','${coB}','${d.type}','b')">⚑ Giv feedback</button></div></td></tr>`;
+  }).join('');
+  const p=d.pitch;
+  return`<div class="tabs"><button class="tab active" id="t1" onclick="sw('compare')">Dækningsoversigt</button><button class="tab" id="t2" onclick="sw('pitch')">Salgspitch</button><button class="tab" id="t3" onclick="sw('send')">Send til kunde</button></div>
+<div class="sum-bar"><strong>${d.companyA}</strong> bedre på ${aW} punkter<span class="sum-dot"></span><strong>${d.companyB}</strong> bedre på ${bW} punkter<span class="sum-dot"></span>Ens på ${eq} punkter</div>
+<div class="filter-tabs">
+  <button class="filter-tab active" onclick="filterCoverage('all')">📊 Alle dækninger</button>
+  <button class="filter-tab" onclick="filterCoverage('yours')">✅ Dine fordele (${aW})</button>
+  <button class="filter-tab" onclick="filterCoverage('theirs')">⚠️ Deres fordele (${bW})</button>
+  <button class="filter-tab" onclick="filterCoverage('equal')">⚖️ Ens niveau (${eq})</button>
+</div>
+<div style="margin:1rem;padding:0 1rem"><div style="position:relative"><input type="text" id="coverage-search-${type}" placeholder="🔍 Søg i dækninger... (fx 'ferieudlejning', 'skybrud', 'beløb')" style="width:100%;padding:0.75rem 1rem 0.75rem 2.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);transition:border-color 0.15s" onkeyup="searchCoverages('${type}')" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"><span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none">🔍</span></div><div id="search-results-count-${type}" style="font-size:12px;color:var(--muted);margin-top:0.5rem;padding-left:0.25rem"></div></div>
+<table class="sync-table"><thead><tr><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyA)}</div><div><div class="co-nm">${d.companyA}<span class="yours-tag">Dit selskab</span></div><div class="co-sub">Hold musen over rækker for salgstips</div></div></div></th><th><div class="co-head-sync"><div class="co-logo-wrap">${logoHtml(d.companyB)}</div><div><div class="co-nm">${d.companyB}</div><div class="co-sub">Kundens nuværende selskab</div></div></div></th></tr></thead><tbody>${rows}</tbody></table>
+<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center"><span style="display:flex;align-items:center;gap:4px"><span class="dot dy" style="width:14px;height:14px">✓</span>Dækket</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dn" style="width:14px;height:14px">✗</span>Undtaget</span><span style="display:flex;align-items:center;gap:4px"><span class="dot dp" style="width:14px;height:14px">?</span>INIB (Ikke nævnt i betingelserne)</span></div>
+<div class="disclaimer" style="margin-top:10px">${d.disclaimer}</div>
+${window._isAdmin?(()=>{const lowConf=coverage.filter(c=>c.confidence==='low'||c.confidence==='medium');return lowConf.length>0?`<div class="conf-panel"><div class="conf-panel-title">⚠ Admin: ${lowConf.length} dækning${lowConf.length>1?'er':''} med lav/middel sikkerhed</div>${lowConf.map(c=>`<div class="conf-item"><strong>${c.category}</strong> — ${c.confidence==='low'?'Lav':'Middel'} sikkerhed${c.confidence_reason?': '+c.confidence_reason:''}</div>`).join('')}</div>`:'';})():''}
+</div>
+
+<div id="vp" class="hidden">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:1rem;overflow:hidden"><div style="background:var(--accent);padding:10px 14px;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,.8)" stroke-width="1.2"/><path d="M5.5 6.5C5.5 5.1 6.6 4 8 4s2.5 1.1 2.5 2.5c0 1.4-1.1 2.5-2.5 2.5v1.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12.5" r=".7" fill="white"/></svg><span style="font-size:13px;font-weight:600;color:#fff;letter-spacing:.02em">IQSales Coach</span><span style="font-size:11px;color:rgba(255,255,255,.55);margin-left:2px">— stil mig et spørgsmål om salg eller dækninger</span></div><div id="coach-messages" style="padding:12px 14px;min-height:80px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"><div style="font-size:13px;color:var(--muted);font-style:italic">Hej! Jeg kender hele analysen. Spørg mig om alt fra dækningsdetaljer til salgstaktik.</div></div><div id="coach-suggestions" style="padding:0 14px 10px;display:flex;gap:6px;flex-wrap:wrap"></div><div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px"><input id="coach-input" type="text" placeholder="Stil et spørgsmål til coachen..." style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text)" onkeydown="if(event.key==='Enter')sendCoach()"><button onclick="sendCoach()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap">Send →</button></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem"><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden"><div class="pitch-col-header ph-green" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><polyline points="1,7 4.5,10.5 12,3" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>Top 3 fordele — ${d.companyA}</div><ul class="pitch-kp" style="padding:4px 0">${(p.advantages_a||p.advantages||[]).map(x=>`<li style="padding:8px 14px 8px 32px;font-size:13px">${x}</li>`).join('')}</ul></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden"><div class="pitch-col-header ph-red" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1L1 11.5h11L6.5 1z" stroke="rgba(255,255,255,.8)" stroke-width="1.2" fill="none"/><line x1="6.5" y1="5" x2="6.5" y2="8.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>Top 3 fordele — ${d.companyB}</div><ul class="pitch-kp" style="padding:4px 0">${(p.advantages_b||[]).map(x=>`<li style="padding:8px 14px 8px 32px;font-size:13px">${x}</li>`).join('')}</ul></div></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1rem"><div class="pitch-col-header ph-blue" style="padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1a5.5 5.5 0 1 0 0 11A5.5 5.5 0 0 0 6.5 1z" stroke="rgba(255,255,255,.8)" stroke-width="1.2"/><path d="M4.5 5s.4-1.5 2-1.5 2 1 2 1.8c0 1.2-2 1.7-2 3" stroke="white" stroke-width="1.2" stroke-linecap="round"/><circle cx="6.5" cy="10" r=".7" fill="white"/></svg>Remotivering — spørgsmål til telefonen</div><ul style="list-style:none;padding:4px 0">${(p.remotivering||[]).map((q,i)=>`<li style="padding:9px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start"><span style="width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${i+1}</span>${q}</li>`).join('')}</ul></div>
+<div style="background:var(--accent);border-radius:var(--r);padding:14px 18px;margin-bottom:1rem;display:flex;align-items:center;gap:12px"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="flex-shrink:0"><path d="M9 2l1.8 3.6 4 .6-2.9 2.8.7 4L9 11l-3.6 1.9.7-4L3.2 6.2l4-.6L9 2z" stroke="rgba(255,255,255,.8)" stroke-width="1.3" fill="none"/></svg><div><div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">En-liner</div><div style="font-size:14px;font-weight:500;color:#fff;line-height:1.5">${p.enliner||''}</div></div></div>
+<div class="pitch-actions" style="display:flex;gap:8px"><button class="btn-act btn-sec" id="cp-btn" onclick="copyP()">Kopiér pitch</button><button class="btn-act btn-pri" onclick="window.print()">Print / Gem som PDF</button></div>
+<div class="disclaimer">${d.disclaimer}</div></div>
+
+<div id="vs" class="hidden">
+<div class="send-intro">Vælg de dækninger du vil sende til kunden. Rapporten forklarer hver dækning i simpelt sprog — ingen forsikringsjargon.</div>
+<div class="coverage-selector"><div class="sel-controls"><button class="sel-ctrl-btn" onclick="selAll(true)">Vælg alle</button><button class="sel-ctrl-btn" onclick="selAll(false)">Fravælg alle</button><button class="sel-ctrl-btn" onclick="selOnlyTop()">Kun top fordele</button></div><div class="sel-grid" id="sel-grid"></div></div>
+<div id="customer-preview"></div>
+<div class="send-actions"><button class="btn-act btn-sec" onclick="printCustomer()">Gem som PDF</button><button class="btn-act btn-pri" onclick="mailCustomer()">Åbn i mail</button></div></div>`;
+}
+
+function renderResult(d){window._d=d;document.getElementById('result').innerHTML=`<div class="result-section">${buildResultHtml(d)}</div>`;buildSelector(d);initCoach(d);}
+
+function buildSelector(d){
+  const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());
+  const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>(c.category||'').toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));};
+  const grid=document.getElementById('sel-grid');
+  if(!grid)return;
+  grid.innerHTML=d.coverage.map((c,i)=>{const isTop=isTopA(c);return`<label class="sel-item${isTop?' selected':''}" id="sel-${i}" onclick="toggleSel(${i})"><input type="checkbox" id="chk-${i}"${isTop?' checked':''} onclick="event.stopPropagation();toggleSel(${i})"><div class="sel-item-text"><div class="sel-item-cat">${c.category}${isTop?` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">Top</span>`:''}</div><div class="sel-item-det">${(typeof c.amount_a==='string'?c.amount_a:(c.amount_a?.text||'')).substring(0,60)}${(typeof c.amount_a==='string'?c.amount_a:(c.amount_a?.text||'')).length>60?'...':''}</div></div></label>`;}).join('');
+  updateCustomerPreview();
+}
+
+function toggleSel(i){const chk=document.getElementById('chk-'+i);const lbl=document.getElementById('sel-'+i);chk.checked=!chk.checked;lbl.classList.toggle('selected',chk.checked);updateCustomerPreview();}
+function selAll(v){const d=window._d;d.coverage.forEach((_,i)=>{document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
+function selOnlyTop(){const d=window._d;const top3raw=(d.top3_a||[]).map(s=>s.toLowerCase().trim());const isTopA=c=>{if(c.status_b==='no'||c.status_b==='excluded'||c.status_b==='inib')return true;return top3raw.some(t=>(c.category||'').toLowerCase().includes(t)||t.includes((c.category||'').toLowerCase()));};d.coverage.forEach((c,i)=>{const v=isTopA(c);document.getElementById('chk-'+i).checked=v;document.getElementById('sel-'+i).classList.toggle('selected',v);});updateCustomerPreview();}
+
+function updateCustomerPreview(){
+  const d=window._d;if(!d)return;
+  const selected=d.coverage.filter((_,i)=>document.getElementById('chk-'+i)?.checked);
+  if(!selected.length){document.getElementById('customer-preview').innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:13px">Vælg mindst én dækning ovenfor</div>';return;}
+  const rows=selected.map(c=>{const aIcon=ico(c.status_a),bIcon=ico(c.status_b);const aCls=dotCls(c.status_a),bCls=dotCls(c.status_b);const isBetter=c.winner==='a';return`<div class="pdf-row"><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${aCls}" style="width:14px;height:14px">${aIcon}</span>${c.category}${isBetter?` <span class="pdf-better">Bedre hos os</span>`:''}</div><div class="pdf-det">${c.amount_a}</div>${c.customer_explanation?`<div class="pdf-exp">${c.customer_explanation}</div>`:''}</div><div class="pdf-cell"><div class="pdf-cat"><span class="dot ${bCls}" style="width:14px;height:14px">${bIcon}</span>${c.category}</div><div class="pdf-det">${c.amount_b}</div></div></div>`;}).join('');
+  document.getElementById('customer-preview').innerHTML=`<div class="customer-pdf-preview" id="pdf-content"><div class="pdf-header"><div class="pdf-title">Forsikringssammenligning</div><div class="pdf-sub">${d.companyA} vs. ${d.companyB} · ${d.type} · ${new Date().toLocaleDateString('da-DK',{day:'numeric',month:'long',year:'numeric'})}</div></div><div class="pdf-body" style="padding:0"><div class="pdf-row-header"><div class="pdf-col-head">${d.companyA}</div><div class="pdf-col-head">${d.companyB}</div></div>${rows}</div><div class="pdf-footer">${d.disclaimer}</div></div>`;
+}
+
+function printCustomer(){window.print();}
+function mailCustomer(){const d=window._d;if(!d)return;const subject=encodeURIComponent(`Forsikringssammenligning: ${d.companyA} vs. ${d.companyB}`);const body=encodeURIComponent(`Hej,\n\nHermed en sammenligning af din nuværende forsikring hos ${d.companyB} og vores tilbud hos ${d.companyA}.\n\nJeg vedlægger en detaljeret sammenligning. Kontakt mig endelig hvis du har spørgsmål.\n\nMed venlig hilsen`);window.location.href=`mailto:?subject=${subject}&body=${body}`;}
+
+function sw(t){document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));const map={compare:'t1',pitch:'t2',send:'t3'};document.getElementById(map[t]).classList.add('active');document.getElementById('vc').classList.toggle('hidden',t!=='compare');document.getElementById('vp').classList.toggle('hidden',t!=='pitch');document.getElementById('vs').classList.toggle('hidden',t!=='send');if(t==='send'&&window._d){buildSelector(window._d);}}
+
+function filterCoverage(filter){
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  const rows=document.querySelectorAll('.sync-table tbody tr');
+  rows.forEach(row=>{
+    const winner=row.getAttribute('data-winner');
+    if(filter==='all'){
+      row.style.display='';
+    }else if(filter==='yours'){
+      row.style.display=winner==='a'?'':'none';
+    }else if(filter==='theirs'){
+      row.style.display=winner==='b'?'':'none';
+    }else if(filter==='equal'){
+      row.style.display=winner==='equal'?'':'none';
+    }
+  });
+}
+
+// Live Search Function
+function searchCoverages(type){
+  const query=document.getElementById('coverage-search-'+type).value.toLowerCase().trim();
+  const rows=document.querySelectorAll('.sync-table tbody tr');
+  const counter=document.getElementById('search-results-count-'+type);
+  if(!query){rows.forEach(row=>row.style.display='');counter.textContent='';return;}
+  let visibleCount=0;
+  rows.forEach(row=>{const text=row.textContent.toLowerCase();const matches=text.includes(query);row.style.display=matches?'':'none';if(matches)visibleCount++;});
+  counter.textContent=`Viser ${visibleCount} af ${rows.length} dækninger`;
+  if(visibleCount===0){counter.innerHTML='<span style="color:var(--danger)">⚠️ Ingen dækninger matcher din søgning</span>';}
+}
+
+// Favoritter Toggle Function
+async function toggleFav(category,companyA,companyB,type){
+  const userId=getUserId();
+  if(!userId){showToast('error','Log ind først','Du skal være logget ind for at bruge favoritter');return;}
+  const key=`${userId}-${type}-favorites`;
+  let favorites=JSON.parse(localStorage.getItem(key)||'[]');
+  const index=favorites.indexOf(category);
+  const wasAdded=index===-1;
+  if(index>-1){favorites.splice(index,1);}else{favorites.push(category);}
+  localStorage.setItem(key,JSON.stringify(favorites));
+  try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/user_preferences',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({user_id:userId,insurance_type:type,favorites:favorites})});}catch(e){console.error('Failed to sync favorites:',e);}
+  showToast('success',wasAdded?'⭐ Tilføjet til favoritter':'☆ Fjernet fra favoritter',category);
+  renderTypeInTab(type);
+}
+
+function loadFavorites(userId,type){const key=`${userId}-${type}-favorites`;return JSON.parse(localStorage.getItem(key)||'[]');}
+
+function copyP(){const d=window._d;if(!d)return;const p=d.pitch;let t=`SALGSPITCH – ${d.companyA} til kunde hos ${d.companyB} (${d.type})\n\nTOP 3 FORDELE ${d.companyA.toUpperCase()}\n${(p.advantages_a||p.advantages||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nTOP 3 FORDELE ${d.companyB.toUpperCase()}\n${(p.advantages_b||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nREMOTIVERING\n${(p.remotivering||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\nEN-LINER\n${p.enliner||''}\n\n---\n${d.disclaimer}`;navigator.clipboard.writeText(t).then(()=>{const btn=document.getElementById('cp-btn');btn.textContent='Kopieret!';setTimeout(()=>btn.textContent='Kopiér pitch',2000);});}
+
+let coachHistory=[];
+function initCoach(d){coachHistory=[];const suggestions=[`Hvordan forklarer jeg den vigtigste fordel ved ${d.companyA}?`,`Hvad siger jeg hvis kunden er tilfreds med ${d.companyB}?`,'Forklar mig forskellen på "undtaget" og "INIB"','Giv mig et eksempel på et godt åbningsspørgsmål'];const sg=document.getElementById('coach-suggestions');if(sg)sg.innerHTML=suggestions.map(s=>`<button onclick="useCoachSuggestion('${s.replace(/'/g,"\\'")}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">${s}</button>`).join('');}
+function useCoachSuggestion(s){document.getElementById('coach-input').value=s;sendCoach();}
+
+let coachMsgCount=0;
+function addCoachMsg(text,role,question=''){const msgs=document.getElementById('coach-messages');if(!msgs)return;const isUser=role==='user';const msgId='cmsg-'+(++coachMsgCount);const div=document.createElement('div');div.style.cssText=`display:flex;gap:8px;align-items:flex-start;${isUser?'flex-direction:row-reverse':''}`;const feedbackHtml=!isUser&&text!=='Tænker...'?`<div style="display:flex;gap:4px;margin-top:5px"><button onclick="coachFeedback('${msgId}',true,'${question.replace(/'/g,"\\'")}')" id="${msgId}-up" title="Godt svar" style="font-size:13px;background:none;border:none;cursor:pointer;opacity:.5;transition:opacity .15s;padding:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">👍</button><button onclick="coachFeedback('${msgId}',false,'${question.replace(/'/g,"\\'")}')" id="${msgId}-dn" title="Dårligt svar" style="font-size:13px;background:none;border:none;cursor:pointer;opacity:.5;transition:opacity .15s;padding:0" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5">👎</button></div><div id="${msgId}-form" style="display:none;margin-top:5px"><input id="${msgId}-txt" type="text" placeholder="Hvad var galt?" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;width:100%;font-family:'DM Sans',sans-serif"><button onclick="sendCoachFeedback('${msgId}','${question.replace(/'/g,"\\'")}','${text.substring(0,200).replace(/'/g,"\\'")}')" style="margin-top:4px;font-size:12px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif">Send feedback</button></div>`:'';const formatted=text.split('\n').map(line=>{const l=line.trim();if(l.startsWith('•'))return`<div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--accent2);flex-shrink:0;font-weight:600">•</span><span>${l.substring(1).trim()}</span></div>`;if(l==='')return'';return`<div style="margin-bottom:4px">${l}</div>`;}).join('');div.innerHTML=`<div style="width:26px;height:26px;border-radius:50%;background:${isUser?'var(--accent2)':'var(--accent)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:#fff">${isUser?'Du':'IQ'}</div><div style="max-width:80%"><div style="background:${isUser?'var(--accent-light)':'var(--bg)'};border:1px solid var(--border);border-radius:${isUser?'12px 4px 12px 12px':'4px 12px 12px 12px'};padding:8px 12px;font-size:13px;color:var(--text);line-height:1.6">${isUser?text:formatted}</div>${feedbackHtml}</div>`;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+
+function coachFeedback(msgId,positive,question){if(positive){document.getElementById(msgId+'-up').style.opacity=1;document.getElementById(msgId+'-dn').style.opacity=.3;saveCoachFeedback(question,'','positive');const btn=document.getElementById(msgId+'-up');btn.insertAdjacentHTML('afterend','<span style="font-size:11px;color:var(--accent2);margin-left:6px">Tak for din feedback ✓</span>');document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;}else{document.getElementById(msgId+'-dn').style.opacity=1;document.getElementById(msgId+'-up').style.opacity=.3;document.getElementById(msgId+'-form').style.display='block';}}
+async function sendCoachFeedback(msgId,question,answer){const comment=document.getElementById(msgId+'-txt').value.trim();saveCoachFeedback(question,comment,'negative',answer);document.getElementById(msgId+'-form').style.display='none';document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;const container=document.getElementById(msgId+'-form').parentElement;container.insertAdjacentHTML('beforeend','<div style="font-size:11px;color:var(--accent2);margin-top:4px">Tak for din konstruktive feedback — det hjælper os med at forbedre coachen ✓</div>');}
+async function saveCoachFeedback(question,comment,type,answer=''){const d=window._d;if(!d)return;try{await fetch('https://pnzpdgjstzuapgknagsa.supabase.co/rest/v1/feedback',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({company_a:d.companyA,company_b:d.companyB,insurance_type:d.type,category:'IQSales Coach',issue_type:type==='positive'?'coach_positiv':'coach_negativ',comment:question+(comment?'\nFeedback: '+comment:''),user_id:getSupabaseUserId()})});}catch(e){}}
+
+async function sendCoachFeedback(msgId,question,answer){const comment=document.getElementById(msgId+'-txt').value.trim();saveCoachFeedback(question, comment, 'negative', answer);document.getElementById(msgId+'-form').style.display='none';document.getElementById(msgId+'-up').disabled=true;document.getElementById(msgId+'-dn').disabled=true;const container=document.getElementById(msgId+'-form').parentElement;container.insertAdjacentHTML('beforeend','<div style="font-size:11px;color:var(--accent2);margin-top:4px">Tak for din konstruktive feedback — det hjælper os med at forbedre coachen ✓</div>');}
+  
+async function sendGeneralFb(btn){
+  const textarea=document.getElementById('general-fb-text');
+  const text=textarea.value.trim();
+  if(!text){alert('Skriv venligst din feedback inden du sender.');return;}
+  btn.disabled=true;btn.textContent='Sender...';
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/feedback',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},
+      body:JSON.stringify({company_a:'Generel',company_b:'Generel',insurance_type:'Generel',category:'Generel feedback',issue_type:'generel',comment:text,user_id:getSupabaseUserId()})
+    });
+  }catch(e){}
+  textarea.value='';
+  const ok=document.getElementById('general-fb-success');
+  ok.style.display='flex';
+  btn.disabled=false;btn.textContent='Send feedback';
+  setTimeout(()=>ok.style.display='none',4000);
+}
+
+// ============================================================
+// FAVORITES & ROW SORTING
+// ============================================================
+
+async function toggleFav(category, nameA, nameB, type){
+  const prefs=window._prefs||{favorites:[],sort_order:[]};
+  const idx=prefs.favorites.indexOf(category);
+  if(idx===-1)prefs.favorites.push(category);
+  else prefs.favorites.splice(idx,1);
+  window._prefs=prefs;
+  await savePreferences(nameA,nameB,type,prefs.favorites,prefs.sort_order);
+  // Re-render
+  const shortName = type.replace('forsikring', '').toLowerCase();
+const d=allResults[shortName];
+  if(d){
+    const container=document.getElementById('tab-'+type);
+    if(container){container.innerHTML=buildResultHtml(d,prefs);initCoach(d);}
+  }
+}
+
+let dragSrcRow=-1;
+
+function rowDragStart(event, rowIdx){
+  dragSrcRow=rowIdx;
+  event.dataTransfer.effectAllowed='move';
+  event.dataTransfer.setData('text/plain', rowIdx);
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('tr[data-row="'+rowIdx+'"]');
+    rows.forEach(r=>r.style.opacity='0.4');
+  },0);
+}
+
+function rowDragOver(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect='move';
+  const tr=event.target.closest('tr[data-row]');
+  document.querySelectorAll('tr[data-row]').forEach(r=>r.classList.remove('drag-over'));
+  if(tr)tr.classList.add('drag-over');
+}
+
+function rowDragEnd(event){
+  document.querySelectorAll('tr[data-row]').forEach(r=>{
+    r.style.opacity='';
+    r.classList.remove('drag-over');
+  });
+  dragSrcRow=-1;
+}
+
+async function rowDrop(event, targetIdx, nameA, nameB, type){
+  event.preventDefault();
+  event.stopPropagation();
+  const srcIdx=dragSrcRow;
+  document.querySelectorAll('tr[data-row]').forEach(r=>{
+    r.style.opacity='';
+    r.classList.remove('drag-over');
+  });
+  if(srcIdx===-1||srcIdx===targetIdx)return;
+
+  const shortName = type.replace('forsikring', '').toLowerCase();
+const d=allResults[shortName];
+  if(!d)return;
+  const prefs=window._prefs||{favorites:[],sort_order:[]};
+  // Build current display order
+  let coverage=[...d.coverage];
+  if(prefs.sort_order&&prefs.sort_order.length>0){
+    const orderMap={};prefs.sort_order.forEach((cat,i)=>orderMap[cat]=i);
+    coverage.sort((a,b)=>(orderMap[a.category]??999)-(orderMap[b.category]??999));
+  }
+  if(prefs.favorites&&prefs.favorites.length>0){
+    const favSet=new Set(prefs.favorites);
+    const favs=coverage.filter(c=>favSet.has(c.category));
+    const rest=coverage.filter(c=>!favSet.has(c.category));
+    coverage=[...favs,...rest];
+  }
+  // Move row
+  const [moved]=coverage.splice(srcIdx,1);
+  coverage.splice(targetIdx,0,moved);
+  prefs.sort_order=coverage.map(c=>c.category);
+  window._prefs=prefs;
+  await savePreferences(nameA,nameB,type,prefs.favorites,prefs.sort_order);
+  // Re-render
+  const container=document.getElementById('tab-'+type);
+  if(container){container.innerHTML=buildResultHtml(d,prefs);initCoach(d);}
+}
+
+buildMenus();
+checkCacheStatus();
+updateBetingelsesLinks();
+renderUploadZones();
+setTimeout(()=>{updateCddDisplay('a');updateCddDisplay('b');},50);
+// Load cache panel after slight delay to ensure auth is ready
+setTimeout(()=>renderCachePanel(),800);
+
+// ═══════════════════════════════════════════════════════════
+// SCREENSHOT DETECTION
+// ═══════════════════════════════════════════════════════════
+
+let screenshotPopupShown = false;
+
+function hasActiveAnalysis() {
+  const result = document.getElementById('result');
+  return result && result.querySelector('.tabs') !== null;
+}
+
+function showScreenshotPopup() {
+  if (screenshotPopupShown || !hasActiveAnalysis()) return;
+  screenshotPopupShown = true;
+  const overlay = document.createElement('div');
+  overlay.className = 'screenshot-overlay';
+  overlay.id = 'screenshot-overlay';
+  overlay.innerHTML = `
+    <div class="screenshot-modal">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <i class="ti ti-camera" aria-hidden="true" style="font-size:22px;color:#854F0B;"></i>
+        <span style="font-size:16px;font-weight:500;color:var(--text);">Screenshot registreret</span>
+      </div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 12px;">IQSales-analyser er fortrolige interne salgsværktøjer. Ved at dele dette screenshot erklærer du dig indforstået med at:</p>
+      <ul style="font-size:13px;color:var(--muted);line-height:1.9;margin:0 0 20px;padding-left:18px;">
+        <li>Oplysningerne kan indeholde fejl og er ikke verificerede</li>
+        <li>Du selv bærer det fulde ansvar for eventuelle fejlinformationer til kunden</li>
+        <li>Deling af interne analyser er i strid med virksomhedens retningslinjer</li>
+      </ul>
+      <button onclick="closeScreenshotPopup()" style="width:100%;padding:10px;font-size:13px;border-radius:8px;background:#FAEEDA;border:0.5px solid #EF9F27;color:#633806;cursor:pointer;font-family:inherit;font-weight:500;">Jeg forstår og accepterer</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+}
+
+function closeScreenshotPopup() {
+  const overlay = document.getElementById('screenshot-overlay');
+  if (overlay) {
+    overlay.style.animation = 'fadeOut 0.2s forwards';
+    setTimeout(() => { overlay.remove(); document.body.style.overflow = ''; }, 200);
+  }
+  setTimeout(() => { screenshotPopupShown = false; }, 3000);
+}
+
+// Detect PrintScreen key
+document.addEventListener('keyup', e => {
+  if (e.key === 'PrintScreen') showScreenshotPopup();
+});
+
+// Detect Snipping Tool / Alt+Tab (window blur → focus within 3 sec)
+let blurTime = 0;
+window.addEventListener('blur', () => { blurTime = Date.now(); });
+window.addEventListener('focus', () => {
+  const elapsed = Date.now() - blurTime;
+  if (elapsed > 80 && elapsed < 3000) showScreenshotPopup();
+});
+// GLOBAL SALGSCOACH
+// ═══════════════════════════════════════════════════════════
+
+// Global chat history - persists across tab switches
+let coachChatHistory = [];
+function resetCoachHistory() { coachChatHistory = []; }
+
+function renderGlobalCoach() {
+  const container = document.getElementById('tab-coach');
+  if (!container) return;
+
+  // Build summary of all analyses
+  const analyses = Object.entries(allResults).map(([shortName, data]) => {
+    const wins = (data.coverage||[]).filter(c=>c.winner==='a').length;
+    const loses = (data.coverage||[]).filter(c=>c.winner==='b').length;
+    return `${data.type}: ${wins} fordele, ${loses} ulemper`;
+  }).join('\n');
+
+  const companyA = Object.values(allResults)[0]?.companyA || 'Dit selskab';
+  const companyB = Object.values(allResults)[0]?.companyB || 'Kundens selskab';
+  const types = Object.values(allResults).map(d=>d.type).join(', ');
+
+  container.innerHTML = `
+    <div style="padding:1rem 0;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;">
+        <div style="background:#1A3C2E;padding:12px 16px;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/><circle cx="9" cy="16" r="1" fill="#95D5B2" stroke="none"/><circle cx="15" cy="16" r="1" fill="#95D5B2" stroke="none"/></svg>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:white;">AI Salgscoach</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.6);">Kender hele din analyse — ${companyA} vs ${companyB} · ${Object.keys(allResults).length} forsikringstyper</div>
+          </div>
+        </div>
+
+        <div id="global-chat-messages" style="padding:16px;min-height:200px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#1A3C2E;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg>
+            </div>
+            <div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.65;max-width:85%;">
+              Hej! Jeg kender hele din analyse af <strong>${companyA}</strong> vs <strong>${companyB}</strong> på tværs af ${Object.keys(allResults).length} forsikringstyper. Hvad vil du gerne have hjælp til?
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <input id="global-chat-input" placeholder="Stil et spørgsmål om din analyse..." style="flex:1;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;background:var(--bg);color:var(--text);" onkeydown="if(event.key==='Enter'){sendGlobalCoachMessage('${companyA}','${companyB}','${types}');}">
+          <button onclick="sendGlobalCoachMessage('${companyA}','${companyB}','${types}')" style="padding:8px 14px;background:#1A3C2E;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Send</button>
+        </div>
+
+        <div style="padding:8px 12px 10px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--muted);padding-top:3px;margin-right:2px;">Hurtigspørgsmål:</span>
+          ${['Stærkeste argument på tværs?','Bedste åbningssætning?','Hvad er vi svage på?','Generer remotivering'].map(q=>
+            `<button onclick="document.getElementById('global-chat-input').value='${q}';sendGlobalCoachMessage('${companyA}','${companyB}','${types}');" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:20px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;">${q}</button>`
+          ).join('')}
+        </div>
+      </div>
+
+      <!-- Mødeforberedelse -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A3C2E" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Mødeforberedelse</div><div style="font-size:11px;color:var(--muted);">Baseret på alle forsikringstyper · ⏱️ ca. 10 sek.</div></div>
+          <button id="global-prep-btn" onclick="generateGlobalSection('prep','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;white-space:nowrap;">Generer ▼</button>
+        </div>
+        <div id="global-prep-body" style="display:none;padding:14px 16px;"><span id="global-prep-loading" style="color:var(--muted);font-size:13px;">Genererer...</span></div>
+      </div>
+
+      <!-- Indvendingsbehandling -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4m0 4h.01"/></svg>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Indvendingsbehandling</div><div style="font-size:11px;color:var(--muted);">Typiske indsigelser fra kunder · ⏱️ ca. 10 sek.</div></div>
+          <button id="global-obj-btn" onclick="generateGlobalSection('obj','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;white-space:nowrap;">Generer ▼</button>
+        </div>
+        <div id="global-obj-body" style="display:none;padding:14px 16px;"><span id="global-obj-loading" style="color:var(--muted);font-size:13px;">Genererer...</span></div>
+      </div>
+
+      <!-- Remotivering -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text);">Remotivering af mødet</div><div style="font-size:11px;color:var(--muted);">Manus til opkaldet inden mødet · ⏱️ ca. 10 sek.</div></div>
+          <button id="global-remot-btn" onclick="generateGlobalSection('remot','${companyA}','${companyB}','${types}')" style="margin-left:auto;font-size:11px;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit;white-space:nowrap;">Generer ▼</button>
+        </div>
+        <div id="global-remot-body" style="display:none;padding:14px 16px;"><span id="global-remot-loading" style="color:var(--muted);font-size:13px;">Genererer...</span></div>
+      </div>
+    </div>
+  `;
+
+  // Restore chat history if any
+  if (coachChatHistory.length > 0) {
+    const messagesEl = document.getElementById('global-chat-messages');
+    coachChatHistory.forEach(msg => {
+      messagesEl.innerHTML += msg;
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+}
+
+async function sendGlobalCoachMessage(companyA, companyB, types) {
+  const input = document.getElementById('global-chat-input');
+  const messagesEl = document.getElementById('global-chat-messages');
+  if (!input || !messagesEl) return;
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+
+  // Build context from all analyses
+  const topA = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='a').slice(0,3).map(c=>`${d.type}: ${c.category}`)).join(', ');
+  const topB = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='b').slice(0,2).map(c=>`${d.type}: ${c.category}`)).join(', ');
+
+  const botIcon = `<div style="width:28px;height:28px;border-radius:50%;background:#1A3C2E;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg></div>`;
+
+  const userMsg = `<div style="display:flex;gap:10px;align-items:flex-start;justify-content:flex-end;">
+    <div style="background:#EAF3DE;border-radius:12px 12px 0 12px;padding:10px 14px;font-size:13px;color:#3B6D11;line-height:1.65;max-width:85%;">${question}</div>
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--surface-2,#F8F6F1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:var(--muted);">dig</div>
+  </div>`;
+
+  messagesEl.innerHTML += userMsg;
+  coachChatHistory.push(userMsg);
+
+  const loadingId = 'gcl-' + Date.now();
+  const loadingMsg = `<div id="${loadingId}" style="display:flex;gap:10px;align-items:flex-start;">${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--muted);">Tænker...</div></div>`;
+  messagesEl.innerHTML += loadingMsg;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    const resp = await fetch('/api/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+      body: JSON.stringify({
+        system: await buildCoachSystem(companyA, companyB, types, topA, topB),
+        message: question,
+        max_tokens: 1000,
+        user_id: getUserId() || null,
+        section_type: 'chat'
+      })
+    });
+    const r = await resp.json();
+    const answer = formatCoachAnswer(r.text || 'Beklager, prøv igen.');
+    const botMsg = `<div style="display:flex;gap:10px;align-items:flex-start;">${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.65;max-width:85%;">${answer}</div></div>`;
+    const el = document.getElementById(loadingId);
+    if (el) el.outerHTML = botMsg;
+    coachChatHistory.push(botMsg);
+  } catch(e) {
+    const el = document.getElementById(loadingId);
+    if (el) el.querySelector('div:last-child').textContent = 'Fejl — prøv igen';
+  }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function generateGlobalSection(section, companyA, companyB, types) {
+  const bodyEl = document.getElementById('global-' + section + '-body');
+  const btnEl = document.getElementById('global-' + section + '-btn');
+  const loadingEl = document.getElementById('global-' + section + '-loading');
+  if (!bodyEl) return;
+
+  const isOpen = bodyEl.style.display !== 'none';
+  if (isOpen && bodyEl.dataset.generated === '1') {
+    bodyEl.style.display = 'none';
+    if (btnEl) btnEl.textContent = 'Generer ▼';
+    return;
+  }
+
+  bodyEl.style.display = 'block';
+  if (btnEl) btnEl.textContent = 'Skjul ▲';
+  if (bodyEl.dataset.generated === '1') return;
+
+  if (loadingEl) loadingEl.innerHTML = '<span style="color:var(--muted)">Genererer...</span>';
+
+  const topA = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='a').slice(0,3).map(c=>`${d.type} - ${c.category}: ${c.amount_a||''}`)).join('\n');
+  const topB = Object.values(allResults).flatMap(d=>(d.coverage||[]).filter(c=>c.winner==='b').slice(0,2).map(c=>`${d.type} - ${c.category}: ${c.amount_b||''}`)).join('\n');
+
+  const prompts = {
+    prep: `Du er en erfaren dansk forsikringssælger. Analysen sammenligner ${companyA} vs ${companyB} på tværs af: ${types}.\n\nFORDELE FOR ${companyA}:\n${topA}\n\nFORDELE FOR ${companyB}:\n${topB}\n\nLav en mødeforberedelse med de 3 vigtigste punkter på tværs af ALLE forsikringstyper. For hvert punkt: kort titel og 1-2 sætninger om hvordan man præsenterer det bedst. Vær konkret. Svar på dansk.`,
+    obj: `Du er en erfaren dansk forsikringssælger. Analysen sammenligner ${companyA} vs ${companyB} på: ${types}.\n\nFORDELE FOR ${companyB} (indsigelser at forberede sig på):\n${topB}\n\nLav 4 typiske indvendinger fra kunder hos ${companyB} og giv et konkret svar til hver.\nFormat:\n"[Indvending]"\n→ [Svar]\n\nVær naturlig. Svar på dansk.`,
+    remot: `Du er en erfaren dansk forsikringssælger. Analysen sammenligner ${companyA} vs ${companyB} på: ${types}.\n\nVIGTIGSTE FORDELE FOR ${companyA}:\n${topA}\n\nSkriv et telefonmanus til remotivering af mødet. 3 sektioner:\n1) Åbning\n2) Værdiskabelse\n3) Bekræftelse af møde\n\nNaturligt sprog. Brug [navn]. Svar på dansk.`
+  };
+
+  try {
+    const response = await fetch('/api/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+      body: JSON.stringify({
+        message: prompts[section],
+        max_tokens: 1000,
+        user_id: getUserId() || null,
+        section_type: section
+      })
+    });
+    const result = await response.json();
+    const text = result.text || '';
+    if (section === 'prep') bodyEl.innerHTML = renderPrepContent(text);
+    else if (section === 'obj') bodyEl.innerHTML = renderObjContent(text);
+    else if (section === 'remot') bodyEl.innerHTML = renderRemotContent(text);
+    bodyEl.dataset.generated = '1';
+  } catch(e) {
+    if (loadingEl) loadingEl.innerHTML = '<span style="color:#DC2626">Kunne ikke generere — prøv igen</span>';
+  }
+}
+
+// Reset coach chat history when new analysis starts
+function renderGlobalSend() {
+  const container = document.getElementById('tab-send');
+  if (!container) return;
+  const companyA = Object.values(allResults)[0]?.companyA || 'Dit selskab';
+  const companyB = Object.values(allResults)[0]?.companyB || 'Kundens selskab';
+  container.innerHTML = `
+    <div style="padding:1rem 0;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;">
+        <div style="background:#1A3C2E;padding:12px 16px;display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:white;">Send til kunde</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.6);">Generer en oversigt til ${companyB}-kunden</div>
+          </div>
+        </div>
+        <div style="padding:2rem;text-align:center;color:var(--muted);">
+          <div style="font-size:40px;margin-bottom:1rem;">📧</div>
+          <div style="font-size:15px;font-weight:500;color:var(--text);margin-bottom:8px;">Kundemail kommer snart</div>
+          <div style="font-size:13px;line-height:1.6;max-width:400px;margin:0 auto;">Her vil du kunne generere en kunde-venlig rapport over de vigtigste forskelle mellem <strong>${companyA}</strong> og <strong>${companyB}</strong> — klar til at sende direkte til kunden.</div>
+        </div>
+      </div>
+    </div>`;
+}
+const _origAnalyzeLegacy = typeof analyze === 'function' ? analyze : null;
+function formatCoachAnswer(text) {
+  return text
+    .replace(/---+/g, '')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^#{1,3}\s+(.+)$/gm, '<strong style="font-size:13px;display:block;margin-bottom:4px;">$1</strong>')
+    .replace(/^[-•]\s+(.+)$/gm, '<div style="padding:3px 0 3px 12px;border-left:2px solid #1A3C2E;margin:4px 0;">$1</div>')
+    .replace(/^\d+\.\s+(.+)$/gm, '<div style="padding:3px 0;margin:4px 0;"><strong style="color:#1A3C2E;">$&</strong></div>')
+    .replace(/\n{2,}/g, '<br><br>')
+    .replace(/\n/g, '<br>')
+    .trim();
+}
+
+function toggleCoachSection(bodyId, btnId) {
+  const body = document.getElementById(bodyId);
+  const btn = document.getElementById(btnId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  if (isOpen) {
+    body.style.display = 'none';
+    if (btn) btn.textContent = 'Generer ▼';
+  } else {
+    body.style.display = 'block';
+    if (btn) btn.textContent = 'Skjul ▲';
+    const parts = bodyId.split('-');
+    const section = parts[0];
+    const shortName = parts.slice(2).join('-');
+    if (!document.getElementById(bodyId).dataset.generated) {
+      generateCoachSection(shortName, section);
+    }
+  }
+}
+
+async function generateCoachSection(shortName, section) {
+  const loadingEl = document.getElementById(section + '-loading-' + shortName);
+  const bodyEl = document.getElementById(section + '-body-' + shortName);
+  if (!bodyEl || bodyEl.dataset.generated === '1') return;
+
+  const data = allResults[shortName];
+  if (!data) return;
+
+  const topA = (data.coverage || []).filter(c => c.winner === 'a').slice(0, 5).map(c => `${c.category}: ${c.amount_a || ''}`).join('\n');
+  const topB = (data.coverage || []).filter(c => c.winner === 'b').slice(0, 3).map(c => `${c.category}: ${c.amount_b || ''}`).join('\n');
+
+  const prompts = {
+    prep: `Du er en erfaren dansk forsikringssælger. Baseret på denne analyse af ${data.companyA} vs ${data.companyB} for ${data.type}:\n\nFORDELE FOR ${data.companyA}:\n${topA}\n\nFORDELE FOR ${data.companyB}:\n${topB}\n\nLav en mødeforberedelse med de 3 vigtigste punkter sælgeren skal fremhæve. For hvert punkt: kort titel og 1-2 sætninger om hvordan man præsenterer det bedst. Vær konkret og praktisk. Svar på dansk.`,
+    obj: `Du er en erfaren dansk forsikringssælger. Baseret på denne analyse af ${data.companyA} vs ${data.companyB} for ${data.type}:\n\nFORDELE FOR ${data.companyA}:\n${topA}\n\nFORDELE FOR ${data.companyB}:\n${topB}\n\nLav 4 typiske indvendinger fra kunder hos ${data.companyB} og giv et konkret svar til hver. Format per punkt:\n"[Indvending]"\n→ [Svar]\n\nVær naturlig i sproget. Svar på dansk.`,
+    remot: `Du er en erfaren dansk forsikringssælger. Baseret på denne analyse af ${data.companyA} vs ${data.companyB} for ${data.type}:\n\nVIGTIGSTE FORDELE FOR ${data.companyA}:\n${topA}\n\nSkriv et telefonmanus til remotivering af mødet inden det afholdes. Opdel i 3 sektioner:\n1) Åbning\n2) Værdiskabelse\n3) Bekræftelse af møde\n\nManus skal føles naturligt. Brug [navn] som placeholder. Svar på dansk.`
+  };
+
+  if (loadingEl) loadingEl.innerHTML = '<span style="color:var(--muted)">Genererer...</span>';
+
+  try {
+    const response = await fetch('/api/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+      body: JSON.stringify({
+        message: prompts[section],
+        max_tokens: 1000,
+        user_id: getUserId() || null,
+        section_type: section
+      })
+    });
+
+    const result = await response.json();
+    const text = result.text || '';
+
+    if (section === 'prep') bodyEl.innerHTML = renderPrepContent(text);
+    else if (section === 'obj') bodyEl.innerHTML = renderObjContent(text);
+    else if (section === 'remot') bodyEl.innerHTML = renderRemotContent(text);
+    bodyEl.dataset.generated = '1';
+
+  } catch(e) {
+    if (loadingEl) loadingEl.innerHTML = '<span style="color:#DC2626">Kunne ikke generere — prøv igen</span>';
+  }
+}
+
+function renderPrepContent(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+  let counter = 1;
+  let inPoint = false;
+
+  lines.forEach(line => {
+    const cleaned = line.replace(/^[\*\#\-\d\.]+\s*/, '').trim();
+    if (!cleaned) return;
+    if (counter <= 3 && (line.match(/^\d/) || line.match(/^\*\*/) || (line.length < 80 && !inPoint))) {
+      if (inPoint) html += '</div></div>';
+      html += `<div style="display:flex;gap:12px;align-items:flex-start;"><div style="width:22px;height:22px;border-radius:50%;background:#EAF3DE;color:#3B6D11;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${counter}</div><div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;">${cleaned}</div>`;
+      counter++; inPoint = true;
+    } else if (inPoint) {
+      html += `<div style="font-size:13px;color:var(--muted);line-height:1.6;">${formatCoachAnswer(cleaned)}</div>`;
+    }
+  });
+  if (inPoint) html += '</div></div>';
+  return html + '</div>';
+}
+
+function renderObjContent(text) {
+  // Split on blank lines or lines starting with a quote/number
+  const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+  let counter = 1;
+
+  blocks.forEach(block => {
+    const lines = block.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+
+    // First line = indvending (question), rest = svar
+    const q = lines[0].replace(/^[\"\„\»\d\.\-\*"#]+\s*/, '').replace(/["""]/g, '').trim();
+    const aLines = lines.slice(1).map(l => l.replace(/^[→\-\*]+\s*/, '').trim()).filter(l => l);
+    const a = aLines.join('<br>');
+    if (!q || !a) return;
+
+    html += `<div style="display:flex;gap:12px;align-items:flex-start;">
+      <div style="width:24px;height:24px;border-radius:50%;background:#FAEEDA;color:#854F0B;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${counter}</div>
+      <div style="flex:1;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;border-bottom:1px solid var(--border);">"${formatCoachAnswer(q)}"</div>
+        <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.7;">${formatCoachAnswer(a)}</div>
+      </div>
+    </div>`;
+    counter++;
+  });
+
+  // Fallback: try original splitting if no blocks found
+  if (counter === 1) {
+    const parts = text.split(/\n(?=["„»\d])/);
+    parts.forEach(block => {
+      const lines = block.split('\n').filter(l => l.trim());
+      if (lines.length < 2) return;
+      const q = lines[0].replace(/^[\"\„\»\d\.\-\*"]+\s*/, '').replace(/["""]/g, '').trim();
+      const a = lines.slice(1).map(l => l.replace(/^[→\-\*]+\s*/, '').trim()).join('<br>');
+      if (!q || !a) return;
+      html += `<div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border-radius:50%;background:#FAEEDA;color:#854F0B;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${counter}</div>
+        <div style="flex:1;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <div style="padding:10px 14px;background:var(--surface-2,#F8F6F1);font-size:13px;color:var(--muted);font-style:italic;border-bottom:1px solid var(--border);">"${formatCoachAnswer(q)}"</div>
+          <div style="padding:10px 14px;font-size:13px;color:var(--text);line-height:1.7;">${formatCoachAnswer(a)}</div>
+        </div>
+      </div>`;
+      counter++;
+    });
+  }
+
+  return html + '</div>';
+}
+
+function renderRemotContent(text) {
+  const sectionDefs = [
+    { keys: ['åbning','1.','1)'], label: 'Åbning', bg: '#EAF3DE', color: '#3B6D11', border: '#C6E5B3' },
+    { keys: ['værdiskab','konkret','2.','2)'], label: 'Værdiskabelse', bg: '#EFF6FF', color: '#185FA5', border: '#B5D4F4' },
+    { keys: ['bekræft','mødet','3.','3)'], label: 'Bekræftelse af møde', bg: '#F5F3FF', color: '#534AB7', border: '#CECBF6' }
+  ];
+  const lines = text.split('\n');
+  let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+  let cur = null; let curLines = [];
+
+  const flush = () => {
+    if (!cur || !curLines.length) return;
+    const content = curLines
+      .filter(l => l.trim())
+      .map(l => formatCoachAnswer(l.replace(/^[\*\#\-]+\s*/, '').trim()))
+      .join('<br>');
+    html += `<div style="border:1px solid ${cur.border};border-radius:8px;overflow:hidden;">
+      <div style="padding:8px 14px;background:${cur.bg};font-size:11px;font-weight:600;color:${cur.color};text-transform:uppercase;letter-spacing:.06em;">${cur.label}</div>
+      <div style="padding:12px 14px;font-size:13px;color:var(--text);line-height:1.75;font-style:italic;">${content}</div>
+    </div>`;
+    curLines = [];
+  };
+
+  lines.forEach(line => {
+    const lower = line.toLowerCase();
+    const matched = sectionDefs.find(s => s.keys.some(k => lower.includes(k)));
+    if (matched) {
+      flush();
+      cur = matched;
+      const rest = line.replace(/^[\*\#\d\.\)\-]+\s*/, '').trim();
+      // Skip if rest is just the section label
+      const isJustLabel = matched.keys.some(k => rest.toLowerCase() === k || rest.toLowerCase() === matched.label.toLowerCase());
+      if (rest && !isJustLabel) curLines.push(rest);
+    } else {
+      curLines.push(line);
+    }
+  });
+  flush();
+  return html + '</div>';
+}
+
+async function sendCoachMessage(shortName, companyA, companyB, type) {
+  const input = document.getElementById('chat-input-' + shortName);
+  const messagesEl = document.getElementById('chat-messages-' + shortName);
+  if (!input || !messagesEl) return;
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+
+  const data = allResults[shortName];
+  const topA = data ? (data.coverage||[]).filter(c=>c.winner==='a').slice(0,5).map(c=>c.category).join(', ') : '';
+  const topB = data ? (data.coverage||[]).filter(c=>c.winner==='b').slice(0,3).map(c=>c.category).join(', ') : '';
+
+  const botIcon = `<div style="width:28px;height:28px;border-radius:50%;background:#1A3C2E;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 3a3 3 0 0 1 3 3v5H9V6a3 3 0 0 1 3-3z"/></svg></div>`;
+
+  messagesEl.innerHTML += `<div style="display:flex;gap:10px;align-items:flex-start;justify-content:flex-end;">
+    <div style="background:#EAF3DE;border-radius:12px 12px 0 12px;padding:10px 14px;font-size:13px;color:#3B6D11;line-height:1.65;max-width:85%;">${question}</div>
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--surface-2,#F8F6F1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:var(--muted);">dig</div>
+  </div>`;
+
+  const loadingId = 'cl-' + Date.now();
+  messagesEl.innerHTML += `<div id="${loadingId}" style="display:flex;gap:10px;align-items:flex-start;">${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--muted);">Tænker...</div></div>`;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    const resp = await fetch('/api/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+      body: JSON.stringify({
+        system: await buildCoachSystem(companyA, companyB, type, topA, topB),
+        message: question,
+        max_tokens: 1000,
+        user_id: getUserId() || null,
+        section_type: 'chat'
+      })
+    });
+    const r = await resp.json();
+    const answer = formatCoachAnswer(r.text || 'Beklager, prøv igen.');
+    const el = document.getElementById(loadingId);
+    if (el) el.innerHTML = `${botIcon}<div style="background:var(--surface-2,#F8F6F1);border-radius:0 12px 12px 12px;padding:10px 14px;font-size:13px;color:var(--text);line-height:1.65;max-width:85%;">${answer}</div>`;
+  } catch(e) {
+    const el = document.getElementById(loadingId);
+    if (el) el.querySelector('div:last-child').textContent = 'Fejl — prøv igen';
+  }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+</script>
+
+<style>
+/* Prevent text selection on result area */
+#result {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+/* Watermark */
+.iq-watermark {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+  display: none;
+}
+.iq-watermark-text {
+  position: absolute;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0,0,0,0.07);
+  white-space: nowrap;
+  letter-spacing: 1px;
+  font-family: 'DM Sans', sans-serif;
+  user-select: none;
+  pointer-events: none;
+  transform: rotate(-30deg);
+}
+/* Screenshot warning modal */
+#screenshot-warning {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+}
+#screenshot-warning.show { display: flex; }
+.screenshot-warning-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+.screenshot-warning-box h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #1A1A1A; }
+.screenshot-warning-box p { font-size: 14px; color: #6B7280; line-height: 1.6; margin-bottom: 1.5rem; }
+.screenshot-warning-btn { background: #1D9E75; color: #fff; border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+</style>
+
+<!-- Watermark overlay -->
+<div class="iq-watermark" id="iqWatermark" aria-hidden="true"></div>
+
+<!-- Screenshot warning -->
+<div id="screenshot-warning">
+  <div class="screenshot-warning-box">
+    <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+    <h3>Fortroligt indhold</h3>
+    <p>Dette materiale er til intern brug og må ikke deles eller gemmes. Adgang er logget.</p>
+    <button class="screenshot-warning-btn" onclick="document.getElementById('screenshot-warning').classList.remove('show')">Forstået</button>
+  </div>
+</div>
+
+<script>
+// ==================== SCREENSHOT BESKYTTELSE ====================
+
+async function logScreenshotAttempt() {
+  try {
+    const userId = getSupabaseUserId();
+    const name = window._userName || 'Ukendt';
+    const _ssToken = getAccessToken();
+    await fetch(SUPABASE_URL + '/rest/v1/analytics', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + (_ssToken || SUPABASE_KEY),
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        event_type: 'screenshot_attempt',
+        user_id: userId,
+        metadata: JSON.stringify({ name: name, url: window.location.href, timestamp: new Date().toISOString() })
+      })
+    });
+  } catch(e) {}
+}
+
+function showScreenshotWarning() {
+  document.getElementById('screenshot-warning').classList.add('show');
+  logScreenshotAttempt();
+}
+
+// Show watermark when results are visible
+function updateWatermark() {
+  const resultEl = document.getElementById('result');
+  const watermark = document.getElementById('iqWatermark');
+  if (!resultEl || !watermark) return;
+  const hasResults = resultEl.innerHTML.trim().length > 500;
+  if (!hasResults) { watermark.style.display = 'none'; return; }
+  watermark.style.display = 'block';
+
+  // Build repeating grid pattern
+  const name = window._userName || 'IQSales';
+  const dateStr = new Date().toLocaleDateString('da-DK');
+  const text = 'FORTROLIGT · ' + name + ' · ' + dateStr + ' · IQSales';
+
+  const W = window.innerWidth, H = window.innerHeight;
+  const cols = Math.ceil(W / 320) + 2;
+  const rows = Math.ceil(H / 180) + 2;
+
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * 300 - 60;
+      const y = r * 160 - 40;
+      html += '<div class="iq-watermark-text" style="left:' + x + 'px;top:' + y + 'px;">' + text + '</div>';
+    }
+  }
+  watermark.innerHTML = html;
+}
+
+// Intercept keyboard screenshot shortcuts
+document.addEventListener('keydown', function(e) {
+  const resultEl = document.getElementById('result');
+  if (!resultEl || resultEl.innerHTML.trim().length < 100) return;
+
+  // PrtScr (alle varianter - Samsung Fn+Insert, standard PrtScr)
+  if (e.key === 'PrintScreen') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Alt + PrtScr (aktivt vindue)
+  if (e.altKey && e.key === 'PrintScreen') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Win + PrtScr (gemmer direkte til Screenshots-mappe)
+  if (e.metaKey && e.key === 'PrintScreen') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Win + Shift + S (Snipping Tool / Klippeværktøj)
+  if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Ctrl+P / Cmd+P (print/gem som PDF)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Ctrl+S / Cmd+S (gem siden)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+3 (fuld skærm)
+  if (e.metaKey && e.shiftKey && e.key === '3') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+4 (markeret område)
+  if (e.metaKey && e.shiftKey && e.key === '4') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+5 (skærmoptagelse)
+  if (e.metaKey && e.shiftKey && e.key === '5') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Mac: Cmd+Shift+6 (Touch Bar)
+  if (e.metaKey && e.shiftKey && e.key === '6') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Fn+F11 / Fn+Shift+F11 (Mac keyboard på Windows)
+  if (e.shiftKey && e.key === 'F11') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+  // Ctrl+F (find/søg - kan bruges til at lokalisere indhold)
+  // Win+G (Game Bar - skærmoptagelse)
+  if (e.metaKey && e.key.toLowerCase() === 'g') {
+    e.preventDefault();
+    showScreenshotWarning();
+    return;
+  }
+});
+
+// Also block context menu on results
+document.addEventListener('contextmenu', function(e) {
+  const resultEl = document.getElementById('result');
+  if (resultEl && resultEl.contains(e.target) && resultEl.innerHTML.trim().length > 100) {
+    e.preventDefault();
+  }
+});
+
+// Track focus_lost - stille logning uden advarsel
+document.addEventListener('visibilitychange', function() {
+  const resultEl = document.getElementById('result');
+  if (document.hidden && resultEl && resultEl.innerHTML.trim().length > 100) {
+    try {
+      const userId = getSupabaseUserId();
+      const name = window._userName || 'Ukendt';
+      const _flToken = getAccessToken();
+      fetch(SUPABASE_URL + '/rest/v1/analytics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + (_flToken || SUPABASE_KEY),
           'Prefer': 'return=minimal'
         },
         body: JSON.stringify({
-          user_id: req.body.userId,
-          event_type: 'analysis_failed',
-          insurance_type: req.body.type,
-          company_a: req.body.companyA,
-          company_b: req.body.companyB
+          event_type: 'focus_lost',
+          user_id: userId,
+          metadata: JSON.stringify({ name: name, timestamp: new Date().toISOString() })
         })
       });
-    }
- 
-    return res.status(500).json({ 
-      error: error.message || 'Analysis failed'
-    });
+    } catch(e) {}
   }
-}
- 
-// ═══════════════════════════════════════════════════════════════
-// PROMPT BUILDER WITH TYPE-SPECIFIC INSTRUCTIONS
-// ═══════════════════════════════════════════════════════════════
- 
-function buildPrompt(companyA, companyB, type, textA, textB, feedbacks, topImportant, topIrrelevant, mandatoryCategories = []) {
-  let prompt = `Sammenlign ${companyA} og ${companyB} for ${type}.
- 
-SELSKAB A (${companyA}) BETINGELSER:
-${textA.substring(0, 100000)}
- 
-SELSKAB B (${companyB}) BETINGELSER:
-${textB.substring(0, 100000)}
-`;
- 
-  if (feedbacks.length > 0) {
-    prompt += `\n\nGODKENDT FEEDBACK (VIGTIGT - tag højde for dette):\n`;
-    prompt += `REGEL 1: Dækninger markeret som prioriterede (⭐) SKAL altid inkluderes i dine 20 coverage items.\n`;
-    prompt += `REGEL 2: Feedback der er knyttet til et specifikt selskab gælder kun for det selskab — brug det til at beskrive det selskabs dækning præcist.\n`;
-    prompt += `REGEL 3: Inkluder specifikke detaljer (beløb, procenter, tidsrum, undtagelser) direkte i "reason"-feltet. Forkort ikke.\n`;
-    if (mandatoryCategories.length > 0) {
-      prompt += `\n⭐ OBLIGATORISKE DÆKNINGER (skal altid med):\n`;
-      mandatoryCategories.forEach((cat, i) => { prompt += `${i + 1}. ${cat}\n`; });
-    }
-    prompt += `\nFEEDBACK:\n`;
-    feedbacks.forEach(function(f, i) {
-      const companyTag = f.company ? ` [${f.company}]` : '';
-      const priorityTag = f.priority ? ' ⭐' : '';
-      prompt += `${i + 1}.${priorityTag}${companyTag} ${f.category}: ${f.comment}\n`;
-    });
-  }
- 
-  // Add vigtig/ligegyldig ratings
-  if (topImportant && topImportant.length > 0) {
-    prompt += `\n\nSÆLGERNES PRIORITETER (baseret på afstemninger):\n`;
-    prompt += `FREMHÆV SÆRLIGT disse dækninger - sælgerne finder dem vigtige for kunderne:\n`;
-    topImportant.forEach(function(cat, i) {
-      prompt += `${i+1}. ${cat}\n`;
-    });
-  }
+});
 
-  if (topIrrelevant && topIrrelevant.length > 0) {
-    prompt += `\n\nNEDPRIORITÉR disse dækninger - sælgerne finder dem ligegyldige:\n`;
-    topIrrelevant.forEach(function(cat, i) {
-      prompt += `${i+1}. ${cat}\n`;
-    });
-    prompt += `(Medtag kun hvis der er en markant forskel)\n`;
-  }
+// Watch for result changes to update watermark
+const resultObserver = new MutationObserver(updateWatermark);
+window.addEventListener('DOMContentLoaded', function() {
+  const resultEl = document.getElementById('result');
+  if (resultEl) resultObserver.observe(resultEl, { childList: true, subtree: true });
+});
+</script>
 
-  // Add type-specific instructions
-  const typeGuide = getTypeSpecificGuide(type);
-  if (typeGuide) {
-    prompt += `\n\n${typeGuide}`;
-  }
- 
-  prompt += `\n\n⚠️ VIGTIGT: Returner MAX 20 coverage items.
- 
-PRIORITÉR I DENNE RÆKKEFØLGE:
-1. Store beløbsforskelle (f.eks. 50.000 kr vs 100.000 kr)
-2. Dækninger hvor kun ÉT selskab dækker (status: yes vs no/inib)
-3. Markant bedre vilkår (f.eks. selvrisiko 2.500 kr vs 5.000 kr)
-4. Kritiske dækninger som kunden ofte spørger om
- 
-SPRING OVER:
-- Dækninger hvor begge er "inib" (ikke nævnt af nogen)
-- Meget små forskelle under 5.000 kr
-- Ansvarsforsikring (medmindre markant forskel)
- 
-Returner JSON med: type, companyA, companyB, coverage (array), pitch, top3_a, top3_b.`;
- 
-  return prompt;
+<div style="text-align:center; padding:16px; font-size:12px; color:#7A7870; border-top:1px solid #E3E1D9; margin-top:2rem;">
+  <a href="/privacy.html" target="_blank" style="color:#2D6A4F; text-decoration:none;">Privatlivspolitik</a>
+  &nbsp;·&nbsp;
+  <a href="/terms.html" target="_blank" style="color:#2D6A4F; text-decoration:none;">Brugerbetingelser</a>
+  &nbsp;·&nbsp;
+  <a href="mailto:support@iqsales.dk" style="color:#2D6A4F; text-decoration:none;">support@iqsales.dk</a>
+  &nbsp;·&nbsp;
+  CVR 46572424
+  &nbsp;·&nbsp;
+  © 2026 IQSales
+</div>
+
+</body>
+</html>
+
+<script>
+// ==================== KÆKKE KOMMENTARER ====================
+window._userName = window._userName || '';
+function safeStr(v){return typeof v==='string'?v:(v?.text||v?.description||v?.detail||'');}
+
+function isDanishHoliday(d) {
+  var m=d.getMonth()+1,day=d.getDate(),y=d.getFullYear();
+  if(['1/1','5/6','24/12','25/12','26/12','31/12'].includes(m+'/'+day))return true;
+  var a=y%19,b=Math.floor(y/100),c=y%100,d2=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),hh=(19*a+b-d2-g+15)%30,ii=Math.floor(c/4),k=c%4,l=(32+2*e+2*ii-hh-k)%7,m2=Math.floor((a+11*hh+22*l)/451),mo=Math.floor((hh+l-7*m2+114)/31),de=(hh+l-7*m2+114)%31+1;
+  var easter=new Date(y,mo-1,de);
+  for(var o of[-3,-2,1,39,49,50]){var hd=new Date(easter);hd.setDate(hd.getDate()+o);if(hd.getMonth()+1===m&&hd.getDate()===day)return true;}
+  return false;
 }
- 
-function getTypeSpecificGuide(type) {
-  const guides = {
-    'Sundhedsforsikring': `
-🔍 SPECIFIKT FOR SUNDHEDSFORSIKRING:
-Find konkrete dækninger: Behandlingsgaranti (ventetid), Speciallæge, Fysioterapi, Psykolog, Kiropraktor, Scanning/MR, Kræftbehandling, Operationer, Tandbehandling, Medicin.
-Vær specifik om ventetider og maksimumsbeløb!`,
- 
-    'Lystfartøj': `
-🔍 SPECIFIKT FOR LYSTFARTØJ:
-Find konkrete dækninger som: Kaskoforsikring, Maskinskade, Trailer, Bjærgning, Sejlområde, Udstyr om bord.
-ALDRIG bare "Ukendt dækning" - find det specifikke navn!`,
- 
-    'Fritidshus': `
-🔍 SPECIFIKT FOR FRITIDSHUS:
-DIFFERENTIER bygningsskader: "Bygning - Stormskade", "Bygning - Vandskade", "Bygning - Solceller"
-ALDRIG bare "Bygning" uden specifikation!`,
- 
-    'Hund': `
-🔍 SPECIFIKT FOR HUND:
-Find konkrete dækninger: Veterinærbehandling, Hundesygdom, Tandbehandling, Ansvar.
-ALDRIG "Ukendt dækning"!`,
- 
-    'Motorcykel': `
-🔍 SPECIFIKT FOR MOTORCYKEL:
-Vær specifik om: Nyværdierstatning (hvor længe?), Kaskodækning, Glasskader, Tilbehør.`,
- 
-    'Campingvogn': `
-🔍 SPECIFIKT FOR CAMPINGVOGN:
-Differentier: Vognen selv vs Fortelt vs Indbo vs Udstyr.`
+function getAnalysesToday(){return parseInt(localStorage.getItem('iqsales_analyses_'+new Date().toDateString())||'0',10);}
+function incrementAnalysesToday(){var n=getAnalysesToday()+1;localStorage.setItem('iqsales_analyses_'+new Date().toDateString(),n);return n;}
+function isFirstEverAnalysis(){return!localStorage.getItem('iqsales_first_analysis_done');}
+function markFirstAnalysisDone(){localStorage.setItem('iqsales_first_analysis_done','1');}
+
+function showQuip(msg){
+  var container=document.querySelector('.toast-container');
+  if(!container){container=document.createElement('div');container.className='toast-container';document.body.appendChild(container);}
+  var el=document.createElement('div');el.className='toast';el.style.cssText='border-left:4px solid #1D9E75;';
+  el.innerHTML='<div class="toast-icon">\ud83d\udcac</div><div class="toast-content"><div class="toast-title">'+msg+'</div></div><div class="toast-close">\xd7</div>';
+  container.appendChild(el);
+  setTimeout(function(){el.classList.add('show');},10);
+  setTimeout(function(){el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.remove();},400);},6000);
+  el.querySelector('.toast-close').addEventListener('click',function(){el.classList.add('hide');setTimeout(function(){if(el.parentNode)el.remove();},400);});
+}
+
+function isWeekday(d){var dow=d.getDay();return dow>=1&&dow<=5&&!isDanishHoliday(d);}
+
+function getWorkdayStreak(){
+  var streak=0;
+  var check=new Date();
+  check.setHours(0,0,0,0);
+  // Start fra i dag eller seneste hverdag
+  while(!isWeekday(check)){check.setDate(check.getDate()-1);}
+  // Gå baglæns dag for dag (kun hverdage)
+  for(var i=0;i<365;i++){
+    var key='iqsales_analyses_'+check.toDateString();
+    var count=parseInt(localStorage.getItem(key)||'0',10);
+    if(count>0){
+      streak++;
+      // Find forrige hverdag
+      check.setDate(check.getDate()-1);
+      while(!isWeekday(check)){check.setDate(check.getDate()-1);}
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function showStreakQuip(name){
+  var streak=getWorkdayStreak();
+  if(streak<2) return;
+  var n=name?', '+name:'';
+  var msg;
+  if(streak>=10) msg='\ud83d\udd25 '+streak+' hverdage i str\u00e6k'+n+' \u2014 du er usl\u00e5elig!';
+  else if(streak>=5) msg='\ud83d\udd25 '+streak+' hverdage i str\u00e6k'+n+' \u2014 hold den i gang!';
+  else msg='\ud83d\udd25 '+streak+' hverdage i str\u00e6k'+n+' \u2014 godt k\u00f8rt!';
+  setTimeout(function(){showQuip(msg);},5000);
+}
+
+function showDayQuip(name){
+  var n=name?', '+name:'',d=new Date(),h=d.getHours(),dow=d.getDay();
+  if(isDanishHoliday(d)){setTimeout(function(){showQuip('Har du ikke fri'+n+'? \ud83d\ude04 Respekt for indsatsen!');},2500);return;}
+  if(dow===1&&h>=5&&h<12){setTimeout(function(){showQuip('Ny uge, nye kunder \u2014 lad os komme i gang'+n+'! \ud83d\udcbc');},2500);return;}
+  if(dow===5&&h>=12&&h<22){setTimeout(function(){showQuip('Sidste m\u00f8de inden weekend eller planl\u00e6gger du n\u00e6ste uge'+n+'? Uanset hvad, er jeg her for dig! \ud83d\udd25');},2500);return;}
+  if(h>=22||h<5){setTimeout(function(){showQuip('Sent p\u00e5 den'+n+' \u2014 du g\u00e5r benh\u00e5rdt efter at blive \u00e5rets s\u00e6lger! \ud83c\udf19');},2500);return;}
+  showStreakQuip(name);
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  setTimeout(function(){
+    var name = window._userName || '';
+    if(name) {
+      showDayQuip(name.split(' ')[0]);
+    } else if(window._sb){
+      window._sb.auth.getSession().then(function(res){
+        var session=res.data&&res.data.session;if(!session)return;
+        window._sb.from('profiles').select('full_name').eq('id',session.user.id).single().then(function(res2){
+          var name=res2.data&&res2.data.full_name?res2.data.full_name.split(' ')[0]:'';
+          window._userName = window._userName || name;
+          showDayQuip(name);
+        });
+      });
+    }
+  }, 500);
+});
+
+var _quipToggleDone=false;
+var _origToggleType=window.toggleType;
+if(typeof _origToggleType==='function'){
+  window.toggleType=function(btn){
+    _origToggleType(btn);
+    var rare={'Lystf\u00e6rt\u00f8jsforsikring':'Lystf\u00e6rt\u00f8j? Sp\u00e6ndende kunde! \ud83d\udea2','Campingvognsforsikring':'Campingvogn \u2014 ikke hverdagskost! \ud83d\ude90','Vetrank\u00f8ret\u00f8jsforsikring':'Vetrank\u00f8ret\u00f8j \u2014 en \u00e6gte entusiast! \ud83c\udfce\ufe0f','Sundhedsforsikring':'Sundhedsforsikring \u2014 en vigtig \u00e9n! \ud83c\udfe5'};
+    var type=btn.dataset.type;
+    if(btn.classList.contains('selected')){
+      if(rare[type]){setTimeout(function(){showQuip(rare[type]);},300);return;}
+      if(window.selectedTypes&&window.selectedTypes.length>=6&&!_quipToggleDone){
+        _quipToggleDone=true;
+        setTimeout(function(){showQuip('Ambiti\u00f8st \u2014 '+window.selectedTypes.length+' typer p\u00e5 \u00e9n gang! Du udfordrer mig \ud83d\ude04');},300);
+      }
+    }else{_quipToggleDone=false;}
   };
- 
-  return guides[type] || null;
-}
- 
-// ═══════════════════════════════════════════════════════════════
-// SYSTEM PROMPT - ENHANCED WITH EXPLICIT RULES
-// ═══════════════════════════════════════════════════════════════
- 
-function getSystemPrompt(type) {
-  return `Du er Danmarks mest erfarne forsikringsekspert med 20+ års erfaring i at sammenligne forsikringsbetingelser.
- 
-# DIN OPGAVE
-Analyser de to sæt forsikringsbetingelser MEGET nøje og identificer præcist hvad hvert selskab dækker og IKKE dækker.
- 
-# KRITISKE REGLER FOR SAMMENLIGNING
- 
-## ✅ REGEL 1: Højere beløb = Fordel
-Hvis Selskab A dækker 50.000 kr og Selskab B dækker 100.000 kr → winner=b
- 
-## ✅ REGEL 2: Kun én nævner dækningen = Fordel
-Hvis Selskab A nævner "blæsevejr" og Selskab B ikke gør → winner=a
-VIGTIGT: Dette gælder MEDMINDRE Selskab B eksplicit undtager det.
- 
-## ✅ REGEL 3: Bedre vilkår = Fordel
-Lavere selvrisiko, længere periode, bredere geografi = Fordel
- 
-## ⚖️ REGEL 4: Vage beløb = Equal
-"50.000 kr" vs "fremgår af police" → winner=equal
- 
-## 🚫 REGEL 5: Spring over når begge er ens negative
-Hvis BEGGE ikke nævner det (inib+inib) → SKIP!
-Hvis BEGGE eksplicit undtager (no+no) → SKIP!
-Vi vil KUN se dækninger hvor der er en REEL FORSKEL!
- 
-## ✅ REGEL 6: Dækket med begrænsninger > Undtaget
-Hvis A dækker (selv med begrænsninger) OG B eksplicit undtager → winner=a
-Eksempel:
-- A: "Dækket op til 10% - dog ikke fra ubeboet bolig" → status_a=yes
-- B: "Ikke dækket - huset anses ubeboet ved weekendophold" → status_b=no
-→ winner=a (A dækker, B undtager!)
- 
-## 📊 Status-definitioner (brug KUN disse 4):
-- **yes**: Dækkes eksplicit med konkrete vilkår
-- **no**: Forsikringen nævner det men dækker det IKKE (f.eks. "vi dækker ikke skader på løsøre")
-- **excluded**: Eksplicit UNDTAGET — forsikringen dækker normalt denne type men undtager specifikt dette scenarie (f.eks. "storm dækkes, men ikke hvis bygningen er ubeboet")
-- **inib**: Ikke Nævnt I Betingelserne — dækningen omtales slet ikke
- 
-## 🔥 KRITISK: FORSKEL PÅ "no" OG "excluded"
-- **no** = Forsikringen siger direkte at denne ting ikke dækkes: "Skader på løsøre er ikke dækket"
-- **excluded** = Forsikringen dækker normalt, men undtager SPECIFIKT dette scenarie: "Stormskade dækkes — dog ikke hvis ejendommen er ubeboet mere end 60 dage"
- 
-## 🔥 KRITISK: STATUS OG AMOUNT KONSISTENS
-Når du skriver status og amount, skal de MATCHE:
-- Hvis status="yes" → amount skal beskrive hvad der dækkes (f.eks. "Op til 50.000 kr")
-- Hvis status="no" → amount skal sige "Ikke dækket" eller forklare undtagelsen
-- Hvis status="inib" → amount skal være null
- 
-⚠️ FORKERT eksempel:
-{
-  "status_b": "yes",  ← FORKERT!
-  "amount_b": "Dækkes ikke - kun storm..."  ← Dette er en no-status!
-}
- 
-✅ KORREKT eksempel:
-{
-  "status_b": "no",  ← Korrekt!
-  "amount_b": "Dækkes ikke - kun storm over 17,2 m/s dækkes"
-}
- 
-## 🔥 KRITISK: KONKRETE CATEGORIES
-- HVER coverage item SKAL have et KONKRET category navn
-- ✅ GODT: "Stormskade", "Nyværdierstatning første år", "Veterinærbehandling"
-- ❌ DÅRLIGT: "Ukendt dækning", "Ekstra dækning", "Bygning" (uden specifikation)
-- Hvis du finder flere ting i samme kategori → differentier: "Bygning - Stormskade", "Bygning - Solceller"
-
-## 🔥 KRITISK: AMOUNT FELTER SKAL ALTID VÆRE STRINGS
-- amount_a og amount_b SKAL ALTID være TEXT STRINGS — ALDRIG objekter!
-- ✅ KORREKT: "amount_a": "Dækker op til 50.000 kr med selvrisiko 2.500 kr"
-- ✅ KORREKT: "amount_a": "Ikke dækket — kun storm over 17,2 m/s dækkes"
-- ❌ FORKERT: "amount_a": {"covered": false, "details": "..."}
-- ❌ FORKERT: "amount_a": null (når status er "yes"!)
-- Hvis status er "yes" → SKRIV hvad der dækkes som en TEXT STRING
-- Hvis status er "no" → SKRIV hvad der IKKE dækkes som en TEXT STRING
-- Hvis status er "inib" → sæt amount til null
- 
- 
-# EKSEMPEL 0a: SKIP - Begge undtager (no+no)
-❌ MEDTAG IKKE:
-{
-  "category": "Oversvømmelse fra hav",
-  "status_a": "no",
-  "status_b": "no"
-  → SKIP! Ingen forskel - begge undtager det
-}
- 
-# EKSEMPEL 0b: REGEL 6 - Dækket > Undtaget
-✅ MEDTAG:
-{
-  "category": "Simpelt tyveri - ubeboet",
-  "status_a": "yes",
-  "status_b": "no",
-  "amount_a": "Dækket op til 10% af forsikringssummen",
-  "amount_b": "Ikke dækket - huset anses ubeboet ved weekendophold",
-  "winner": "a"
-}
- 
-# EKSEMPEL 1: Højere beløb
-{
-  "category": "Personskade",
-  "status_a": "yes",
-  "status_b": "yes", 
-  "amount_a": "50.000 kr",
-  "amount_b": "100.000 kr",
-  "winner": "b",
-  "reason": "Selskab B dækker dobbelt så meget"
-}
- 
-# EKSEMPEL 2: Kun én nævner
-{
-  "category": "Blæsevejr under stormstyrke",
-  "status_a": "yes",
-  "status_b": "inib",
-  "amount_a": "Dækkes ved vindstyrke under 17,2 m/s",
-  "amount_b": null,
-  "winner": "a",
-  "reason": "Kun Selskab A dækker blæsevejr - ikke nævnt hos B"
-}
- 
-# EKSEMPEL 3: Eksplicit ikke dækket
-{
-  "category": "Stormskade under vindstyrke 8",
-  "status_a": "yes",
-  "status_b": "no",
-  "amount_a": "Dækkes fra vindstyrke 5",
-  "amount_b": "Ikke dækket - kun storm over 17,2 m/s dækkes",
-  "winner": "a",
-  "reason": "Selskab A dækker blæsevejr, Selskab B undtager det eksplicit"
-}
- 
-## 📍 KILDEREFERENCER (page_a, section_a, page_b, section_b)
-For HVER coverage item skal du angive præcis hvor i betingelserne du fandt informationen:
-- **page_a / page_b**: Sidenummer som heltal (f.eks. 12). Sæt null hvis ikke angivet i dokumentet.
-- **section_a / section_b**: Det præcise afsnits- eller paragrafnavn (f.eks. "Afsnit 4.2 - Stormskade" eller "Afsnit 3 - Branddækning"). Sæt null hvis ikke tydeligt angivet.
-
-✅ KORREKT eksempel:
-{
-  "category": "Stormskade",
-  "page_a": 8,
-  "section_a": "Afsnit 4 - Naturfaenomener",
-  "page_b": 12,
-  "section_b": "Afsnit 6.1 Storm og orkan"
 }
 
-❌ FORKERT: Lad være med at opfinde sidenumre — skriv null hvis du er i tvivl.
-
-# OUTPUT FORMAT
-Returner KUN valid JSON uden markdown backticks:
-{
-  "type": "${type}",
-  "companyA": "Selskab A navn",
-  "companyB": "Selskab B navn",
-  "coverage": [
-    {
-      "category": "Konkret dækningsnavn",
-      "status_a": "yes/no/inib",
-      "status_b": "yes/no/inib",
-      "amount_a": "Beløb eller beskrivelse (eller null hvis inib)",
-      "amount_b": "Beløb eller beskrivelse (eller null hvis inib)",
-      "winner": "a/b/equal",
-      "reason": "Forklaring",
-      "sales_tip": "Kort salgstip hvis winner=a",
-      "objection_tip": "Håndtering hvis winner=b",
-      "customer_explanation": "Simpel forklaring",
-      "page_a": 8,
-      "section_a": "Afsnit 4 - Stormskade",
-      "page_b": 12,
-      "section_b": "Afsnit 6.1 Storm og orkan"
-    }
-  ],
-  "pitch": {
-    "why_switch": "Hvorfor skifte?",
-    "money_saved": "Besparelse"
-  },
-  "top3_a": ["Fordel 1", "Fordel 2", "Fordel 3"],
-  "top3_b": ["Fordel 1", "Fordel 2", "Fordel 3"]
-}`;
+var _origAnalyze=window.analyze;
+if(typeof _origAnalyze==='function'){
+  window.analyze=async function(){
+    var name=window._userName||'',n=name?', '+name:'';
+    var firstEver=isFirstEverAnalysis();
+    if(firstEver){markFirstAnalysisDone();setTimeout(function(){showQuip('F\u00f8rste rigtige analyse \u2014 sp\u00e6ndende! Vi er her hvis du har sp\u00f8rgsm\u00e5l \ud83d\ude4c');},1000);}
+    else if(getAnalysesToday()===0){setTimeout(function(){showQuip('F\u00f8rste analyse i dag \u2014 godt gjort'+n+' \ud83d\udc4f');},1000);}
+    var slowTimer=setTimeout(function(){showQuip('Vi t\u00e6nker os godt om... de her betingelser er ikke lette \ud83e\udde0');},20000);
+    try{await _origAnalyze.call(this);}finally{clearTimeout(slowTimer);}
+    var count=incrementAnalysesToday();
+    setTimeout(function(){
+      if(count>=5){showQuip(count+' analyser i dag \u2014 du er brandvarm'+n+'! \ud83d\udd25');}
+      else{showQuip('Analysen er klar'+n+'! Nu ved du mere om de her betingelser end de fleste s\u00e6lgere \ud83d\ude0f');}
+    },800);
+  };
 }
+</script>
