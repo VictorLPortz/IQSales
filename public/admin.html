@@ -1358,7 +1358,16 @@
           <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px">Opret ny nyhed</div>
           <input type="text" id="updateTitleInput" placeholder="Titel, fx 'Ny feature: Skadeseksempler'" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text)">
           <textarea id="updateMessageInput" placeholder="Besked, fx 'Generer AI-billeder af konkrete skadeseksempler direkte fra din analyse.'" rows="3" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;background:var(--surface);color:var(--text);resize:vertical"></textarea>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Type</label>
+              <select id="updateTypeInput" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+                <option value="feature">⭐ Ny feature</option>
+                <option value="opdatering" selected>🕐 Opdatering</option>
+                <option value="forbedring">📈 Forbedring</option>
+                <option value="advarsel">⚠️ Vigtigt</option>
+              </select>
+            </div>
             <div>
               <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Vis fra</label>
               <input type="date" id="updateStartDate" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
@@ -1704,7 +1713,7 @@
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
-      body: JSON.stringify({ title, message, start_date: startDate, end_date: endDate })
+      body: JSON.stringify({ title, message, type: document.getElementById('updateTypeInput').value, start_date: startDate, end_date: endDate })
     });
 
     if(res.ok){
