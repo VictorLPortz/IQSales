@@ -1679,11 +1679,48 @@
       const periodText = u.end_date
         ? `${formatDk(u.start_date)} – ${formatDk(u.end_date)}`
         : `Fra ${formatDk(u.start_date)} (uden slutdato)`;
+      const typeLabels = {feature:'⭐ Ny feature', opdatering:'🕐 Opdatering', forbedring:'📈 Forbedring', advarsel:'⚠️ Vigtigt'};
       return `
-      <div style="padding:12px 1.25rem;border-bottom:1px solid var(--border)">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${u.title}</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:2px">${u.message}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">Oprettet ${new Date(u.created_at).toLocaleString('da-DK')} · Vises: ${periodText}</div>
+      <div id="update-row-${u.id}" style="padding:12px 1.25rem;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${u.title}</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px">${u.message}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">${typeLabels[u.type]||'🕐 Opdatering'} · Oprettet ${new Date(u.created_at).toLocaleString('da-DK')} · Vises: ${periodText}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="editUpdate('${u.id}')" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--text);font-family:inherit">Rediger</button>
+            <button onclick="deleteUpdate('${u.id}')" style="font-size:12px;padding:4px 10px;border:1px solid #FECACA;border-radius:6px;background:transparent;cursor:pointer;color:#DC2626;font-family:inherit">Slet</button>
+          </div>
+        </div>
+        <div id="update-edit-${u.id}" style="display:none;margin-top:12px;padding:12px;background:var(--bg,#F9F8F5);border-radius:8px;border:1px solid var(--border)">
+          <input id="edit-title-${u.id}" value="${u.title.replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;margin-bottom:8px;background:var(--surface);color:var(--text)">
+          <textarea id="edit-message-${u.id}" rows="3" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;margin-bottom:8px;background:var(--surface);color:var(--text);resize:vertical">${u.message}</textarea>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Type</label>
+              <select id="edit-type-${u.id}" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)">
+                <option value="feature" ${u.type==='feature'?'selected':''}>⭐ Ny feature</option>
+                <option value="opdatering" ${(!u.type||u.type==='opdatering')?'selected':''}>🕐 Opdatering</option>
+                <option value="forbedring" ${u.type==='forbedring'?'selected':''}>📈 Forbedring</option>
+                <option value="advarsel" ${u.type==='advarsel'?'selected':''}>⚠️ Vigtigt</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Vis fra</label>
+              <input type="date" id="edit-start-${u.id}" value="${u.start_date||''}" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Vis til og med</label>
+              <input type="date" id="edit-end-${u.id}" value="${u.end_date||''}" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="saveUpdate('${u.id}')" style="font-size:12px;padding:6px 14px;border:none;border-radius:6px;background:#1A3C2E;color:#fff;cursor:pointer;font-family:inherit;font-weight:500">Gem ændringer</button>
+            <button onclick="editUpdate('${u.id}')" style="font-size:12px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);font-family:inherit">Annuller</button>
+            <span id="edit-status-${u.id}" style="font-size:12px"></span>
+          </div>
+        </div>
       </div>`;
     }).join('');
   }
@@ -1692,6 +1729,55 @@
     if(!dateStr) return '';
     const d = new Date(dateStr);
     return d.toLocaleDateString('da-DK');
+  }
+
+  function editUpdate(id) {
+    const editEl = document.getElementById('update-edit-' + id);
+    editEl.style.display = editEl.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function saveUpdate(id) {
+    const title = document.getElementById('edit-title-' + id).value.trim();
+    const message = document.getElementById('edit-message-' + id).value.trim();
+    const type = document.getElementById('edit-type-' + id).value;
+    const startDate = document.getElementById('edit-start-' + id).value || new Date().toISOString().slice(0,10);
+    const endDate = document.getElementById('edit-end-' + id).value || null;
+    const statusEl = document.getElementById('edit-status-' + id);
+    if(!title || !message){ statusEl.textContent = 'Udfyld titel og besked'; statusEl.style.color = '#DC2626'; return; }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session) return;
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/updates?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ title, message, type, start_date: startDate, end_date: endDate })
+    });
+
+    if(res.ok){
+      statusEl.textContent = '✓ Gemt';
+      statusEl.style.color = '#16A34A';
+      setTimeout(() => loadUpdates(), 800);
+    } else {
+      statusEl.textContent = 'Fejl — prøv igen';
+      statusEl.style.color = '#DC2626';
+    }
+  }
+
+  async function deleteUpdate(id) {
+    if(!confirm('Er du sikker på at du vil slette denne nyhed?')) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session) return;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/updates?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${session.access_token}` }
+    });
+    if(res.ok) loadUpdates();
   }
 
   async function createUpdate() {
