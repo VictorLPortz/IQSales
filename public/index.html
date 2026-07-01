@@ -4741,6 +4741,12 @@ async function generateSkaderScenario(c){
 Dækning: ${c.name}
 Forsikringstype: ${c.type}
 ${c.winner} har fordelen på denne dækning.
+Faktisk forskel ifølge betingelserne: ${c.detail || 'Ikke specificeret'}
+
+VIGTIGT: Brug KUN de faktiske detaljer fra "Faktisk forskel" ovenfor (fx beløb, m/s-grænser, %-satser). Opfind IKKE egne tal eller betegnelser. Hvis dækningen handler om vindforhold, skal du bruge korrekt dansk forsikringsterminologi baseret KUN på meter pr. sekund — nævn ALDRIG "vindstyrke" eller Beaufort-numre:
+- Blæsevejr = under 17,2 m/s
+- Storm = 17,2 m/s og derover
+Brug det ord (blæsevejr/storm) der faktisk matcher den dækning scenariet handler om — titlen og teksten skal stemme overens med ${c.name}.
 
 Returner KUN JSON (ingen markdown) med disse felter:
 {
