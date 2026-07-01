@@ -2059,7 +2059,7 @@ const BETINGELSER_LINKS={'Alm. Brand':'https://www.almbrand.dk','Tryg':'https://
 
 function updateBetingelsesLinks(){['a','b'].forEach(side=>{const name=cddState[side];const link=document.getElementById('link-'+side);if(!link)return;const url=BETINGELSER_LINKS[name];if(url&&name!=='andet'){link.href=url;link.style.display='inline-flex';}else{link.href='#';link.style.display='none';}});}
 
-function buildCoachSystem(companyA, companyB, types, topA, topB) {
+async function buildCoachSystem(companyA, companyB, types, topA, topB) {
   // Saml PDF-tekst fra alle valgte typer (maks ~60k tegn total for at holde omkostning nede)
   const MAX_CHARS = 60000;
   let pdfSection = '';
@@ -2067,19 +2067,40 @@ function buildCoachSystem(companyA, companyB, types, topA, topB) {
   const typeList = Array.isArray(types) ? types : (types || '').split(',').map(t => t.trim());
 
   for (const type of typeList) {
-    if (docsA[type]?.data && docsA[type].data !== 'cached') {
-      const text = typeof docsA[type].data === 'string' ? docsA[type].data : '';
-      if (totalChars + text.length < MAX_CHARS) {
-        pdfSection += `\n\n=== ${companyA} ${type} betingelser ===\n${text.substring(0, 30000)}`;
-        totalChars += text.length;
+    // Forsøg at bruge allerede indlæst tekst
+    let textA = (docsA[type]?.data && docsA[type].data !== 'cached') ? docsA[type].data : null;
+    let textB = (docsB[type]?.data && docsB[type].data !== 'cached') ? docsB[type].data : null;
+
+    // Hvis cached, hent tekst direkte fra Supabase insurance_terms
+    if (!textA || !textB) {
+      try {
+        const companies = [];
+        if (!textA) companies.push(companyA);
+        if (!textB) companies.push(companyB);
+        const filter = companies.map(c => `selskab=eq.${encodeURIComponent(c)}`).join('&');
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/insurance_terms?insurance_type=eq.${encodeURIComponent(type)}&${filter}&select=selskab,full_text`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${getAuthToken()}` } }
+        );
+        if (res.ok) {
+          const rows = await res.json();
+          for (const row of rows) {
+            if (row.selskab === companyA && !textA) textA = row.full_text;
+            if (row.selskab === companyB && !textB) textB = row.full_text;
+          }
+        }
+      } catch(e) {
+        console.error('Coach PDF-hentning fejlede:', e);
       }
     }
-    if (docsB[type]?.data && docsB[type].data !== 'cached') {
-      const text = typeof docsB[type].data === 'string' ? docsB[type].data : '';
-      if (totalChars + text.length < MAX_CHARS) {
-        pdfSection += `\n\n=== ${companyB} ${type} betingelser ===\n${text.substring(0, 30000)}`;
-        totalChars += text.length;
-      }
+
+    if (textA && totalChars < MAX_CHARS) {
+      pdfSection += `\n\n=== ${companyA} ${type} betingelser ===\n${textA.substring(0, 30000)}`;
+      totalChars += textA.length;
+    }
+    if (textB && totalChars < MAX_CHARS) {
+      pdfSection += `\n\n=== ${companyB} ${type} betingelser ===\n${textB.substring(0, 30000)}`;
+      totalChars += textB.length;
     }
   }
 
@@ -2090,7 +2111,7 @@ function buildCoachSystem(companyA, companyB, types, topA, topB) {
 Analysen dækker: ${Array.isArray(types) ? types.join(', ') : types}.
 ${companyA} er stærkere på: ${topA}.
 ${companyB} er stærkere på: ${topB}.
-${hasPdf ? `\nDu har adgang til de fulde betingelsestekster nedenfor og KAN svare på detaljerede spørgsmål om specifikke dækninger, selvrisici, beløb og begrænsninger direkte fra betingelserne. Citér gerne konkret fra teksten når det er relevant.` : ''}
+${hasPdf ? `\nDu har adgang til de fulde betingelsestekster nedenfor og KAN svare på detaljerede spørgsmål om specifikke dækninger, selvrisici, beløb og begrænsninger direkte fra betingelserne. Citér gerne konkret fra teksten når det er relevant.` : '\nDu har ikke adgang til de fulde betingelsestekster denne gang — svar kun baseret på analysen ovenfor.'}
 
 Tal som en erfaren kollega. Svar på dansk.${hasPdf ? pdfSection : ''}`;
 }
@@ -4694,12 +4715,6 @@ async function generateSkaderScenario(c){
 Dækning: ${c.name}
 Forsikringstype: ${c.type}
 ${c.winner} har fordelen på denne dækning.
-Faktisk forskel ifølge betingelserne: ${c.detail || 'Ikke specificeret'}
-
-VIGTIGT: Brug KUN de faktiske detaljer fra "Faktisk forskel" ovenfor (fx beløb, m/s-grænser, %-satser). Opfind IKKE egne tal eller betegnelser. Hvis dækningen handler om vindforhold, skal du bruge korrekt dansk forsikringsterminologi baseret KUN på meter pr. sekund (m/s) - nævn ALDRIG "vindstyrke" eller numre som "vindstyrke 8/10/12":
-- Blæsevejr = under 17,2 m/s
-- Storm = 17,2 m/s og derover
-Brug det ord (blæsevejr/storm) der faktisk matcher den dækning, scenariet handler om - titlen og teksten skal stemme overens med ${c.name}.
 
 Returner KUN JSON (ingen markdown) med disse felter:
 {
@@ -5347,7 +5362,7 @@ async function sendGlobalCoachMessage(companyA, companyB, types) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
-        system: buildCoachSystem(companyA, companyB, types, topA, topB),
+        system: await buildCoachSystem(companyA, companyB, types, topA, topB),
         message: question,
         max_tokens: 1000,
         user_id: getUserId() || null,
@@ -5658,7 +5673,7 @@ async function sendCoachMessage(shortName, companyA, companyB, type) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
       body: JSON.stringify({
-        system: buildCoachSystem(companyA, companyB, type, topA, topB),
+        system: await buildCoachSystem(companyA, companyB, type, topA, topB),
         message: question,
         max_tokens: 1000,
         user_id: getUserId() || null,
