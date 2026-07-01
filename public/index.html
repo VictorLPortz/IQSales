@@ -1286,10 +1286,16 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
   <!-- USER NAV -->
   <div id="user-nav" style="display:flex;align-items:center;gap:14px;position:relative">
     <div id="bell-wrap" style="position:relative;cursor:pointer;display:none" onclick="toggleNotifDropdown()">
-      <span style="color:rgba(255,255,255,.85);font-size:18px;line-height:1">🔔</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <div id="bell-dot" style="display:none;position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#E24B4A;border:1.5px solid #1A3C2E"></div>
-      <div id="notif-dropdown" style="display:none;position:absolute;top:28px;right:-8px;width:340px;background:#fff;border:1px solid #E3E1D9;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);overflow:hidden;z-index:1000;max-height:400px;overflow-y:auto;cursor:default">
-        <div style="padding:14px 18px;border-bottom:1px solid #E3E1D9;font-size:14px;font-weight:600;color:#141412">Nyheder</div>
+      <div id="notif-dropdown" style="display:none;position:absolute;top:32px;right:-8px;width:360px;background:var(--surface-2,#fff);border:0.5px solid var(--border,#E3E1D9);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);overflow:hidden;z-index:1000;max-height:480px;overflow-y:auto;cursor:default">
+        <div style="background:#1A3C2E;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#95D5B2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span style="font-size:13px;font-weight:500;color:#fff;">Nyheder</span>
+          </div>
+          <span id="notif-unread-count" style="display:none;font-size:11px;color:rgba(255,255,255,0.5);"></span>
+        </div>
         <div id="notif-list"></div>
       </div>
     </div>
@@ -1329,6 +1335,8 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
     const activeUnread = data.filter(u=>!seenIds.includes(u.id) && isInPeriod(u));
     if(activeUnread.length>0){
       document.getElementById('bell-dot').style.display='block';
+      const countEl = document.getElementById('notif-unread-count');
+      if(countEl){ countEl.style.display='block'; countEl.textContent=activeUnread.length+' ulæste'; }
       setTimeout(function(){
         const dd = document.getElementById('notif-dropdown');
         if(dd) dd.style.display='block';
@@ -1337,18 +1345,35 @@ input[type="text"]:focus{outline:none;border-color:var(--accent)}
 
     const list = document.getElementById('notif-list');
     if(data.length===0){
-      list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:#A09E96;font-size:13px">Ingen nyheder endnu</div>';
+      list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-muted,#A09E96);font-size:13px">Ingen nyheder endnu</div>';
       return;
     }
-    list.innerHTML = data.map(u=>{
+
+    const typeConfig = {
+      'feature':    { label:'Ny feature',  icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', bg:'#1D9E75', labelColor:'#085041', rowBg:'#F0FAF6' },
+      'opdatering': { label:'Opdatering',  icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>', bg:'#185FA5', labelColor:'#0C447C', rowBg:'#EBF4FD' },
+      'forbedring': { label:'Forbedring',  icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>', bg:'#BA7517', labelColor:'#633806', rowBg:'#FEF3E2' },
+      'advarsel':   { label:'Vigtigt',     icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>', bg:'#E24B4A', labelColor:'#791F1F', rowBg:'#FEF2F2' }
+    };
+
+    list.innerHTML = data.map(function(u, i){
       const unread = !seenIds.includes(u.id) && isInPeriod(u);
       const timeAgo = formatTimeAgo(new Date(u.created_at));
-      return '<div style="padding:12px 18px;border-bottom:1px solid #E3E1D9;background:'+(unread?'#F0FAF6':'#fff')+'">'+
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'+
-        '<div style="width:6px;height:6px;border-radius:50%;background:'+(unread?'#1D9E75':'#D3D1C7')+'"></div>'+
-        '<span style="font-size:13px;font-weight:600;color:'+(unread?'#141412':'#7A7870')+'">'+u.title+'</span></div>'+
-        '<p style="font-size:12px;color:'+(unread?'#7A7870':'#A09E96')+';margin:0 0 4px;line-height:1.5">'+u.message+'</p>'+
-        '<span style="font-size:11px;color:#A09E96">'+timeAgo+'</span></div>';
+      const cfg = typeConfig[u.type] || typeConfig['opdatering'];
+      const isLast = i === data.length - 1;
+      const rowBg = unread ? cfg.rowBg : 'transparent';
+      return '<div style="padding:14px 16px;border-bottom:'+(isLast?'none':'0.5px solid var(--border,#E3E1D9)')+';background:'+rowBg+';">'+
+        '<div style="display:flex;align-items:flex-start;gap:10px;">'+
+        '<div style="width:32px;height:32px;border-radius:8px;background:'+(unread?cfg.bg:'#B4B2A9')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">'+cfg.icon+'</div>'+
+        '<div style="flex:1;min-width:0;">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'+
+        '<span style="font-size:11px;font-weight:500;color:'+(unread?cfg.labelColor:'#888780')+';">'+cfg.label+'</span>'+
+        (unread?'<span style="width:5px;height:5px;border-radius:50%;background:'+cfg.bg+';flex-shrink:0;"></span>':'')+
+        '</div>'+
+        '<p style="font-size:13px;font-weight:500;color:'+(unread?'#141412':'#7A7870')+';margin:0 0 4px;line-height:1.4;">'+u.title+'</p>'+
+        '<p style="font-size:12px;color:'+(unread?'#5F5E5A':'#A09E96')+';margin:0 0 6px;line-height:1.5;">'+u.message+'</p>'+
+        '<span style="font-size:11px;color:#A09E96;">'+timeAgo+'</span>'+
+        '</div></div></div>';
     }).join('');
   }
 
