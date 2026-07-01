@@ -72,6 +72,20 @@ module.exports = async function handler(req, res) {
       const { prompt, userId, insuranceType, coverageName, promptText, feedbackText } = req.body;
       if (!prompt) return res.status(400).json({ error: 'Mangler prompt' });
 
+      // Indholdsfiltrering af feedback
+      if (feedbackText) {
+        const forbudt = [
+          'blod','blood','død','dead','dræb','kill','mord','murder','lig','corpse','selvmord','suicide',
+          'nøgen','naked','sex','erotisk','erotic','porno','porn','voldtægt','rape','bryst','breast',
+          'penis','vagina','nøgenbillede','intim','intimate','eksplicit','explicit',
+          'nazi','swastika','racis','terror','ekstremi'
+        ];
+        const feedbackLower = feedbackText.toLowerCase();
+        if (forbudt.some(ord => feedbackLower.includes(ord))) {
+          return res.status(400).json({ error: 'Feedback indeholder upassende indhold og kan ikke bruges.' });
+        }
+      }
+
       // Tjek cache først (kun hvis brugeren IKKE har givet feedback — så vil de have noget nyt)
       if (insuranceType && coverageName && !feedbackText) {
         try {
